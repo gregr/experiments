@@ -1,18 +1,20 @@
 #lang racket
 
 (struct val-undefined () #:transparent) ; void type
+(struct val-indirect (val) #:mutable #:transparent)
 (define undefined (val-undefined))
 
-; letrec prevents us from using immutable hash? hmm... maybe just have indirection nodes instead
-(define (env-new) (make-hasheq '()))
-(define (env-extend env sym val) (let ((env (hash-copy env))) (hash-set! env sym val) env))
-(define (env-getd env sym default) (hash-ref env sym default))
+(define (env-new) (make-immutable-hasheq '()))
+(define (env-extend env sym val) (hash-set env sym val))
+(define (env-getd env sym default)
+  (match (hash-ref env sym default)
+    ((val-indirect val) val)
+    (val val)))
 (define (env-get env sym) (env-getd env sym undefined))
 (define (env-get-checked env sym)
   (let ((val (env-get env sym)))
     (if (eq? val undefined)
       (error 'env-get-checked "referenced unbound variable: ~s" sym) val)))
-(define (env-set! env sym val) (hash-set! env sym val))
 
 (struct term-var (sym) #:transparent)
 (struct term-app (proc arg) #:transparent)
@@ -37,8 +39,8 @@
        (apply-proc proc arg)))
     ((term-proc param body) (val-proc param body env))
     ((term-letrec param arg body)
-     (let* ((env (env-extend env param undefined)) (arg (eval-term arg env)))
-       (env-set! env param arg)
+     (let* ((ind (val-indirect undefined)) (env (env-extend env param ind)) (arg (eval-term arg env)))
+       (set-val-indirect-val! ind arg)
        (eval-term body env)))
     ((term-if0 cnd cns alt)
      (if (equal? 0 (eval-term cnd env)) (eval-term cns env) (eval-term alt env)))
