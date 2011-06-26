@@ -1,5 +1,7 @@
 #lang racket
 
+(require "common.rkt")
+
 (struct val-undefined () #:transparent) ; void type
 (struct val-indirect (val) #:mutable #:transparent)
 (define undefined (val-undefined))
@@ -45,9 +47,6 @@
     ((term-if0 cnd cns alt)
      (if (equal? 0 (eval-term cnd env)) (eval-term cns env) (eval-term alt env)))
     ((term-lit data) data)))
-
-(define (flip2 fn) (lambda (x y) (fn y x)))
-(define (curry2 fn) (lambda (x) (lambda (y) (fn x y))))
 
 (define (build-term data)
   (match data
