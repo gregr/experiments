@@ -1,5 +1,32 @@
 #lang racket
 
+; normal order
+w x = x x
+
+y f = u u
+  where u x = f (x x)
+
+; applicative order
+y f = u u
+  where u x arg = f (x x) arg
+
+; typing
+y f = (u u):b
+  where u x = (f (x x):b):c
+x: a. a -> b
+f: b -> c
+u: x
+c: b
+y: (b -> b) -> b
+
+fact0 fact n = ...
+fact0 : (n -> n) -> (n -> n)
+y fact0 : n -> n
+
+w x = (x x):b
+x: a. a -> b
+w: (a.(a -> b)) -> b
+
 ;  expr ::= var:t
 ;         | (expr:(a->b) expr:a):b
 ;         | (x:a -> expr:b):(a->b)
@@ -112,9 +139,35 @@
 (struct term-letrec (param arg body) #:transparent)
 (struct term-if0 (condition consequent alternative) #:transparent)
 (struct term-lit (data) #:transparent) ; include native procedures
+;(struct term-destr (tag proc tval) #:transparent)
+;(struct term-tagof (tval) #:transparent)
+;(struct term-table (default-val lab-val-pairs) #:transparent)
+;(struct term-table-get (tab lab) #:transparent)
+
+
 
 (struct val-proc (binder body env) #:transparent)
+;(struct val-table (default labs->vals) #:transparent)
 
+;(define (table-build dval lvs) (val-table dval (make-hash lvs)))
+;(define (table-get tab lab)
+;  (match tab
+;    ((val-table dval lvs) (hash-ref lvs lab dval))
+;    (_ (error 'table-get
+;         "attempted to get labeled value from non-table ~s" tab))))
+;(define (tagged-tagof tval)
+;  (match tval
+;    ((val-tagged tag args) tag)
+;    (_ tval)))
+;(define (tagged-destruct tag proc tval)
+;  (match tval
+;    ((val-tagged tag0 args)
+;     (if (equal? tag0 tag) (apply-proc proc args)
+;       (error 'tagged-destruct
+;         "attempting to destruct tag ~s when expecting ~s" tag0 tag)))
+;    (_ (error 'tagged-destruct
+;         "attempted to destruct non-tagged-val ~s" tval))))
+;
 (define (apply-proc proc arg)
   (match proc
     ((val-proc binder body env)
@@ -135,6 +188,19 @@
     ((term-if0 cnd cns alt)
      (if (equal? 0 (eval-term cnd env)) (eval-term cns env) (eval-term alt env)))
     ((term-lit data) data)))
+;    ((term-destr tag proc tval)
+;     (let ((tag (eval-term tag env)) (proc (eval-term proc env)) (tval (eval-term tval env)))
+;       (tagged-destruct tag proc tval)))
+;    ((term-tagof tval) (let ((tval (eval-term tval env))) (tagged-tagof tval)))
+;    ((term-table dval lvs)
+;     (let ((dval (eval-term dval env))
+;           (lvs (map (lambda (lv) (cons (eval-term (car lv) env)
+;                                        (eval-term (cdr lv) env))) lvs)))
+;       (table-build dval lvs)))
+;    ((term-table-get tab lab)
+;     (let ((tab (eval-term tab env)) (lab (eval-term lab env)))
+;       (table-get tab lab)))))
+
 
 (define (flip2 fn) (lambda (x y) (fn y x)))
 (define (curry2 fn) (lambda (x) (lambda (y) (fn x y))))
@@ -145,6 +211,7 @@
     (`(proc ,param ,body) (term-proc param (build-term body)))
     (`(letrec (,param ,arg) ,body) (term-letrec param (build-term arg) (build-term body)))
     (`(if0 ,cnd ,cns ,alt) (term-if0 (build-term cnd) (build-term cns) (build-term alt)))
+    ;(`(destr ,tag ,proc ,tval) (term-destr (build-term tag) (build-term proc) (build-term tval)))
     ((list single) (build-term single))
     ((? list?) (foldl (flip2 term-app) (build-term (car data)) (map build-term (cdr data))))
     (_ (term-lit data))))
