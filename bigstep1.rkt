@@ -91,5 +91,24 @@
 (define ex-term (build-term
   '(letrec (factorial
              (proc acc (proc n (case n (factorial (* acc n) (- n 1)) (0 () acc)))))
-     (factorial 1 7))))
+     (factorial 1 6000))))
+(define ex-term2 (build-term
+  `(((proc factorial
+       (factorial 1 6000))
+     ((proc f ((proc x (proc arg (f (x x) arg)))
+               (proc x (proc arg (f (x x) arg)))))
+      (proc fact (proc acc (proc n
+        (case n
+          (fact (* acc n) (- n 1))
+          (0 () acc))))))))))
+(define ex-term3 (build-term
+  `(letrec (fib
+             (proc n (case n (+ (fib (- n 1)) (fib (- n 2))) (1 () 1) (0 () 0))))
+     (fib 27))))
+(define ex-term4 (build-term
+  `(((proc fibo (fibo 27))
+     ((proc f ((proc x (proc arg (f (x x) arg)))
+               (proc x (proc arg (f (x x) arg)))))
+      (proc fib (proc n (case n (+ (fib (- n 1)) (fib (- n 2))) (1 () 1) (0 () 0)))))))))
 (define ex-result (eval-term ex-term ex-env))
+(define ex-result2 (eval-term ex-term2 ex-env))
