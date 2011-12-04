@@ -8,6 +8,7 @@ test = do
   put 4
   val <- get
   return "hi"
+test' = runState test 0
 
 data GTerm st key tok = Fail
                       | Eps
