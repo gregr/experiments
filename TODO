@@ -1,2 +1,196 @@
 implicit union and intersection constructors
   are intersection constructors the same as record constructors? (and so unions are variants?)
+
+type-inference algorithm
+  do these dependently-typed terms have principal typings?  they don't need to; use CFA to deal with them
+  can probably get away with it via syntactic embellishments or type annotations
+
+dependent-typing functions can use (possibly run-time) partial evaluation / (JIT) abstract interpretation
+  ex: sprintf :: (x::String) -> SPrintfType x
+
+how to reconcile stack model of mutually-recursive linking?
+
+procedure calls as module linking:
+  [...cont...[inputs]] - push args, then enter module computation
+  [...cont...|[inputs][output space?]...locals...] - reserve space for results?, perform local computation
+  [...cont...[former inputs?][outputs]] - continue with output results
+
+incorporate fully-parallelizeable procedures:
+  expose outer and inner evaluation parallelism (argument evaluation vs. body evaluation)
+  synchronization points to control parallelism and allow side-effects
+  fundamental syntax: apply-parallel and apply-serial
+  evaluation under lambda: partially applied procedures; when is it appropriate? (strict vs. lazy argument returns)
+  reconcile complexities in coordination of application site provisions with procedure body dependencies
+
+value-level (semi?)unification:
+  why should the type-level have all the fun?
+  procedure-app linking coordinator can reach upwards from pattern argument into constructor computation to pull out
+  the true dependencies asynchronously to avoid having to wait for an artificial synchronization due to constructor app
+
+data repr:
+  data types from universes as in Conor McBride's ornaments paper
+  records/modules
+  structs/tuples
+  arrays - ephemeral dynamic arrays via linear types
+  inductive/coinductive algebraic type layer
+  pointed/lifted/mutable/linear/shared
+
+records:
+  form of subtyping based on row-types, as in Morrow
+  free extension without overwriting duplicate fields -- lexically scoped labels
+  extension becomes like environment extension
+  record field access -- constant-time lookup via implicitly-passed label->index args
+  environments as records: variable lookup as field lookup
+
+modules: (how much of this is compatible with the above records?)
+  asymmetric directed linking: one module's provisions are used to satisfy another's requirements
+  symmetric mutually-recursive linking: combine requirements and provisions, but resolving mutually satisfied requirements
+  mixins/traits become easy
+  letrec explainable via dynamic module construction?
+  procedure app explainable via very simple directed linking? allows targeted parameter applicaton? (ie. skipping of params)
+  unresolve dependencies: should such computations be saved up until linking?
+  dynamic 'opening' of modules: should specific symbols need to be specified?
+  reflection/introspection/inspection of exposed fields; debugger/authority able to inspect private environment
+
+type classes:
+  static/dynamic dispatch based on records: 'case' involves destructor/continuation-record fields labeled with type tags
+  ranging over values too; not just types
+  allow projections, something like: ProjClass Type symbol
+  class constraints a form of type function? based on records
+  data-polymorphic views: streams vs. lists, type class interaction with case
+
+case analysis:
+  not just a static syntax compilation into nested switches
+  pattern matching as selecting the field of a record containing destructors/continuations
+  able to dynamically build efficient record-based matching as dependencies are satisfied
+
+implicits:
+  based on dynamically scoped parameters/keys (also see racket's initial values and preserves idea)
+  open/closed contexts for accepting outside implicits (maybe all dynamic params too, not just implicits?)
+  allow reinterpretation of type classes; eg. sorting w/ implicit Ord definition override
+
+algebraic data:
+  tags (actually, all types probably should be reified as tag values, not just algebraic types)
+  constructors
+  destructors
+
+type tower:
+  allow values to be raised to type-level computations, and vice-versa; generalizes upwards (kinds, etc.)
+  how to fit in propositions?
+  intersections/unions/subtyping/recursive types - avoid universal/existential quantification
+  principal typing property: is it available under these circumstances?
+  R-Acyclic Semi-unification
+  dynamic checking = type checking occurs in tandem with evaluation (one step ahead?)
+  recursive types due to mutually-recursive module linking still needs consideration
+  type families: consider procedure that dynamically produces new types of the same form
+
+syntax:
+  context-sensitive syntactic values bound to variables (such as constructors); or should it be values, not variables?
+  above explainable via syntactic records with context tags as field labels?
+  partial macro expansion
+  infix operator groups / relative ordering only within groups; ordering is nonsensical outside of groups
+
+debugging:
+  time-travel via reversible computations
+  explicitly non-deterministic side effects allowable in parallel computations (to allow things like debug printing)
+
+low-level:
+  thread-local keys
+  local data alloc
+  linear values to describe ephemeral data
+  non-allocating computations
+  reversible/conservative computations
+  local vs. global mutability; sharing
+  exact/inexact/arbitrary precision
+  synch/asynch channels
+  ffi: i/o ports (including sockets?); unboxed arithmetic/comparison/conversion
+  how to relate to miasm?
+  parameterized performance/cost estimation
+  equality saturation
+
+example typing (ignoring free-ness of int-to-string and length):
+
+f x = case x of
+  Int i -> f (int-to-string i)
+  String s -> length s
+
+f:(x -> r) x = (case x of
+  Int i -> (f:(a -> b) (int-to-string:(Int -> String) i:Int):String):b
+  String s -> (length:(String -> Int) s:String):Int
+  ):r
+
+f : f?.(x -> r) :.
+
+0{
+x:i
+i:Int
+f:(a -> b)
+a:String
+b:
+r:b
+}
+||
+1{
+x:s
+s:String
+r:Int
+}
+
+simplify:
+
+f : f?.(x -> r) :.
+0{
+x:Int
+f:(String -> r)
+r:
+}
+||
+1{
+x:String
+r:Int
+}
+
+link with free var f (itself!)
+for each instance of f(small), link with f(big)
+for single f(small) instance in env 0, choose f(big)'s env paths where the following holds when f(small):(String -> r):
+note: only the input should be used to filter... can't filter based on output without possible unsoundness
+x <: String
+env 1 has no instances of f, otherwise each instance would choose its own appropriate paths to link with
+
+therefore only env 1 path, choose fresh names:
+(x1 -> r1) :.
+{
+x1:String
+r1:Int
+}
+link with env 0 and unify fs, (x1 -> r1) = (String -> r):
+x1 = String => String = String
+r1 = r
+0{
+x:Int
+f:(String -> r)
+x1:String
+r1:Int
+r:r1
+}
+simplify (f no longer free; can be gc'ed):
+0{
+x:Int
+r:Int
+}
+
+result is:
+f : (x -> r) :.
+0{
+x:Int
+r:Int
+} # aka Int -> Int
+||
+1{
+x:String
+r:Int
+} # aka String -> Int
+
+or:
+f : (Int -> Int) & (String -> Int) :. empty
+
