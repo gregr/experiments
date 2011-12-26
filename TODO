@@ -1,0 +1,2 @@
+implicit union and intersection constructors
+  are intersection constructors the same as record constructors? (and so unions are variants?)
