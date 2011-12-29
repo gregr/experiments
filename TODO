@@ -33,7 +33,7 @@ data repr:
   structs/tuples
   arrays - ephemeral dynamic arrays via linear types
   inductive/coinductive algebraic type layer
-  pointed/lifted/mutable/linear/shared
+  pointed/cyclic?/lifted/mutable/linear/shared
 
 records:
   form of subtyping based on row-types, as in Morrow
@@ -41,6 +41,27 @@ records:
   extension becomes like environment extension
   record field access -- constant-time lookup via implicitly-passed label->index args
   environments as records: variable lookup as field lookup
+  closure and arguments as records
+  procedure types can include parameter names (symbols):
+    f : (one : A) -> (two : B) -> ...
+    f one two = ...
+  partially/fully apply procedure to arguments by name or position, even with non-flat procedures:
+    call procedure with a record supplying arguments
+    f : (one : A) -> (two : B) -> (three : C) -> ...
+      by name:
+        (f :@ {two=...}) : (one : A) -> (three : C) -> ...
+      or by position
+        (f :@ {2=..., 3=...}) : (one : A) -> ...
+    proc could be non-flat; closure would simply store pending name/position fields until applicable
+    the type says eventually there are named params: two and three
+      f : (one : A) -> (two : B) -> (three : C) -> ...
+      f one = ... computation here ... eventually return (proc two three = ...)
+      essentially:
+        (f :@ {three=val}) ==> proc one two = f one two val
+        though maybe not implemented this way; with enough info, could be smarter and possibly finish computations
+        that only depend on three early, even within the nested proc
+        per-argument partial-application-handling code wrapped with closures to do this?
+    if names and positions are mixed, positions should take precedence
 
 modules: (how much of this is compatible with the above records?)
   asymmetric directed linking: one module's provisions are used to satisfy another's requirements
@@ -51,9 +72,43 @@ modules: (how much of this is compatible with the above records?)
   unresolve dependencies: should such computations be saved up until linking?
   dynamic 'opening' of modules: should specific symbols need to be specified?
   reflection/introspection/inspection of exposed fields; debugger/authority able to inspect private environment
+  evaluating a module produces a record reflecting its top-level environment
+  module form expands/evaluates all contained expressions within a new sub-module
+    expressions are effectively evaluated line by line, so data constructions may not be mutually recursive without
+    intervening thunks/indirections
+    side-effectful code should be executed once, when the module body is evaluated; but when that is might be unpredictable
+  define form creates a binding within the enclosing [sub]-module's top-level environment
+    since these bindings are all placed in the same environment without extension, they are mutually-recursive
+
+environments:
+  environments are records:
+    normally immutable, except in the case of module evaluation, during the evaluation itself?
+    the residual record produced by the module evaluation should be immutable
+  get-environment produces the current procedure environment as an immutable record:
+    since a module's environment changes as the module is evaluated, define a get-namespace for grabbing a ref to it
+    what about get-environment within a procedure defined in a module currently being evaluated? that will still break
+      but such procedures can be considered different each time a new definition is linked to its parent module
+      this "evolving" model can be implemented with lazy updates, only performing them when a procedure is demanded
+      or, update could be performed when a procedure's dependencies are linked/updated
+    another possibility: consider premature get-environment uses to be referencing undefined vars (in a way it does, right?)
+      or the module environment can be considered the last definition of a module, so premature refs to it are undefined?
+      or maybe implicit internal env access is a bad idea, and envs should only be accessible given a complete module in hand
+
+alternative module/environment model:
+  rejecting this idea for now; convenience of the "evolving" model seems to outweigh its complexity
+  instead of insisting on modules essentially bootstrapping themselves into existence, consider them constructed externally
+  though this will prevent the definition of macros alongside with their uses (this is something like phase-separation)
+  separate issue: would be nice to be able to update module definitions and have their dependents re-link themselves
+    doing this causes fissure with running code in the old module context; after all, module update should not be mutation
+
+let, let-rec, let-seq via record construction and use/open:
+  use ({x=...} :+: {y=...})
+  use {x=..., y=...}
+  use {x=...}; use {y=...}
+  or not?  instead build a sub-module whose top-level defs are mutually recursive
 
 type classes:
-  static/dynamic dispatch based on records: 'case' involves destructor/continuation-record fields labeled with type tags
+  static/dynamic dispatch based on records: 'case' involves destructor/continuation-record fields labeled with type/data tags
   ranging over values too; not just types
   allow projections, something like: ProjClass Type symbol
   class constraints a form of type function? based on records
@@ -70,7 +125,12 @@ implicits:
   allow reinterpretation of type classes; eg. sorting w/ implicit Ord definition override
 
 algebraic data:
-  tags (actually, all types probably should be reified as tag values, not just algebraic types)
+  reified types as values (these are NOT data constructor tags)
+    if a type contains value-level details, some of those details may be erasable at run-time
+    ex. if we know that a particular Maybe value is always a Just, we can represent the value without a tag at run-time
+    this is not limited to tags: if we know that a particular value is always [1, 2, 3], that value may be erasable as well
+    of course, erasure should not be observable
+  tags (these are not types, see above)
   constructors
   destructors
 
