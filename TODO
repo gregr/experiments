@@ -1,3 +1,12 @@
+data representation for various stages of interpretation/compilation
+  how will runtime code generation be supported?
+  will modules store data needed to compile procedures it stores?
+    maybe the procedure objects themselves should store this data repr
+      erasable when unused; see value erasure somewhere below
+
+system-level procedures for simple c-like translation? no gc; no auto-parallelism (w/ threads; optimal reordering is still fine)
+  general procedures with module-like linking behavior with parallelism available in dependency order for sub-computations?
+
 implicit union and intersection constructors
   are intersection constructors the same as record constructors? (and so unions are variants?)
 
@@ -64,21 +73,54 @@ records:
     if names and positions are mixed, positions should take precedence
 
 modules: (how much of this is compatible with the above records?)
+  basic module form that does no special parsing or special syntactic expansion with macros defined within it
+  a text/file-based module loader that is given a parser and can use expanders as they're defined
+    there could also be an intermediate loader for pre-parsed concrete syntax trees
+  syntactic expansion:
+    involves a renaming of public symbols (which could be used by many modules) to private symbols unique to that module
+    syntactic closures effectively close over private symbols to avoid symbol mis-captures
+    syntactic closures expanding to external dependencies
+      cause implicit linking of private names? public names still not available for use, preserving encapsulation
+    macros considered dependent on final module env:
+      they normally won't be available for export until all of a module's dependencies are satisfied
+        this also means values that store macros (ie., building a list of macros) are also still unevaluated
+      the final env can be forced complete early, producing a record with the macros satisfied; it doesn't mutate the module
+        of course will also satisfy dependencies of those values that store macros, so they will also be present
+  undefine as an interactive module-builder gimick:
+    create a new module and load current definitions into it, minus the symbol being undefined, and continue there
+      these definitions must not close over the previous module, to avoid capturing references to the old def
+  define form creates a binding within the enclosing [sub]-module's top-level environment
+    since these bindings are all placed in the same environment without extension, they are mutually-recursive
+  a module stores distinct SCCs of mutually recursive procedures/thunks, noting remaining dependencies for each
+    as definitions are evaluated, if they satisfy an existing SCC's dependencies, the SCC is relinked
+      this linking is asymmetric:
+        the dependent SCCs have their types updated
+        types of the dependencies don't depend on how they are used (more generally, types only depend on what they use)
+          though a separate use-based linking could be done to determine proc specializations
+      such dependency satisfaction may cause previously distinct SCCs to be coalesced (they're shown to be mutually recursive)
+    when an evaluation is actually taking place, its dependencies are calculated and extracted from the module environment
+      unsatisfied dependencies in the current module env cause it to be rebuilt, incorporating any additional defs seen
+        if the dependencies still aren't there, it indicates an 'undefined dependency' failure
+  unresolve dependencies: should such computations be saved up until linking?
+    cyclic dependencies without indirection (ie., thunks) are an error
+    would be nice, and wrt side-effects, those should be recorded in the order in which their dependencies are resolved
+      symmetric linking deterministically satisfies the side effects of one module before the other
+        also need a way to order incoming dependency symbols to allow proper ordering of side effects as they are satisfied
+      ex: should print out "hello, goodbye"
+        print msg
+        print "hello, "
+        msg = "goodbye"
+    then the side-effects should actually occur whenever the module is completed via linking, in the same order
+  pre-procedures are open terms where module-level bindings are free
+    procedures can be created on demand during module eval by providing pre-procs with the most up-to-date module context
+    modules are immutable, so this context changes as linking occurs to reflect the newly-formed module
+  finally, evaluating a module produces a record reflecting its top-level environment
   asymmetric directed linking: one module's provisions are used to satisfy another's requirements
   symmetric mutually-recursive linking: combine requirements and provisions, but resolving mutually satisfied requirements
   mixins/traits become easy
-  letrec explainable via dynamic module construction?
-  procedure app explainable via very simple directed linking? allows targeted parameter applicaton? (ie. skipping of params)
-  unresolve dependencies: should such computations be saved up until linking?
+    procedure app explainable via very simple directed linking? allows targeted parameter applicaton? (ie. skipping of params)
   dynamic 'opening' of modules: should specific symbols need to be specified?
   reflection/introspection/inspection of exposed fields; debugger/authority able to inspect private environment
-  evaluating a module produces a record reflecting its top-level environment
-  module form expands/evaluates all contained expressions within a new sub-module
-    expressions are effectively evaluated line by line, so data constructions may not be mutually recursive without
-    intervening thunks/indirections
-    side-effectful code should be executed once, when the module body is evaluated; but when that is might be unpredictable
-  define form creates a binding within the enclosing [sub]-module's top-level environment
-    since these bindings are all placed in the same environment without extension, they are mutually-recursive
 
 environments:
   environments are records:
