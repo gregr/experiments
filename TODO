@@ -222,6 +222,9 @@ syntax:
         parsing of a module file produces an operator table, apart from any evaluation of the module
         pass operator table on to parsers used with immporting modules filtering operators based on imported symbols
         all of this tedium should be hidden with a good module-building DSL...
+      instead, do something more like AGDA again, which allows local mixfix specs and doesn't rely on parser manipulation
+        first, parse every symbol as if it was a normal identifier
+        during expansion phase, as operator fixities are learned, rearrange symbols before macro expansions occur
   macros may be used within the defining file-based module as they are defined
     need some way of noticing if a macro has been used before it is defined; this signifies some kind of error
     special form for use of a macro as a value?
@@ -329,4 +332,33 @@ r:Int
 
 or:
 f : (Int -> Int) & (String -> Int) :. empty
+
+
+u f = f f
+u : (a ^ (a -> b)) -> b
+
+u u
+
+((a ^ (a -> b)) -> b) -> y
+(a ^ (a -> b)) -> b
+y: b
+
+a ^ (a -> b)
+(a ^ (a -> b)) -> b
+.
+a ^ (a -> b)
+((a ^ (a -> b)) -> b) ^ ((a ^ (a -> b)) -> b)
+.
+
+a
+(a ^ (a -> b)) -> b
+
+a -> b
+(a ^ (a -> b)) -> b
+.
+a
+a ^ (a -> b)
+.
+a
+(a -> b)
 
