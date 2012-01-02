@@ -17,17 +17,24 @@ type-inference algorithm
 dependent-typing functions can use (possibly run-time) partial evaluation / (JIT) abstract interpretation
   ex: sprintf :: (x::String) -> SPrintfType x
 
-procedure calls as module linking (stack model):
+procedure calls as module linking:
   modules have two possible linking interfaces with corresponding procedure application analogies/protocols:
     name-based inputs (call w/ keyword args)
     position-based translation to input names (call w/ positional args, allowing possible skipping of positions)
+  eval-within/proceed form asks for a given expression to be evaluated within a particular module
+    if the module is complete, the result is the evaluation
+    if the module is incomplete, the result is a "proceedure", though position-based calling is an orthogonal feature
+      as the procedure is partially applied/linked, the results are also procedures
+      once fully applied, the result is the evaluation
   procedure application translation:
+    eval-within/proceed with the expression body and desired procedure module
     link args w/ procedure module via one of the above protocols
-    project resulting module -- hmm this won't work
-  [...cont...[inputs]] - push args, then enter module computation
-  [...cont...|[inputs][output space?]...locals...] - reserve space for results?, perform local computation
-  [...cont...[former inputs?][outputs]] - continue with output results
-  how to reconcile stack model of mutually-recursive linking?
+    value of the expression is produced if linking was complete; a partially-linked module is produced otherwise
+  stack model:
+    [...cont...[inputs]] - push args, then enter module computation
+    [...cont...|[inputs][output space?]...locals...] - reserve space for results?, perform local computation
+    [...cont...[former inputs?][outputs]] - continue with output results
+    how to reconcile stack model of mutually-recursive linking?
 
 incorporate fully-parallelizeable procedures:
   expose outer and inner evaluation parallelism (argument evaluation vs. body evaluation)
@@ -116,10 +123,15 @@ modules: (how much of this is compatible with the above records?)
         print "hello, "
         msg = "goodbye"
     then the side-effects should actually occur whenever the module is completed via linking, in the same order
-  pre-procedures are open terms where module-level bindings are free
+      or, maybe discharge of side-effects can be a separate operation after the linking is complete
+        or even anytime during partial linking for partially-completed side effects?
+          in this case, maybe such discharge should even be repeatable?
+  pre-procedures are open terms defined in a module where the module-level bindings are free
     procedures can be created on demand during module eval by providing pre-procs with the most up-to-date module context
     modules are immutable, so this context changes as linking occurs to reflect the newly-formed module
   finally, evaluating a module produces a record reflecting its top-level environment
+    originally was thinking it was ok to project on any complete fields of a partially linked module
+      now I think this might be a bad idea; it's also a simpler model to only consider this for completed modules
   asymmetric directed linking: one module's provisions are used to satisfy another's requirements
   symmetric mutually-recursive linking: combine requirements and provisions, but resolving mutually satisfied requirements
   mixins/traits become easy
@@ -197,6 +209,9 @@ syntax:
   above explainable via syntactic records with context tags as field labels?
   partial macro expansion
   infix operator groups / relative ordering only within groups; ordering is nonsensical outside of groups
+  macros may be used within the defining file-based module as they are defined
+    need some way of noticing if a macro has been used before it is defined; this signifies some kind of error
+    special form for use of a macro as a value?
 
 debugging:
   time-travel via reversible computations
