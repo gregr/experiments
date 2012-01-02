@@ -214,6 +214,14 @@ syntax:
   above explainable via syntactic records with context tags as field labels?
   partial macro expansion
   infix operator groups / relative ordering only within groups; ordering is nonsensical outside of groups
+    consider AGDA-style mixfix operators/slices, but with positioned wildcards determining closeness of grouping
+      _op_ vs. _ op _ vs. _op _ etc.
+    general parser meta-data available after a module is built, containing things like symbol properties (operator-ness)
+      how to reconcile difference between file-based modules and nested modules wrt operator definitions?
+        operator definitions on a per-file basis
+        parsing of a module file produces an operator table, apart from any evaluation of the module
+        pass operator table on to parsers used with immporting modules filtering operators based on imported symbols
+        all of this tedium should be hidden with a good module-building DSL...
   macros may be used within the defining file-based module as they are defined
     need some way of noticing if a macro has been used before it is defined; this signifies some kind of error
     special form for use of a macro as a value?
