@@ -55,6 +55,11 @@ data repr:
   arrays - ephemeral dynamic arrays via linear types
   inductive/coinductive algebraic type layer
   pointed/cyclic?/lifted/mutable/linear/shared
+  automatic translation of nat/int-like structurally recursive values to machine-level binary number representation
+    infinite sum types? seems plausible using same idea as constructor tagging of pointers
+    unary recursive structures? S S S S S Z -> 0b101
+    n-ary recursive structures?
+    or maybe the recursive structures should be view types of the machine-level repr?
 
 records:
   form of subtyping based on row-types, as in Morrow
