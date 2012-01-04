@@ -55,6 +55,13 @@ data repr:
   arrays - ephemeral dynamic arrays via linear types
   inductive/coinductive algebraic type layer
   pointed/cyclic?/lifted/mutable/linear/shared
+  memoization interface
+    are thunks a special case?
+    memoized functions are different from thunks, because forcing a thunk does not syntactically involve application to ()
+    is explicit support for memoized functions actually necessary? does a finite map paired with a function suffice?
+      can every instance be conveniently expressed as dynamic programming? possibly not
+  codata field slots should be non-strict, but what is a convenient way to specify whether to use memoization?
+    memoization can save computation, but could also cause space leaks, so it's good to have a choice
   automatic translation of nat/int-like structurally recursive values to machine-level binary number representation
     infinite sum types? seems plausible using same idea as constructor tagging of pointers
     unary recursive structures? S S S S S Z -> 0b101
