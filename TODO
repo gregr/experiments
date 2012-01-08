@@ -182,8 +182,34 @@ type classes:
   static/dynamic dispatch based on records: 'case' involves destructor/continuation-record fields labeled with type/data tags
   ranging over values too; not just types
   allow projections, something like: ProjClass Type symbol
-  class constraints a form of type function? based on records
+  class constraints a form of type function? based on records (see Functor example below)
   data-polymorphic views: streams vs. lists, type class interaction with case
+  closed classes that allow overlapping instances (otherwise overlapping can produce undefined results)
+  named instances
+  explicit export/hide interface
+  implicit uses of methods search module context layer of original proc definition first, calling context last
+    which justifies the type simplification during instance linking in the below example
+    implicit uses should also be sealable, allowing only instances that exist in the context at the time of the sealing
+  typing example:
+    term: (map f xs : result) ; where
+      f : (x -> y)
+      xs : [x]
+      result : [y]
+      map is free
+    local constraint: map : (x -> y) -> [x] -> [y]
+    Functor class: map : (Functor f) => (a -> b) -> f a -> f b
+    after linking with class:
+      (map f xs : result) ; where
+      map : (Functor []) => (x -> y) -> [x] -> [y]
+    if a (Functor []) instance is available unhidden, link it too:
+      map : (x -> y) -> [x] -> [y]
+    otherwise, the constraint propagates upward as an implicit argument
+    named instances can be used directly like records:
+      Functor [] ; this is a type
+      get-instance (Functor []) ; something like this... is a value
+      F : Functor [] ## which is synonymous with ## F : {map : (x -> y) -> [x] -> [y]}
+      (F.map f xs : result) ; or use map in an open/use/with statement under F
+
 
 case analysis:
   not just a static syntax compilation into nested switches
@@ -204,6 +230,11 @@ algebraic data:
   tags (these are not types, see above)
   constructors
   destructors
+  data declarations typically produce some names of the form Tag; one for each variant
+    Tag as a record : {tag : TypeTag, ## whatever the type of tags is
+                       constructor : stuff -> |Tag stuff|, ## result is a refined type
+                       destructor : |Tag stuff| -> (stuff -> result) -> result}
+    Tag will be applicable directly (something like a typeclass Apply?) which will use its constructor
 
 type tower:
   allow values to be raised to type-level computations, and vice-versa; generalizes upwards (kinds, etc.)
