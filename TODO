@@ -251,6 +251,9 @@ syntax:
   context-sensitive syntactic values bound to variables (such as constructors); or should it be values, not variables?
   above explainable via syntactic records with context tags as field labels?
   partial macro expansion
+    define expansion only of some macro forms within an expression, either guarding entry, or giving permission
+    guarded forms: don't continue expansion within a given set of macro forms
+    permitted forms: only expand these
   infix operator groups / relative ordering only within groups; ordering is nonsensical outside of groups
     consider AGDA-style mixfix operators/slices, but with positioned wildcards determining closeness of grouping
       _op_ vs. _ op _ vs. _op _ etc.
@@ -262,7 +265,18 @@ syntax:
         all of this tedium should be hidden with a good module-building DSL...
       instead, do something more like AGDA again, which allows local mixfix specs and doesn't rely on parser manipulation
         first, parse every symbol as if it was a normal identifier
-        during expansion phase, as operator fixities are learned, rearrange symbols before macro expansions occur
+        interleaved mixfix operator rearrangement and macro expansion; possible implementation:
+          parsing text produces something like: (initial-parse (final-parse (text)))
+          initial-parse understands basic operators like (_) to at least bootstrap basic expressions first
+          final-parse arranges whatever operators still haven't been handled, including those that may have been imported
+          macro expansion precedences are needed; by default, it would look something like this:
+            normal macros < final-parse < parsing macros < initial-parse
+            where parsing macros would enable lexically scoped operator definitions
+            and so normal macros can remain oblivious to operator parsing
+          macro expansion precedences could be implemented via partial expansion enforced by initial-parse and final-parse
+            this way the parser itself doesn't need its own logic to deal with macro expansion precedences
+            the naive expansion of outermost -> innermost could proceed as normal, but be hijacked immediately by the
+            macros that were inserted by the parser
   macros may be used within the defining file-based module as they are defined
     need some way of noticing if a macro has been used before it is defined; this signifies some kind of error
     special form for use of a macro as a value?
