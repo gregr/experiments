@@ -69,6 +69,11 @@ data repr:
     or maybe the recursive structures should be view types of the machine-level repr?
 
 records:
+  the name 'record' describe a type interface, not an actual data representation
+    the closest thing to a canonical record value is probably a lexical environment
+    data reprs with record interfaces include:
+      environments, which are stacks of sub-records describing lexical frames; also supports de Bruijn-like addressing
+      data reprs that define instances of the projection typeclass
   form of subtyping based on row-types, as in Morrow
   free extension without overwriting duplicate fields -- lexically scoped labels
   extension becomes like environment extension
@@ -247,7 +252,7 @@ type tower:
   type families: consider procedure that dynamically produces new types of the same form
   sub-structural typing and delimited continuations: shift/reset, control/prompt, spawn, abort, etc.
 
-syntax:
+concrete syntax:
   context-sensitive syntactic values bound to variables (such as constructors); or should it be values, not variables?
   above explainable via syntactic records with context tags as field labels?
   partial macro expansion
@@ -281,11 +286,41 @@ syntax:
     need some way of noticing if a macro has been used before it is defined; this signifies some kind of error
     special form for use of a macro as a value?
 
+abstract syntax:
+  Var; should there be any local vs. module distinction? maybe not semantically since procs and modules bind the same way
+    but modules could be merged on shared bindings in a global namespace as an optimization?
+  ExtractEnv (reify current lexical environment); this one is tricky... how can we make it well-behaved?
+    this doesn't seem like a good idea, so use abstract/fully-abstract instead
+  Abstract/FullyAbstract (shield body from binders by abstracting over them)
+    counterpart to abstract, include/import, can be achieved with full abstraction and explicit linking of the desired bindings
+    full abstraction parameters can be determined syntactically and converted to a normal abstraction
+      but ordering isn't known, so they are not applicable?
+  Apply proc tuple-of-args (that could contain holes)
+  ApplyRec proc record (should not contain fields that cannot be bound by proc)
+  Inject/Provide src-record mod; asymmetrically link src-record into mod inputs
+    could src-record also be an incomplete module? its inputs would become inputs of the final module
+  Integrate mod1 mod2; symmetrically link mod1 outputs into mod2 inputs and vice versa
+  Module/Specify/Declare ... actually, how about Define and Express, to create module singletons?
+    these forms create a singleton module that, when fully linked, will produce ...
+    Define: its environment
+    Express: the value of its expression, and any side effects
+    production behavior of linked modules is asymmetric, even when mutually recursive
+  record operations:
+    Project; should this be a typeclass dictionary lookup operation instead?
+    Export/Hide rec names
+    Extend rec1 rec2; create an env that glues rec1 onto rec2
+  ----------------
+  Typeclass/Implicit-related opening and closing
+  ----------------
+  Type definitions
+  Constructors
+
 debugging:
   time-travel via reversible computations
   explicitly non-deterministic side effects allowable in parallel computations (to allow things like debug printing)
 
 low-level:
+  garbage collection as an abstract interpretation of the current continuation
   thread-local keys
   local data alloc
   linear values to describe ephemeral data
