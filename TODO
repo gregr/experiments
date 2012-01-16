@@ -287,6 +287,7 @@ concrete syntax:
     special form for use of a macro as a value?
 
 abstract syntax:
+  it would probably be helpful to describe the type syntax first; and maybe values before that
   Var; should there be any local vs. module distinction? maybe not semantically since procs and modules bind the same way
     but modules could be merged on shared bindings in a global namespace as an optimization?
   ExtractEnv (reify current lexical environment); this one is tricky... how can we make it well-behaved?
@@ -303,7 +304,7 @@ abstract syntax:
   Module/Specify/Declare ... actually, how about Define and Express, to create module singletons?
     these forms create a singleton module that, when fully linked, will produce ...
     Define: its environment
-    Express: the value of its expression, and any side effects
+    Express: the value of its expression, and any side effects; actually, this is subsumed by abstract, isn't it?
     production behavior of linked modules is asymmetric, even when mutually recursive
   record operations:
     Project; should this be a typeclass dictionary lookup operation instead?
