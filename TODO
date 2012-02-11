@@ -1,3 +1,6 @@
+existential typing question? it normally requires rank-2 universal quantifiers
+((a -> b) -> a -> result) -> Obj b -> result
+
 data representation for various stages of interpretation/compilation
   how will runtime code generation be supported?
   will modules store data needed to compile procedures it stores?
