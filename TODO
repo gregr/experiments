@@ -1,5 +1,16 @@
+AGDA-like universe polymorphism: data types available at any Set-level; Set is parameterized by Nat
+
+multidimensional arrows for parallelism with possibly non-deterministic effects
+  dependency tree: nodes point to dependents, store dependency arity, and their completion effect
+  linear ordering for simple and positional application
+  name map for keyword application
+
 existential typing question? it normally requires rank-2 universal quantifiers
 ((a -> b) -> a -> result) -> Obj b -> result
+
+typecasing as a constraint
+  forces type information to flow into functions
+  also allows you to see which functions inspect type; we get parametricity back?
 
 data representation for various stages of interpretation/compilation
   how will runtime code generation be supported?
