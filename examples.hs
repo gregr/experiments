@@ -19,3 +19,13 @@ data Pun = One { x :: Int, y :: Int } | Two { x :: Int }
 data Expr' key expr = Var key
                     | App expr expr
 newtype Expr key = Expr (Expr' key (Expr key))
+
+class Misc a where
+  misc :: a -> String
+
+data (Misc a) => MiscHolder a = MH a
+                              | MH2 a a
+  deriving (Show)
+
+instance Misc Int where
+  misc x = show $ x + 1
