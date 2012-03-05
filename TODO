@@ -1,3 +1,14 @@
+Symbols as fundamental data atoms
+  hierarchical structure providing namespacing and contextualization
+    when unambiguous, less information is necessary to represent a symbol
+  data tags are symbols
+  [in]finite sum types
+    constructors are namespaced symbols
+    each such type acts as a namespace for its constructor symbols
+    a data node only needs to be tagged with enough symbolic info to disambiguate
+    ex: naturals as inifinite sum types: symbols interpreted within a Nat context
+  symbols are associated with textual representations/names for readability
+
 AGDA-like universe polymorphism: data types available at any Set-level; Set is parameterized by Nat
 
 multidimensional arrows for parallelism with possibly non-deterministic effects
