@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies #-}
 module Stuff where
 
 class One a where
@@ -50,3 +50,35 @@ testco = co (4 :: Int)
 data SuperList a = Nil
                  | Cons a (SuperList (SuperList a))
   deriving Show
+
+-- "fun" trying to hack the type system to pretend it has intersection types
+class Apply f a b | f a -> b where
+  apply :: f -> a -> b
+
+data F0 = F0
+
+instance Apply F0 Int Int where
+  apply F0 x = x + 1
+
+{-instance Apply (a -> b) a b where-}
+  {-apply f x = f x-}
+
+instance Apply F00 where
+  apply
+
+data TWO = TWO
+
+data F00 = F00
+
+instance Apply TWO F0 F00 where
+  apply TWO F0 = F00
+
+instance Apply TWO F00 (Int -> Int) where
+  apply TWO F00 = two F00
+
+-- data F1 = F1
+
+-- two :: (Apply f a b, Apply f b c) => f -> a -> c
+two f zero = f `apply` (f `apply` zero)
+
+three f zero = f `apply` (f `apply` (f `apply` zero))
