@@ -7,15 +7,15 @@ type Symbol = [Integer]
 type Name = Symbol
 type Binding val = (Name, val)
 
-data Env val = Env [Binding val] -- constraint satisfiers are bindings
+data Env val = Env [[Binding val]] -- constraint satisfiers are bindings
 
-data Typing = Typing Expr Env
+data Typing = Typing Expr EEnv
 
-data Variance = Invariant | Covariant | Contravariant
+{-data Variance = Invariant | Covariant | Contravariant-}
 
-data Constr = Constr { constrTag :: Symbol,
-                       --constrVar :: [Variance],
-                       constrTy :: Typing }
+{-data Constr = Constr { constrTag :: Symbol,-}
+                       {---constrVar :: [Variance],-}
+                       {-constrTy :: Typing }-}
 
 {-
 
@@ -107,29 +107,61 @@ Constr x:A B(x)
 --   for instance, refined types such that you know a function accepts or returns only a subset of the full set of a sealed type's constructors
 --   maybe it's enough to prevent refined and flow types from being sent into unsafe hands (over the wire, to a separate vat, whatever)
 
-type Proc = ([Name], Expr)
+type EEnv = Env Expr
+type Proc = ([Name], Expr) -- params (some implicit?); body expression to evaluate
+type Mod = ([Name], [Binding Expr], DepGraph) -- params: handle positional, keyword, and implicit; list of definitions; definition deps
+type DepGraph = [(Name, [Name], [Name])] -- a, bs, cs; a is directly dependent on bs, and indirectly dependent on cs
+-- DepGraph is needed for module type, but what about module value? maybe simply 'undefined' is fine for a module value
 
-data Value = Datum Constr [Value]
-           | Closure Proc (Env Value)
+type CodesA annot = [(Code, annot)]
+type Codes = CodesA ()
+type CProc = ([Name], Codes, Name) -- params, body, return cont name
 
-data Expr = Var Name
-          | App Expr [Expr]
-          | AppImplicit Expr [Expr]
-          | Abs Expr Expr -- module; body expression to evaluate within module's env
-          | ModuleConstruct Expr [Binding Expr] -- parent module/env; list of definitions: (name, expr) pairs; be able to handle positional, keyword, and implicit args
-          | ModuleAccess Expr Expr Expr -- 'default' Expr can be 'undefined' to induce type error for accessing missing fields
-          | ModuleProject Expr Expr
-          | ModuleOmit Expr Expr
-          | ModuleImport [Expr] Expr
-          | ModuleLink [Expr] -- asymmetric mutually-recursive linking
-          | TupleConstruct [Expr] -- dependent constructor, ie: Constr x:A y:B | F(x, y)
-          | TupleAccess Expr Expr
-          | TupleSplit Expr Expr -- see rambling above
-          | TupleConcat [Expr]
-          | TypeSeal Expr Expr -- Hide the structural type of value behind a nominal type; sealer and value to seal; resulting type depends on the sealer
-          | TypeUnseal Expr Expr
-          | -- build env/module
-          | -- build variant (as an algebra?)
+data Value = ValProc CProc EEnv
+           | ValModule Mod EEnv
+           | ValRecord EEnv
+           -- todo: an efficient array-like tuple?
+           -- todo: efficient sets
+
+-- todo: use a finally-tagless approach
+-- continuation env, value env, local value stack, local continuation, return continuation var, annotation
+data ExecState0 cann sann = ExecState (Env (ExecState0 cann sann)) EEnv [Expr] (CodesA cann) Name sann
+type ExecState = ExecState0 () ()
+-- todo: due to CProc and CModule, this will need to be recursively annotated
+data Code = Halt
+          | Return
+          | CVar Name
+          | CLit Value
+          | CApply Integer
+          | CAbstract CProc
+          | CTuple Integer
+
+type Expr = ExprA () -- todo: temporary to avoid having to parameterize everything while still sketching things out
+data ExprA annot = ExprA (Expr0 (ExprA annot)) annot -- annotated expressions
+data Expr0 expr = Var Name
+                | Literal Value -- literally reference a more efficient value representation; have this even though pure values should all be representable syntactically
+                | Apply expr [expr]
+                -- | ApplyImplicit expr [expr]
+                | Abstract Proc
+                | Record [(expr, expr)] -- module constructor that supports non-symbol field names (as type-level values?); need for this might just be temporary
+                | Module Mod
+                | ModuleAccess expr expr expr -- 'default' expr can be 'undefined' to induce type error for accessing missing fields
+                | ModuleProject expr expr -- module; list of names; new module keeping only the listed names
+                | ModuleOmit expr expr -- module; list of names; new module removing the listed names
+                | ModuleImport [expr] expr -- add the fields of the listed modules to the target module, creating a new module
+                | ModuleLink [expr] -- asymmetric mutually-recursive linking of multiple modules
+                | Tuple [expr] -- dependent constructor, ie: Constr x:A y:B | F(x, y)
+                | TupleAccess expr expr
+                | TupleSplit expr expr -- see rambling above
+                | TupleConcat [expr]
+                | SetPositive [expr] -- empty is bottom/void/undefined
+                | SetNegative [expr] -- empty is top/any
+                | TypeAscribe expr expr -- term; type
+                | TypeStructural expr -- Denote a structural type: the type of a tuple is a tuple of the element types; without this mark, the type of such a type would not clearly be 'Set'
+                | TypeSet -- the type of types; temporary: throw this away after adding nominal types
+                {-| TypeSeal expr expr -- Hide the structural type of value behind a nominal type; sealer and value to seal; resulting type depends on the sealer-}
+                {-| TypeUnseal expr expr-}
+                -- | build variant (as an algebra?)
 
 -- definitions:
 --  bindings
