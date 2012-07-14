@@ -2,12 +2,23 @@ module Expr where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.List as L
 
-type Symbol = [Integer]
-type Name = Symbol
+type Symbol = [Int]
+--type Name = Symbol
+type Name = String -- temporary until symbols have a string mapping
+garbageName = ""
 type Binding val = (Name, val)
 
-data Env val = Env [[Binding val]] -- constraint satisfiers are bindings
+type Env val = M.Map Name val
+--data Env val = Env [[Binding val]] -- constraint satisfiers are bindings
+envEmpty = M.empty
+envInsert env key val = M.insert key val env
+envInserts env kvs = L.foldl' (\env' (key, val) -> envInsert env' key val) env kvs
+envLookup env key dfault = case M.lookup key env of
+  Nothing -> dfault
+  Just result -> result
+envLookupFail env key msg = envLookup env key (error msg)
 
 data Typing = Typing Expr EEnv
 
@@ -107,14 +118,16 @@ Constr x:A B(x)
 --   for instance, refined types such that you know a function accepts or returns only a subset of the full set of a sealed type's constructors
 --   maybe it's enough to prevent refined and flow types from being sent into unsafe hands (over the wire, to a separate vat, whatever)
 
+type ESet = S.Set Expr
 type EEnv = Env Expr
 type Proc = ([Name], Expr) -- params (some implicit?); body expression to evaluate
 type Mod = ([Name], [Binding Expr], DepGraph) -- params: handle positional, keyword, and implicit; list of definitions; definition deps
 type DepGraph = [(Name, [Name], [Name])] -- a, bs, cs; a is directly dependent on bs, and indirectly dependent on cs
 -- DepGraph is needed for module type, but what about module value? maybe simply 'undefined' is fine for a module value
 
-type CodesA annot = [(Code, annot)]
-type Codes = CodesA ()
+--type CodesA annot = [(Code, annot)]
+--type Codes = CodesA ()
+type Codes = [Code]
 type CProc = ([Name], Codes, Name) -- params, body, return cont name
 
 data Value = ValProc CProc EEnv
@@ -122,22 +135,80 @@ data Value = ValProc CProc EEnv
            | ValRecord EEnv
            -- todo: an efficient array-like tuple?
            -- todo: efficient sets
+           | ValSetPositive ESet
+           | ValSetNegative ESet
+  deriving (Show)
 
 -- todo: use a finally-tagless approach
--- continuation env, value env, local value stack, local continuation, return continuation var, annotation
-data ExecState0 cann sann = ExecState (Env (ExecState0 cann sann)) EEnv [Expr] (CodesA cann) Name sann
-type ExecState = ExecState0 () ()
+-- continuation env, value env, local value stack, local continuation, return continuation label, annotation
+--data ExecState0 cann sann = ExecState (Env (ExecState0 cann sann)) EEnv [Expr] (CodesA cann) Name sann
+data ExecState0 annot = ExecState { stateConts :: (Env (ExecState0 annot)),
+                                    stateVals :: EEnv, stateLocals :: [Expr],
+                                    stateCodes :: Codes, stateContLab :: Name,
+                                    stateAnnot :: annot }
+  deriving (Show)
+type ExecState = ExecState0 ()
 -- todo: due to CProc and CModule, this will need to be recursively annotated
 data Code = Halt
           | Return
           | CVar Name
           | CLit Value
-          | CApply Integer
+          | CApply Int
           | CAbstract CProc
-          | CTuple Integer
+          | CTuple Int
+  deriving (Show)
+
+initExecState codes annot = ExecState envEmpty envEmpty [] codes garbageName annot
+procToCProc (names, body) contLabel = (names, exprToCodes body ++ [Return], contLabel)
+argsToCodes args = concat $ [exprToCodes arg | arg <- args]
+exprToCodes (ExprA expr _) = case expr of
+  Var name        -> [CVar name]
+  Literal val     -> [CLit val]
+  Apply proc args -> cargs ++ cproc ++ [CApply $ length args]
+    where cproc = exprToCodes proc
+          cargs = argsToCodes args
+  Abstract proc -> [CAbstract $ procToCProc proc "todo"]
+  Tuple args    -> argsToCodes args ++ [CTuple $ length args]
+
+cstep es@(ExecState conts vals locals (code : codes) label annot) = case code of
+  Halt   -> es -- stay at the same state intentionally
+  Return -> push cont result -- todo: got data-lens?
+    where [result] = locals -- assert single value in locals stack
+          cont = envLookupFail conts label "Return: missing label" -- todo: really need string formatting
+          [] = codes -- assert
+  CVar name -> push next val
+    where val = envLookupFail vals name "CVar: missing name"
+  CLit val -> push next $ ExprA (Literal val) () -- todo: expr annotations need borrowing from Code
+  CApply nargs -> ExecState pconts pvals [] pcodes plabel annot -- todo: annotation
+    where ExprA (Literal (ValProc (pnames, pcodes, plabel) penv)) _ = head locals
+          (args, rest) = splitAt nargs $ tail locals
+          cont = case stateCodes next of
+            [Return] -> envLookupFail conts label "Tail Call: missing label"
+            _ -> next { stateLocals = rest }
+          pconts = envInsert conts plabel cont
+          pvals = envInserts penv $ zip pnames args
+  CAbstract cproc -> push next $ ExprA (Literal $ ValProc cproc vals) ()
+  {-CTuple nargs    ->-}
+  where next = es { stateCodes = codes }
+        push state val = state { stateLocals = val : stateLocals state }
+
+cexec es = iterate cstep es -- todo: find the halting state
+ceval codes = cexec $ initExecState codes ()
+eval expr = ceval $ exprToCodes expr ++ [Halt]
+
+mkExpr expr = ExprA expr ()
+idcomb = mkExpr $ Abstract (["id"], mkExpr $ Var "id")
+testid = mkExpr $ Apply idcomb $ [idcomb]
+ucomb = mkExpr $ Abstract (["u"], mkExpr $ Apply varu [varu])
+  where varu = mkExpr $ Var "u"
+ycomb = mkExpr $ Abstract (["f"], mkExpr $ Apply ucomb $ [mkExpr $ Abstract (["h"], mkExpr $ Apply (mkExpr $ Var "f") [mkExpr $ Apply ucomb $ [mkExpr $ Var "h"]])])
+testUid = mkExpr $ Apply ucomb [idcomb]
+testUU = mkExpr $ Apply ucomb [ucomb]
+--testY =
 
 type Expr = ExprA () -- todo: temporary to avoid having to parameterize everything while still sketching things out
 data ExprA annot = ExprA (Expr0 (ExprA annot)) annot -- annotated expressions
+  deriving (Show)
 data Expr0 expr = Var Name
                 | Literal Value -- literally reference a more efficient value representation; have this even though pure values should all be representable syntactically
                 | Apply expr [expr]
@@ -162,6 +233,7 @@ data Expr0 expr = Var Name
                 {-| TypeSeal expr expr -- Hide the structural type of value behind a nominal type; sealer and value to seal; resulting type depends on the sealer-}
                 {-| TypeUnseal expr expr-}
                 -- | build variant (as an algebra?)
+  deriving (Show)
 
 -- definitions:
 --  bindings
