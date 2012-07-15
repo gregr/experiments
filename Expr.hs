@@ -179,14 +179,20 @@ cstep es@(ExecState conts vals locals (code : codes) label annot) = case code of
   CVar name -> push next val
     where val = envLookupFail vals name "CVar: missing name"
   CLit val -> push next $ ExprA (Literal val) () -- todo: expr annotations need borrowing from Code
-  CApply nargs -> ExecState pconts pvals [] pcodes plabel annot -- todo: annotation
-    where ExprA (Literal (ValProc (pnames, pcodes, plabel) penv)) _ = head locals
-          (args, rest) = splitAt nargs $ tail locals
-          cont = case stateCodes next of
-            [Return] -> envLookupFail conts label "Tail Call: missing label"
-            _ -> next { stateLocals = rest }
-          pconts = envInsert conts plabel cont
-          pvals = envInserts penv $ zip pnames args
+  CApply nargs -> let ExprA (Literal (ValProc (pnames, pcodes, plabel) penv)) _ = head locals
+                      surplus = nargs - length pnames
+                      nargs' = min nargs $ length pnames
+                      (args, rest) = splitAt nargs' $ tail locals
+                      pnames' = drop nargs' pnames
+                      penv' = envInserts penv $ zip pnames args
+                      cproc' = ExprA (Literal (ValProc (pnames', pcodes, plabel) penv')) ()
+                      codes' = if surplus > 0 then (CApply surplus : codes) else codes
+                      cont = case codes' of -- can also tail call with [Halt] ... maybe substitute empty code list for Halt and Return; Halt as a cont label
+                        [Return] -> envLookupFail conts label "Tail Call: missing label"
+                        _ -> next { stateLocals = rest, stateCodes = codes' }
+                      pconts = envInsert conts plabel cont in
+    if surplus < 0 then push next cproc'
+    else ExecState pconts penv' [] pcodes plabel annot -- todo: annotation
   CAbstract cproc -> push next $ ExprA (Literal $ ValProc cproc vals) ()
   {-CTuple nargs    ->-}
   where next = es { stateCodes = codes }
