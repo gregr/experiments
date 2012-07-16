@@ -1,5 +1,6 @@
 module Expr where
 
+import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List as L
@@ -14,10 +15,8 @@ type Env val = M.Map Name val
 --data Env val = Env [[Binding val]] -- constraint satisfiers are bindings
 envEmpty = M.empty
 envInsert env key val = M.insert key val env
-envInserts env kvs = L.foldl' (\env' (key, val) -> envInsert env' key val) env kvs
-envLookup env key dfault = case M.lookup key env of
-  Nothing -> dfault
-  Just result -> result
+envInserts = L.foldl' $ \env' (key, val) -> envInsert env' key val
+envLookup env key dfault = fromMaybe dfault $ M.lookup key env
 envLookupFail env key msg = envLookup env key (error msg)
 
 data Typing = Typing Expr EEnv
@@ -142,7 +141,7 @@ data Value = ValProc CProc EEnv
 -- todo: use a finally-tagless approach
 -- continuation env, value env, local value stack, local continuation, return continuation label, annotation
 --data ExecState0 cann sann = ExecState (Env (ExecState0 cann sann)) EEnv [Expr] (CodesA cann) Name sann
-data ExecState0 annot = ExecState { stateConts :: (Env (ExecState0 annot)),
+data ExecState0 annot = ExecState { stateConts :: Env (ExecState0 annot),
                                     stateVals :: EEnv, stateLocals :: [Expr],
                                     stateCodes :: Codes, stateContLab :: Name,
                                     stateAnnot :: annot }
@@ -158,9 +157,9 @@ data Code = Halt
           | CTuple Int
   deriving (Show)
 
-initExecState codes annot = ExecState envEmpty envEmpty [] codes garbageName annot
+initExecState codes = ExecState envEmpty envEmpty [] codes garbageName
 procToCProc (names, body) contLabel = (names, exprToCodes body ++ [Return], contLabel)
-argsToCodes args = concat $ [exprToCodes arg | arg <- args]
+argsToCodes args = concat [exprToCodes arg | arg <- args]
 exprToCodes (ExprA expr _) = case expr of
   Var name        -> [CVar name]
   Literal val     -> [CLit val]
@@ -186,7 +185,7 @@ cstep es@(ExecState conts vals locals (code : codes) label annot) = case code of
                       pnames' = drop nargs' pnames
                       penv' = envInserts penv $ zip pnames args
                       cproc' = ExprA (Literal (ValProc (pnames', pcodes, plabel) penv')) ()
-                      codes' = if surplus > 0 then (CApply surplus : codes) else codes
+                      codes' = if surplus > 0 then CApply surplus : codes else codes
                       cont = case codes' of -- can also tail call with [Halt] ... maybe substitute empty code list for Halt and Return; Halt as a cont label
                         [Return] -> envLookupFail conts label "Tail Call: missing label"
                         _ -> next { stateLocals = rest, stateCodes = codes' }
@@ -198,19 +197,21 @@ cstep es@(ExecState conts vals locals (code : codes) label annot) = case code of
   where next = es { stateCodes = codes }
         push state val = state { stateLocals = val : stateLocals state }
 
-cexec es = iterate cstep es -- todo: find the halting state
+cexec = iterate cstep -- todo: find the halting state
 ceval codes = cexec $ initExecState codes ()
 eval expr = ceval $ exprToCodes expr ++ [Halt]
 
 mkExpr expr = ExprA expr ()
 idcomb = mkExpr $ Abstract (["id"], mkExpr $ Var "id")
-testid = mkExpr $ Apply idcomb $ [idcomb]
+testid = mkExpr $ Apply idcomb [idcomb]
 ucomb = mkExpr $ Abstract (["u"], mkExpr $ Apply varu [varu])
   where varu = mkExpr $ Var "u"
-ycomb = mkExpr $ Abstract (["f"], mkExpr $ Apply ucomb $ [mkExpr $ Abstract (["h"], mkExpr $ Apply (mkExpr $ Var "f") [mkExpr $ Apply ucomb $ [mkExpr $ Var "h"]])])
+ycomb = mkExpr $ Abstract (["f"], mkExpr $ Apply ucomb [mkExpr $ Abstract (["h"], mkExpr $ Apply (mkExpr $ Var "f") [mkExpr $ Apply ucomb [mkExpr $ Var "h"]])])
 testUid = mkExpr $ Apply ucomb [idcomb]
 testUU = mkExpr $ Apply ucomb [ucomb]
 --testY =
+
+test = eval testUid !! 400
 
 type Expr = ExprA () -- todo: temporary to avoid having to parameterize everything while still sketching things out
 data ExprA annot = ExprA (Expr0 (ExprA annot)) annot -- annotated expressions
