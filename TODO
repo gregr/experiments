@@ -1,3 +1,128 @@
+ML^F: how to type the following? some non-principal example types:
+\f a b -> (f a, f b)
+forall s r. (s -> r) -> s -> s -> (r, r)
+forall a b r. (forall s. (s -> r)) -> a -> b -> (r, r)
+forall a b. (forall s. (s -> [s])) -> a -> b -> ([a], [b])
+this doesn't work:
+forall a b rr (ra :> rr) (rb :> rr) (f :> (forall s (r :> rr). s -> r)). f -> a -> b -> (ra, rb)
+I think the disclaimer is that ML^F can't infer an all-encompassing type here because f is used polymorphically? (requiring a type annotation)
+
+two = \f x -> f (f x)
+(a -> b & b -> c) -> a -> c
+two two
+[(a -> b & b -> c)]            -> a -> c
+[(a -> b & b -> c) -> (a -> c)]
+
+(a -> b & b -> c) -> (a -> c) = (a1 -> b1 & b1 -> c1) -> (a1 -> c1) & (a2 -> b2 & b2 -> c2) -> (a2 -> c2)
+
+(a -> b & b -> c)
+(a1 -> b1 & b1 -> c1) -> (a1 -> c1)
+(a2 -> b2 & b2 -> c2) -> (a2 -> c2)
+
+(a -> b)
+(a1 -> b1 & b1 -> c1) -> (a1 -> c1)
+
+(b -> c)
+(a2 -> b2 & b2 -> c2) -> (a2 -> c2)
+
+a
+(a1 -> b1 & b1 -> c1)
+
+b
+(a2 -> b2 & b2 -> c2)
+(a1 -> c1)
+
+(a1 -> c1) = (a3 -> c3) & (a4 -> c4)
+
+b *
+(a2 -> b2) & (b2 -> c2)
+(a3 -> c3) & (a4 -> c4)
+
+
+c
+(a2 -> c2)
+
+======
+
+a
+(a1 -> b1 & b1 -> c1)
+
+b = (a1 -> c1) = (a3 -> c3) & (c3 -> c4)
+
+
+c
+(a3 -> c4)
+
+
+a -> c :=
+a -> a3 -> c4
+
+==============================================================================
+flow example without first normalizing: copied 'two' before self-applying
+
+(\f x -> f (f x)) (\g a -> g (g a))
+f= (\g a -> g (g a))
+(\x -> f (f x) {f = (\g a -> g (g a))})
+
+@x=x
+g= x
+--f: x -> (\a -> g (g a) {g = x})
+g= (\a -> g (g a) {g = x}) -- should g closure also be recursive? though it wouldn't matter for this example
+--f: (\a -> g (g a) {g = x}) -> (\a -> g (g a) {g = x, g = (\a -> g (g a) {g = x})})
+(\a -> g (g a) {g = x, g = (\a -> g (g a) {g = x})})
+
+@a=a
+x: a -> b*
+x: b -> c*
+c
+&
+x: a -> b
+x: b -> c
+x: c -> d*
+x: d -> e*
+e
+
+(a -> b & b -> c & c -> d & d -> e) -> a -> (c | e) -- result union due to closure conflation of g
+==============================================================================
+flow example without first normalizing: shared 'two' self-applied
+
+(\two -> two two) (\f x -> f (f x))
+two= (\f x -> f (f x))
+(two two {two = (\f x -> f (f x))})
+f= (\f x -> f (f x))
+(\x -> f (f x) {f = (\f x -> f (f x))})
+
+@x=x1
+f= x1
+f= (\x -> f (f x) {f = (\f x -> f (f x)), f = x1})
+(\x -> f (f x) {f = (\f x -> f (f x)), f = x1, f = (\x -> f (f x) {f})})
+
+@x=x2
+f= x2
+(\x -> f (f x) {f = (\f x -> f (f x)), f = x1, f = (\x -> f (f x) {f}), f = x2}) -- same state except for the injected x's (could go on forever if they count as differences)
+&
+x1: x2 -> a*
+x1: a -> b*
+b
+&
+x= x2
+  repetitive garbage...
+  &
+  x= x2 -- again
+  x1: x2 -> a
+  x1: a -> b
+  b
+  x1: b -> c
+  x1: c -> d
+  d
+
+
+(\x -> f (f x) {f = (\f x -> f (f x)), f = x1, f = (\x -> f (f x) {f}), f = x2}) : final = mu self. (x2 -> a & a -> b & b -> c & c -> d) -> self & x2 -> (self | b | d)
+
+(x2 -> a & a -> b & b -> c & c -> d) -> x2 -> (final | b | d) -- can final be eliminated? it seems to be a pointless unfolding/bottom
+==============================================================================
+
+
 Symbols as fundamental data atoms
   hierarchical structure providing namespacing and contextualization
     when unambiguous, less information is necessary to represent a symbol
