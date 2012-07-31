@@ -109,13 +109,16 @@ Constr x:A B(x)
 --
 -- maybe modules should specify let/letrec (possibly several, possibly alternating) sections for their definitions; this explains records as modules
 --
--- if mutually-recursive linking of procedures can be explained, then have modules be procedures, add letrec directly, and records become simple? but procedures and records have the same linking operation? hmm...
---
 -- another explanation of plain records: let, with a body extracting this-env, projected to only show the let-binders as fields; all record ops are now module ops
 --
 -- types and security: how to avoid sealed type constituent information from leaking over the wire?
 --   for instance, refined types such that you know a function accepts or returns only a subset of the full set of a sealed type's constructors
 --   maybe it's enough to prevent refined and flow types from being sent into unsafe hands (over the wire, to a separate vat, whatever)
+--
+-- if mutually-recursive linking of procedures can be explained, then have modules be procedures, add letrec directly, and records become simple? but procedures and records have the same linking operation? hmm...
+-- alternative story for recursive module linking: parametric modules are procedures, built in letrec builds a (possibly cyclic wrt indirect references) data dependency graph, pre-allocates destination space for computed values, and provides addresses to the uninitialized values
+-- basically, letrec provides non-read-access of its result value to its bindings before computation begins so the binding definitions can reference the result as long as they don't read the result's data directly; and this is really only good for referencing the addresses of the entire result, or any of its components (assuming the relevant type info is available)
+-- or, just route mutually-linked module contents to each other within a letrec as delayed thunks; hopefully most of these thunks can later be optimized away
 
 type ESet = S.Set Expr
 type EEnv = Env Expr
