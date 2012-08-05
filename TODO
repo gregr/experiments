@@ -1,3 +1,68 @@
+modular typing with non-terminating term?
+(\f* -> f f) : (f & (f -> g)) -> g
+(\f* -> f f) (\f* -> f f) :
+    (f & (f -> g))        -> g
+(f & (f -> g))  ->  g
+    ({f} -> {g})          -> g
+({f} & (f -> g))  ->  {g}
+g
+forall g. g -- but I had to make intuitive jumps to reach this?
+in other words: bottom
+0CFA seems capable of indicating this, but it's not necessary
+it's syntactically indicated in CPS (no continuation (let alone 'halt') is ever invoked)
+let u = \f k -> f f k
+in u u halt
+
+figure out convenient staging mechanism for modular typing
+  syntactically check for non-termination
+  if terminating, carry out beta reduction at each (non-trivial?) attempt to unify an intersection type?
+  attempt to type residual term normally
+  simpler idea: continue reducing all terms until they no longer contain any poly(poisonous)-lambda terms
+
+two contains poison that must be expelled:
+two = \f* x -> f (f x) : 'a 'b 'c. (a -> b & b -> c) -> a -> c
+  could also mark x* if residual types should potentially retain poison; see bottom result
+appid = \w g y z -> (w, g y, z) : forall c a b d. c -> (a -> b) -> a -> d -> (c, b, d)
+flip = \f x y -> f y x : forall a b c. (a -> b -> c) -> b -> a -> c
+flip (flip appid two) two
+whatever, just start here:
+\k -> (\j -> appid j two) k two
+step1 = \j -> appid j two
+  appid: \w{j?} g{two} y z -> (w, g y, z)
+    two: \f{y} x -> f (f x) -- y is now poisonous too
+  appid: \w{j?} g{two} y* z -> (w, g y, z)
+  step1 : a' b' c' d' e' . e -> (a -> b & b -> c) -> d -> (e, (a -> c), d)
+step2 = \k -> step1 k two
+  step1: \j{k?} -> appid j two
+    appid: \w{j?} g{two} y{two} z -> (w, g y, z)
+      two: \f{two} x -> f (f x) -- about to poison x by passing it to two (as f)
+        two(1): \f{x?} y -> f (f y) -- x is now poisoned
+      two: \f{two} x* -> f (f x){\f{x?} y -> f (f y)} -- note the mark of poison
+        two: \f{\f{x?} z -> f (f y)} z -> f (f z) -- z is never used as f, so it remains clean
+          two(1): \f{x?} y{z} -> f (f y)
+        two: \f{\f{x?} z -> f (f y)} z -> f (f z){\f{x?} y{z} -> f (f y)}
+          two(1): \f{x?} y{\f{x?} y{z} -> f (f y)} -> f (f y)
+        two(2): \z -> (\f{x?} y{\f{x?} y{z} -> f (f y)} -> f (f y))
+      two(3): \f{two} x* -> (f (f x)){\z -> (\f{x?} y{\f{x?} y{z} -> f (f y)} -> f (f y))} -- if we inline sharing notation here: \x z -> x (x (x (x z)))
+    appid(1): \w{j?} g{two} y{two} z -> (w, (g y){\f{two} x* -> (f (f x)){\z -> (\f{x?} y{\f{x?} y{z} -> f (f y)} -> f (f y))}, z) -- call it bleh
+  step1: \j{k?} -> (appid j two){bleh}
+step2: \k -> -- whatever, i was inconsistent with my notation, so this won't make sense
+
+skip this block and read block below it first:
+anyway, if i wasn't a moron, this should be equivalent to:
+\k -> (\j -> appid-new j k)
+appid-new = \w z -> (w, (\f x -> f (f (f (f x)))), z) : forall a b. a -> b -> (a, (forall c. (c -> c) -> c -> c), b)
+note loss of poison/modular-polymorphism; sometimes this isn't desired? see above
+if marking x* in two originally, you should get:
+appid-new = \w z -> (w, (\f* x* -> f (f (f (f x)))), z) : forall a b. a -> b -> (a, (f' g' c' d' e'. (f -> g & g -> c & c -> d & d -> e) -> f -> e), b) -- hooray poison
+aside from mark for assured polymorphism, a mark that only activates polymorphism when it's shallowly apparent might be good
+\f* x*? -> f (f x) -- there is no shallowly apparent polymorphic use of x, so treat it monomorphically
+the point is to allow the programmer to later change the body such that x is used polymorphically, without having to change marking
+
+actually, i was wrong, this example still does yield polymorphism in x: \x* z -> x (x (x (x z)))
+x's use as f poisons it during reduction
+
+
 ML^F: how to type the following? some non-principal example types:
 \f a b -> (f a, f b)
 forall s r. (s -> r) -> s -> s -> (r, r)
