@@ -1,3 +1,132 @@
+symbol (1D) sets: ordered/unordered, discrete, ordered ranges (one or two endpoints), infinite
+examples: ints (ordered infinite), nats (ordered range with 0 as minimum); what would an unordered infinite set be like?
+ordered ranges may support modular arithmetic (wrapping/circular)
+
+subtractive sets? maybe these fall under the below predicate-based sets
+sets may be built with predicates over other sets
+rows map a set of symbols to data
+records and variants built on rows; tuples can be thought of as records with contiguous nat fields (joining and splitting shifts the nats though?)
+should sets simply be records mapping the contained symbols to the unit value? what does it mean to just grab the keys or values of a record?
+should records/variants support default values? the value a key would map to if the key is not already represented in the row
+  the danger with defaults is if you don't have a nice way to determine the difference between a row-represented key and a defaulted key
+  support undefined as a default value; maybe assigning a key to undefined implies deletion/hiding of the key?
+  support an if-else-like index/access primitive form that can determine if the index/access would be undefined/out-of-bounds
+    absolute index/access can be implemented in terms of it, such that the 'else' branch produces an undefined value itself
+    is it possible to instead support a primitive that will catch *any* undefined value?
+      in the scope of such a catcher, how do you avoid masking unintended errors?
+      can all possibly-undefined operations be detected and replaced with safety-checking code, such that failure triggers the catcher?
+are bags/multisets more fundamental than sets? though they generalize sets, it seems hard to create a foundation with them
+
+=======================================================================================
+term : type
+subtype <: type
+===============
+Set <: Type ? maybe just say Type for everything instead of distinguishing
+Type : Type ? how to distinguish universes
+nat : Nat : SymbolSet <: Set
+int : Int : SymbolSet <: Set
+... bounded and modular versions of the above ...
+symbol : this symbol's primary/home set of symbols, constructed by Symbol(Nat (name/namespace), Nat (cardinality)) : SymbolSet <: Set
+--tuple : set of values structurally described by a particular tuple of Sets of correct length : tuple struct-described powerset (aka TupleSet) <: Set
+--array : set struct-described by Array(Type, nat) : ArraySet <: Set
+record : set struct-described by Record(SymbolSet (of keys), particular record mapping fields to Types) : RecordSet <: Set
+--variant : set struct-described by Variant(SymbolSet (of keys/tags), particular *record* mapping tags to Types) : VariantSet <: Set
+sigma : set struct-described by Sigma(a:Type, b(a):Type) : SigmaSet <: Set
+sealed : particular value of the appropriate(meaning what?) variant : SealedSet <: Set
+closure : a -> b : ProcType <: Type
+
+how to deal with open variants like Type? how does dispatch work for type classes?
+  as lexically-scoped dynamic keys/vars to the currently-known variant (or record for open dispatch such as type classes)?
+    dynamic vars need to treat dynamic environment as a first class record, dispatching on a particular label
+  what about the ever-growing symbol set associated with these variants?
+    maybe these symbols need to be multi-dimensional (namespace) to describe their origins to avoid clashing names/tags
+      but how many dimensions are needed? one per nested scope?
+        only type-defining scopes would need to be counted, but could be hard to determine statically
+      one dimension per thread-splitting context may be better; requires per-thread state for a counter
+
+variants as restricted form of dependent product?
+  what restrictions? left projection can't be restricted to be a symbol/tag for the following to work
+  better explains dispatching on the type of a value
+  example ignoring [un]sealing:
+    Type = sigma(tag, {... EitherTag = (Type, Type) ...}.tag)
+    Either = \a b -> sigma(tag, {LeftTag = a , RightTag = b}.tag)
+    Any = sigma(tag, {... EitherTag = sigma((type1:Type, type2:Type), Either type1 type2) ...}.tag)
+
+    case (type-tagged-val : Any) of ... | (Either Int String, value) -> (expr) | ...
+    becomes:
+    let inner-dispatch = \(ty1:Type) (ty2:Type) (value:Either ty1 ty2) ->
+                           {...
+                            IntTag = \() (ty2:Type) (value:Either Int ty2) ->
+                                       {...
+                                        StringTag = \() (value:Either Int String) -> expr,
+                                        ...}.[sigma-left ty2] (sigma-right ty2) value,
+                            ...}.[sigma-left ty1] (sigma-right ty2) value
+    in let case-table = {...
+                         EitherTag = \sigma((ty1, ty2), (value:Either ty1 ty2)) -> inner-dispatch ty1 ty2 value,
+                         ...}
+       in case-table.[sigma-left type-tagged-val] (sigma-right type-tagged-val)
+
+    looks a little sloppy: maybe a special dispatching index operation would make typing easier?
+    or, figure out simple dependent typing rules
+
+=======================================================================================
+predicates/comparisons, constraints, proof witnesses for indexing tuples/arrays/records
+=======================================================================================
+witness erasure?
+  index constraint in function type describes an implicit argument (witness term)
+  the value retrieved from the structure at the index is the proof witness itself
+  term referring to witness to index a structure simply becomes the implicitly-passed value
+
+forall struct. Access(struct, {3=Int}) => struct -> Int
+  type of functions taking structs containing an Int at position 3, and returning an Int
+forall struct. Access(struct, {index=Int}) => struct -> (index : Nat) -> Int
+  this one is more general
+  Access extendable like typeclasses?
+  erasure produces a function more like: Int -> Int
+
+AccessDomain(struct, Set (of indices), result)
+  may be nicer to express unpredictable or large contiguous accesses
+  harder to erase witnesses for these?
+
+Actually, the original Access constraint with a record mapping indices to result types
+is sufficient to describe AccessDomain if records can support default values
+  example: AccessDomain(struct, Nat, Int)
+  Access(struct, {(_:Nat)=Int}) assuming _=X defines default value X for Nat indices
+    should records support multiple defaults? different subsets, different mappings
+    this seems a lot like defining dependent functions...
+    maybe functions should also support Access?
+
+at this point, might as well just use record notation for all structures?
+  tuple/array syntax as syntactic sugar? how about tuple/array operations?
+    array notation/behavior corresponds to 'default value' concept from records
+    tuple/array splitting and concatenating operations remap keys
+      so should be distinct from record extension/joining and hiding concepts
+      this is probably only applicable to records whose keys are from Nat
+  forall struct. Access(struct, {index=Int}) => struct -> (index : Nat) -> Int
+  becomes: {index = Int} -> (index : Nat) -> Int
+
+=======================================================================================
+for tuples/arrays:
+  map, filter, fold, zip[With], [un]curry...
+    present efficiency challenges related to contiguous memory arrangement
+  uniqueness for efficient initialization?
+  or maybe smart region allocation to make seemingly quadratic operations linear?
+
+strings (of various encodings), other data blobs:
+  generalized by bit vectors?
+  extensible parser for designing appropriate literals (and their translation to bit vectors)
+  can bit vectors/sets be efficiently generalized by tuples/arrays of single-bit values?
+    yes, saner and more general: tuples/arrays of (modular?) nats/ints
+
+what are symbols and their namespaces really?
+figure out tractable dependent-sum/existential representation for variants
+open sums and their handles
+example list variant:
+  letrec List a = List-sigma (tag:ListTag, {nil=(); cons=(a, List a)}.tag)
+         ListTag = TagSet {nil, cons} -- do tag sets also have a representation? (brain explodes)
+         List-sigma, List-sigma-opener = ... new-sealed-sigma-pair ...
+
+==============================================================================
 modular typing with non-terminating term?
 (\f* -> f f) : (f & (f -> g)) -> g
 (\f* -> f f) (\f* -> f f) :
