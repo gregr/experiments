@@ -20,8 +20,9 @@ variant Type {
   Symbol NS
   Int
   Nat
-  Proc a b
-  Sigma a (Proc a b)
+  Fn a b
+  Pi a (Fn a b)
+  Sigma a (Fn a b)
   Record (Sigma NS (\ns -> [Row ns, Type]))
 }
 
