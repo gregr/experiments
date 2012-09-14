@@ -33,11 +33,11 @@ recordSimplify rec = let (left : rest) = flatten' rec in
   case simplify left rest of
     [single] -> single
     recs -> RecGlue recs
-  where flatten' (RecGlue recs) = concat $ map flatten' recs
+  where flatten' (RecGlue recs) = concatMap flatten' recs
         flatten' rec = [rec]
         simplify left [] = [left]
         simplify left@(RecDefault _) _ = [left]
-        simplify (RecRow left) ((RecRow right) : rest) = simplify combined rest
+        simplify (RecRow left) (RecRow right : rest) = simplify combined rest
           where combined = RecRow $ M.union left right
         simplify left rest = left : simplify (head rest) (tail rest)
 
