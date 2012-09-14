@@ -13,8 +13,9 @@ import qualified Data.List as L
 
 
 {-type Namespace = [Int]-}
-{-type Symbol = Int-}
-type Symbol = [Int]
+--type Symbol = Int
+data Symbol = Global String | Nat Int
+  deriving (Show, Eq, Ord)
 type Namespace = Symbol
 type SymToString = M.Map Symbol String
 type NamespaceInfo = (Int, SymToString)
@@ -59,19 +60,20 @@ data Value = Sym Symbol
            -- | Type -- type of all types
   deriving (Show)
 
-tupleRow items = M.fromList $ zip (map (: []) [0..]) items
+nat_syms = map Nat [0..]
+nat_zero = head nat_syms
+tupleRow items = M.fromList $ zip nat_syms items
 tuple items = Literal . Rec . RecRow $ tupleRow items
 unit = tuple []
 --list
 
 tagged tag datum = Literal $ Sig tag datum
 
-gen_syms = map (: []) [0..]
-gen_tags = map (Literal . Sym) gen_syms
+gen_tags = map (Literal . Sym) nat_syms
 
 sumty ns alts = (sig, [constrs])
-  where row = M.fromList $ zip gen_syms alts
-        sig = Sig ns $ Abstract [[0]] $ Access (Literal . Rec $ RecRow row) $ Var [0]
+  where row = M.fromList $ zip nat_syms alts
+        sig = Sig ns $ Abstract [nat_zero] $ Access (Literal . Rec $ RecRow row) $ Var nat_zero
         constrs = ()
 
 --[(false_tag, _), (true_tag, _)] = sumty [unitty, unitty]
@@ -105,8 +107,8 @@ voidty_rhs = unitty
 tyty_rhs = unitty
 symty_rhs = tuplety [symty tyty_tag]
 -- what the hell am I doing here?
---recty_rhs = sigty (symty tyty_tag) $ Abstract [[0]] $ recty (Var [0]) (list $ tuplety [symty, tyty]) (maybety tyty)
-sigty_rhs = sigty tyty $ Abstract [[0]] $ procty (Var [0]) tyty
+--recty_rhs = sigty (symty tyty_tag) $ Abstract [nat_zero] $ recty (Var nat_zero) (list $ tuplety [symty, tyty]) (maybety tyty)
+sigty_rhs = sigty tyty $ Abstract [nat_zero] $ procty (Var nat_zero) tyty
 --type_row_base = M.fromList [] -- create base variant row for Type
 
 type Name = Symbol
