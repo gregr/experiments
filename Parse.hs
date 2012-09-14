@@ -1,17 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Parse where
 
-import Control.Monad
 import Data.Attoparsec.ByteString.Char8
-import Data.ByteString.Char8
+import Data.ByteString.Char8 as BS
+import qualified Data.List as L
+import Data.Functor
+import Control.Applicative
+import Control.Monad
 
 data FormElem atom = Atom atom
                    | Form [FormElem atom]
   deriving (Show)
 
-isAlpha = isAlpha_iso8859_15
+isOneOf preds ch = or $ preds <*> [ch]
+isIdentChar = isOneOf [isAlpha_iso8859_15, isDigit, ('_' ==)]
 isLParen = ('(' ==)
-identifier = takeWhile1 isAlpha
+identifier = takeWhile1 isIdentChar
 lparen = char '('
 rparen = char ')'
 
@@ -37,7 +41,7 @@ parseFormElement = do
 
 parseForm = do
   skipSpace
-  cond <- peekPred $ \ch -> isAlpha ch || isLParen ch
+  cond <- peekPred $ isOneOf [isIdentChar, isLParen]
   if cond then do
     elem <- parseFormElement
     rest <- parseForm
@@ -46,14 +50,17 @@ parseForm = do
 
 parseMore parser text = killPartial $ parse parser text
   where killPartial res = case res of
-          Partial _ -> killPartial $ feed res empty
+          Partial _ -> killPartial $ feed res BS.empty
           _ -> res
 
 parseAll parser text = case res of
-  Done text out -> case feed (parse skipSpace text) empty of
+  Done text out -> case feed (parse skipSpace text) BS.empty of
     Done "" _ -> Right out
     _ -> Left $ "Unparsed trailing text: " ++ unpack text
   _ -> eitherResult res
   where res = parseMore parser text
 
-testText = pack " (proc (w) w ((  ( w))) ) (proc (x  ) x)  1"
+parseForms = parseAll parseForm
+
+testText = pack " (proc (w) w ((  ( w))) ) (proc (x  ) x) 1"
+test = parseForms testText
