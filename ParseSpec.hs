@@ -1,13 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ParseSpec where
 
-import Data.Attoparsec.ByteString.Char8
-import Data.ByteString.Char8 as BS
+import Data.Attoparsec.Text
+import Data.Text as TS
+import Data.Text.IO as TS
+import Data.Char
 import Data.Maybe
 import Control.Applicative
 import Control.Monad
 
-type Name = ByteString
+type Name = Text
 type DConstr = (Name, [DefTerm])
 data DefStmt = DefType Name [Name] DConstr
              | DefVariant Name [Name] [DConstr]
@@ -21,9 +23,8 @@ isCombOf comb preds ch = comb $ preds <*> [ch]
 isAllOf = isCombOf and
 isOneOf = isCombOf or
 
---endOfLine isEndOfLine
-skipNonNewlineSpace = void $ skipWhile $ isAllOf [isSpace, ('\n' /=)]
-isIdentChar = isOneOf [isAlpha_iso8859_15, isDigit, ('_' ==)]
+skipHSpace = void $ skipWhile isHorizontalSpace
+isIdentChar = isOneOf [isAlpha, isDigit, ('_' ==)]
 identifier = takeWhile1 isIdentChar
 peekCh = fromMaybe '\n' <$> peekChar
 
@@ -34,8 +35,8 @@ peekActList fin act mfirst mrest = do
     else act >> parseToList mfirst mrest
 peekList fin = peekActList fin $ return ()
 
-parseNameList = skipNonNewlineSpace *> peekList '\n' identifier parseNameList
-parseDConstr fin = skipNonNewlineSpace >> identifier >>= parseDConstrBody fin
+parseNameList = many (identifier <* skipHSpace) <* void space -- peekList '\n' identifier parseNameList
+parseDConstr fin = skipHSpace >> identifier >>= parseDConstrBody fin
 parseDConstrBody fin name = (,) name <$> parseDefTermList fin
 parseDConstrList = peekList '\n' (parseDConstr '\n') parseDConstrList
 parseDefTupleTy =
@@ -50,41 +51,38 @@ parseDefTermParen =
           otherwise -> DefConstr <$> parseDConstrBody ')' name
 parseDefTerm = parseDefTermAlt (\name -> return $ DefConstr (name, []))
 parseDefTermList fin = do
-  if fin == '\n' then skipNonNewlineSpace else skipSpace
+  if fin == '\n' then skipHSpace else skipSpace
   peekList fin parseDefTerm $ parseDefTermList fin
 parseCommaTermList comma =
   skipSpace *> peekActList ']' eatComma parseDefTerm (parseCommaTermList True)
   where eatComma = when comma (char ',' >> skipSpace)
 
-parseDefHead = skipNonNewlineSpace *> liftA (,) identifier <*> parseNameList
+parseDefHead = skipHSpace *> liftA (,) identifier <*>
+  (skipHSpace *> parseNameList)
 parseDefType =
   uncurry DefType <$> parseDefHead <* space <* skipSpace <*> parseDConstr '\n'
 parseDefVariant = uncurry DefVariant <$> parseDefHead <*> parseDConstrList
 parseDefStmt = skipSpace *>
   ("type" .*> parseDefType) <|> ("variant" .*> parseDefVariant)
 
---endOfInput atEnd
-
-parseDefStmtList = do
-  skipSpace
-  mch <- peekChar
-  case mch of
-    Nothing -> return []
-    Just _ -> parseToList parseDefStmt parseDefStmtList
+parseDefStmtList = skipSpace *> (endOfInput *> pure [] <|>
+  parseToList parseDefStmt parseDefStmtList)
 
 parseMore parser text = killPartial $ parse parser text
   where killPartial res = case res of
-          Partial _ -> killPartial $ feed res BS.empty
+          Partial _ -> killPartial $ feed res TS.empty
           _ -> res
 parseAll parser text = case res of
-  Done text out -> case feed (parse skipSpace text) BS.empty of
+  Done text out -> case feed (parse skipSpace text) TS.empty of
     Done "" _ -> Right out
-    _ -> Left $ "Unparsed trailing text: " ++ unpack text
+    _ -> Left $ "Unparsed trailing text: " ++ TS.unpack text
   _ -> eitherResult res
   where res = parseMore parser text
-parseDefs text = parseAll parseDefStmtList (BS.append text "\n")
+parseDefs text = parseAll parseDefStmtList (TS.append text "\n")
+-- TODO: there seems to be an "impossible error" bug with parseOnly currently
+-- parseDefs text = parseOnly parseDefStmtList (TS.append text "\n")
 
-parseStdin = parseDefs <$> BS.getContents
-parseFile fname = parseDefs <$> BS.readFile fname
+parseStdin = parseDefs <$> TS.getContents
+parseFile fname = parseDefs <$> TS.readFile fname
 
 test = parseFile "basis.spec"
