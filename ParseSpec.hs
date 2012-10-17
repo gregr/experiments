@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 module ParseSpec where
 
 import Data.Attoparsec.Text
@@ -26,62 +26,39 @@ isOneOf = isCombOf or
 skipHSpace = void $ skipWhile isHorizontalSpace
 isIdentChar = isOneOf [isAlpha, isDigit, ('_' ==)]
 identifier = takeWhile1 isIdentChar
-peekCh = fromMaybe '\n' <$> peekChar
 
-parseToList mfirst mrest = (:) <$> mfirst <*> mrest
-peekActList fin act mfirst mrest = do
-  ch <- peekCh
-  if ch == fin then when (ch == '\n') (void space) >> return []
-    else act >> parseToList mfirst mrest
-peekList fin = peekActList fin $ return ()
+namedList spacer term = (,) <$> identifier <*> (spacer *> sepBy term spacer)
+buffer body = skipSpace *> body <* skipSpace
+bufferH body = skipHSpace *> body <* skipHSpace
+bracket open close body = char open *> buffer body <* char close
+parseDConstr = namedList skipHSpace parseDefTerm
+parseDefFn = "fn" .*> buffer (liftA DefFn identifier) <*> parseDefTerm
+brackTerm = parseDefTermParen <|> parseDefTupleTy
+parseDefTerm = brackTerm <|> (DefConstr . (, []) <$> identifier)
+parseDefTermParen = bracket '(' ')' $ brackTerm <|> parseDefFn <|>
+  (DefConstr <$> namedList skipSpace parseDefTerm)
+parseDefTupleTy = bracket '[' ']' $ liftA DefTupleTy commaTerms
+  where commaTerms = sepBy parseDefTerm (buffer $ char ',')
 
-parseNameList = many (identifier <* skipHSpace) <* void space -- peekList '\n' identifier parseNameList
-parseDConstr fin = skipHSpace >> identifier >>= parseDConstrBody fin
-parseDConstrBody fin name = (,) name <$> parseDefTermList fin
-parseDConstrList = peekList '\n' (parseDConstr '\n') parseDConstrList
-parseDefTupleTy =
-  char '[' *> liftA DefTupleTy (parseCommaTermList False) <* char ']'
-parseDefFn = skipSpace *> liftA DefFn identifier <*> parseDefTerm <* skipSpace
-parseDefTermAlt alt = skipSpace *>
-  (parseDefTermParen <|> parseDefTupleTy <|> (identifier >>= alt))
-parseDefTermParen =
-  char '(' *> parseDefTermAlt alt <* skipSpace <* char ')'
-  where alt name = case name of
-          "fn" -> parseDefFn
-          otherwise -> DefConstr <$> parseDConstrBody ')' name
-parseDefTerm = parseDefTermAlt (\name -> return $ DefConstr (name, []))
-parseDefTermList fin = do
-  if fin == '\n' then skipHSpace else skipSpace
-  peekList fin parseDefTerm $ parseDefTermList fin
-parseCommaTermList comma =
-  skipSpace *> peekActList ']' eatComma parseDefTerm (parseCommaTermList True)
-  where eatComma = when comma (char ',' >> skipSpace)
+-- TODO: maybe support empty lines while defining types/variants?
+indent body = char ' ' *> bufferH body -- HACK
+parseHead tag =
+  uncurry tag <$> bufferH (namedList skipHSpace identifier) <* endOfLine
+parseDefType = parseHead DefType <*> indent parseDConstr
+parseDefVariant =
+  parseHead DefVariant <*> sepBy (indent parseDConstr) endOfLine
+parseDefStmt = ("type" .*> parseDefType) <|> ("variant" .*> parseDefVariant)
+parseDefStmtList = buffer (sepBy parseDefStmt skipSpace) <* endOfInput
 
-parseDefHead = skipHSpace *> liftA (,) identifier <*>
-  (skipHSpace *> parseNameList)
-parseDefType =
-  uncurry DefType <$> parseDefHead <* space <* skipSpace <*> parseDConstr '\n'
-parseDefVariant = uncurry DefVariant <$> parseDefHead <*> parseDConstrList
-parseDefStmt = skipSpace *>
-  ("type" .*> parseDefType) <|> ("variant" .*> parseDefVariant)
+-- sometimes you get another Partial after feeding empty
+finishParse result@(Partial _) = finishParse $ feed result TS.empty
+finishParse result = result
+consumedResult done@(Done "" out) = done
+consumedResult (Done text out) = Fail text [] "Unparsed trailing text"
+consumedResult fail@(Fail _ _ _) = fail
+consumedResult partial = consumedResult $ finishParse partial
 
-parseDefStmtList = skipSpace *> (endOfInput *> pure [] <|>
-  parseToList parseDefStmt parseDefStmtList)
-
-parseMore parser text = killPartial $ parse parser text
-  where killPartial res = case res of
-          Partial _ -> killPartial $ feed res TS.empty
-          _ -> res
-parseAll parser text = case res of
-  Done text out -> case feed (parse skipSpace text) TS.empty of
-    Done "" _ -> Right out
-    _ -> Left $ "Unparsed trailing text: " ++ TS.unpack text
-  _ -> eitherResult res
-  where res = parseMore parser text
-parseDefs text = parseAll parseDefStmtList (TS.append text "\n")
--- TODO: there seems to be an "impossible error" bug with parseOnly currently
--- parseDefs text = parseOnly parseDefStmtList (TS.append text "\n")
-
+parseDefs = consumedResult . parse parseDefStmtList
 parseStdin = parseDefs <$> TS.getContents
 parseFile fname = parseDefs <$> TS.readFile fname
 
