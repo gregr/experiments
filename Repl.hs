@@ -1,8 +1,9 @@
 module Repl where
 
 import Simpler
-import qualified Parse as P
-import qualified Data.ByteString.Char8 as BS
+import Data.Attoparsec.Text
+import qualified ParseForm as P
+import qualified Data.Text as TS
 import qualified Data.List as L
 import System.Console.Haskeline
 
@@ -14,13 +15,13 @@ readPrompt prompt1 prompt2 = readPrompt' [] prompt1
 
 i_repl = do
   text <- readPrompt "> " ". " >>= maybe (error "EOF") return
-  case P.parseForms $ BS.pack text of
-    Left msg -> error msg
-    Right forms -> putStrLn $ "parsed: " ++ show (map elemToTerm forms)
+  case P.parseForms $ TS.pack text of
+    Fail text cxt msg -> error $ show (text, cxt, msg)
+    Done _ forms -> putStrLn $ "parsed: " ++ show (map elemToTerm forms)
   i_repl
 
 litSym = Literal . Sym
-elemToTerm (P.Atom atom) = litSym . Global $ BS.unpack atom -- TODO: symbol maps
+elemToTerm (P.Atom atom) = litSym . Global $ TS.unpack atom -- TODO: symbol maps
 elemToTerm (P.Form []) = litSym nat_zero -- TODO: unit
 -- TODO: process syntactic forms
 elemToTerm (P.Form (first : rest)) = Apply first' rest'
