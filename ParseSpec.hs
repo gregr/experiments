@@ -5,9 +5,7 @@ import Data.Attoparsec.Text
 import Data.Text as TS
 import Data.Text.IO as TS
 import Data.Char
-import Data.Maybe
 import Control.Applicative
-import Control.Monad
 
 type Name = Text
 type DConstr = (Name, [DefTerm])
@@ -23,7 +21,7 @@ isCombOf comb preds ch = comb $ preds <*> [ch]
 isAllOf = isCombOf and
 isOneOf = isCombOf or
 
-skipHSpace = void $ skipWhile isHorizontalSpace
+skipHSpace = skipWhile isHorizontalSpace
 isIdentChar = isOneOf [isAlpha, isDigit, ('_' ==)]
 identifier = takeWhile1 isIdentChar
 
