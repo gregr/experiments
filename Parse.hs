@@ -48,19 +48,14 @@ parseForm = do
     return $ elem : rest
    else return []
 
-parseMore parser text = killPartial $ parse parser text
-  where killPartial res = case res of
-          Partial _ -> killPartial $ feed res TS.empty
-          _ -> res
+finishParse result@(Partial _) = finishParse $ feed result TS.empty
+finishParse result = result
+consumedResult done@(Done "" out) = done
+consumedResult (Done text out) = Fail text [] "Unparsed trailing text"
+consumedResult fail@(Fail _ _ _) = fail
+consumedResult partial = consumedResult $ finishParse partial
 
-parseAll parser text = case res of
-  Done text out -> case feed (parse skipSpace text) TS.empty of
-    Done "" _ -> Right out
-    _ -> Left $ "Unparsed trailing text: " ++ unpack text
-  _ -> eitherResult res
-  where res = parseMore parser text
-
-parseForms = parseAll parseForm
+parseForms = consumedResult . parse parseForm
 
 testText = pack " (proc (w) w ((  ( w))) ) (proc (x  ) x) 1"
 test = parseForms testText
