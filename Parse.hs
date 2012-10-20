@@ -16,8 +16,8 @@ isOneOf preds ch = or $ preds <*> [ch]
 isIdentChar = isOneOf [isAlpha, isDigit, ('_' ==)]
 isLParen = ('(' ==)
 identifier = takeWhile1 isIdentChar
-lparen = char '('
-rparen = char ')'
+buffer body = skipSpace *> body <* skipSpace
+bracket open close body = char open *> buffer body <* char close
 
 peekPred pred = do
   mch <- peekChar
@@ -25,13 +25,7 @@ peekPred pred = do
     Nothing -> return False
     Just ch -> return $ pred ch
 
-parseParenForm = do
-  skipSpace
-  lparen
-  form <- parseForm
-  skipSpace
-  rparen
-  return form
+parseParenForm = buffer $ bracket '(' ')' parseForm
 
 parseFormElement = do
   skipSpace
