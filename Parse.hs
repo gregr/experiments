@@ -6,7 +6,6 @@ import Data.Text as TS
 import Data.Text.IO as TS
 import Data.Char
 import Control.Applicative
-import Control.Monad
 
 data FormElem atom = Atom atom
                    | Form [FormElem atom]
@@ -19,28 +18,9 @@ identifier = takeWhile1 isIdentChar
 buffer body = skipSpace *> body <* skipSpace
 bracket open close body = char open *> buffer body <* char close
 
-peekPred pred = do
-  mch <- peekChar
-  case mch of
-    Nothing -> return False
-    Just ch -> return $ pred ch
-
-parseParenForm = buffer $ bracket '(' ')' parseForm
-
-parseFormElement = do
-  skipSpace
-  cond <- peekPred isLParen
-  if cond then liftM Form parseParenForm
-   else liftM Atom identifier
-
-parseForm = do
-  skipSpace
-  cond <- peekPred $ isOneOf [isIdentChar, isLParen]
-  if cond then do
-    elem <- parseFormElement
-    rest <- parseForm
-    return $ elem : rest
-   else return []
+parseParenForm = bracket '(' ')' parseForm
+parseFormElement = Form <$> parseParenForm <|> Atom <$> identifier
+parseForm = many $ buffer parseFormElement
 
 finishParse result@(Partial _) = finishParse $ feed result TS.empty
 finishParse result = result
