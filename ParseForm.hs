@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Parse where
+module ParseForm where
 
 import Data.Attoparsec.Text
 import Data.Text as TS
