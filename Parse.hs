@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Parse where
 
-import Data.Attoparsec.ByteString.Char8
-import Data.ByteString.Char8 as BS
-import qualified Data.List as L
-import Data.Functor
+import Data.Attoparsec.Text
+import Data.Text as TS
+import Data.Text.IO as TS
+import Data.Char
 import Control.Applicative
 import Control.Monad
 
@@ -13,7 +13,7 @@ data FormElem atom = Atom atom
   deriving (Show)
 
 isOneOf preds ch = or $ preds <*> [ch]
-isIdentChar = isOneOf [isAlpha_iso8859_15, isDigit, ('_' ==)]
+isIdentChar = isOneOf [isAlpha, isDigit, ('_' ==)]
 isLParen = ('(' ==)
 identifier = takeWhile1 isIdentChar
 lparen = char '('
@@ -50,11 +50,11 @@ parseForm = do
 
 parseMore parser text = killPartial $ parse parser text
   where killPartial res = case res of
-          Partial _ -> killPartial $ feed res BS.empty
+          Partial _ -> killPartial $ feed res TS.empty
           _ -> res
 
 parseAll parser text = case res of
-  Done text out -> case feed (parse skipSpace text) BS.empty of
+  Done text out -> case feed (parse skipSpace text) TS.empty of
     Done "" _ -> Right out
     _ -> Left $ "Unparsed trailing text: " ++ unpack text
   _ -> eitherResult res
