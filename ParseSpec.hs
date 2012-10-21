@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 module ParseSpec where
 
-import Data.Attoparsec.Text
+import ParseUtil
 import Data.Text as TS
 import Data.Text.IO as TS
-import Data.Char
 import Control.Applicative
 
 type Name = Text
@@ -17,18 +16,7 @@ data DefTerm = DefConstr DConstr
              | DefFn Name DefTerm
              deriving (Show)
 
-isCombOf comb preds ch = comb $ preds <*> [ch]
-isAllOf = isCombOf and
-isOneOf = isCombOf or
-
-skipHSpace = skipWhile isHorizontalSpace
-isIdentChar = isOneOf [isAlpha, isDigit, ('_' ==)]
-identifier = takeWhile1 isIdentChar
-
 namedList spacer term = (,) <$> identifier <*> (spacer *> sepBy term spacer)
-buffer body = skipSpace *> body <* skipSpace
-bufferH body = skipHSpace *> body <* skipHSpace
-bracket open close body = char open *> buffer body <* char close
 parseDConstr = namedList skipHSpace parseDefTerm
 parseDefFn = "fn" .*> buffer (liftA DefFn identifier) <*> parseDefTerm
 brackTerm = parseDefTermParen <|> parseDefTupleTy
@@ -47,14 +35,6 @@ parseDefVariant =
   parseHead DefVariant <*> sepBy (indent parseDConstr) endOfLine
 parseDefStmt = ("type" .*> parseDefType) <|> ("variant" .*> parseDefVariant)
 parseDefStmtList = buffer (sepBy parseDefStmt skipSpace) <* endOfInput
-
--- sometimes you get another Partial after feeding empty
-finishParse result@(Partial _) = finishParse $ feed result TS.empty
-finishParse result = result
-consumedResult done@(Done "" out) = done
-consumedResult (Done text out) = Fail text [] "Unparsed trailing text"
-consumedResult fail@(Fail _ _ _) = fail
-consumedResult partial = consumedResult $ finishParse partial
 
 parseDefs = consumedResult . parse parseDefStmtList
 parseStdin = parseDefs <$> TS.getContents
