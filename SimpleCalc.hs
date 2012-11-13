@@ -21,7 +21,7 @@ data Term =
 
 -- TODO: unifiable neutral terms/types
 type Closure = (Env, Term)
-data Value = VClo Closure | VTVar Name | VType | VArrow Value Value
+data Value = VClo Closure | VCVar Name | VType | VArrow Value Value
   deriving (Show, Eq)
 
 bigeval (Ann term _) env = bigeval term env
@@ -39,23 +39,23 @@ type Typing = (Value, Constraint)
 type Constraint = M.Map Name Term
 cstr_empty = M.empty
 cstr_assign name ty = modify $ M.insert name ty
-cstr_find (VTVar name) = do
+cstr_find (VCVar name) = do
   cstr <- get
   case M.lookup name cstr of
-    Nothing -> return $ VTVar name
+    Nothing -> return $ VCVar name
     Just ty -> do
       ty' <- cstr_find ty
       cstr_assign name ty'
       return ty'
 cstr_find ty = return ty
-cstr_occurs na (VTVar nb) = na == nb
+cstr_occurs na (VCVar nb) = na == nb
 cstr_occurs name (VArrow ta tb) = or $ map (cstr_occurs name) [ta, tb]
 cstr_occurs name _ = False
-cstr_unify' (VTVar na) var@(VTVar nb) | na == nb = return var
-cstr_unify' (VTVar name) other
+cstr_unify' (VCVar na) var@(VCVar nb) | na == nb = return var
+cstr_unify' (VCVar name) other
   | cstr_occurs name other = throwError $ "Occurs check: " ++ show (name, other)
   | otherwise = cstr_assign name other >> return other
-cstr_unify' other var@(VTVar _) = cstr_unify' var other
+cstr_unify' other var@(VCVar _) = cstr_unify' var other
 cstr_unify' VType VType = return VType
 cstr_unify' (VArrow la lb) (VArrow ra rb) = do
   ta <- cstr_unify la ra
@@ -72,7 +72,7 @@ cstr_join ca cb = do
   where
     cbshared = M.toList $ M.intersection ca cb
     cstr = M.union ca $ M.difference cb ca
-    merge = flip forM_ (\(name, bval) -> cstr_unify (VTVar name) bval)
+    merge = flip forM_ (\(name, bval) -> cstr_unify (VCVar name) bval)
 
 data Context = Context{cxt_nextName :: Name}
   deriving Show
@@ -80,7 +80,7 @@ cxt_empty = Context{cxt_nextName = 0}
 cxt_freshName = do
   fresh <- gets cxt_nextName
   modify (\cxt -> cxt{cxt_nextName = nm_next fresh})
-  return . VTVar $ fresh
+  return . VCVar $ fresh
 
 bigtype Type _ = return $ (VType, cstr_empty)
 bigtype (Arrow ta tb) env = do
