@@ -49,12 +49,12 @@ cstr_find (VCVar name) = do
       return ty'
 cstr_find ty = return ty
 cstr_occurs na (VCVar nb) = na == nb
-cstr_occurs name (VArrow ta tb) = or $ map (cstr_occurs name) [ta, tb]
+cstr_occurs name (VArrow ta tb) = any (cstr_occurs name) [ta, tb]
 cstr_occurs name _ = False
 cstr_unify' (VCVar na) var@(VCVar nb) | na == nb = return var
-cstr_unify' (VCVar name) other
-  | cstr_occurs name other = throwError $ "Occurs check: " ++ show (name, other)
-  | otherwise = cstr_assign name other >> return other
+cstr_unify' (VCVar name) ty
+  | cstr_occurs name ty = throwError $ "Occurs check: " ++ show (name, ty)
+  | otherwise = cstr_assign name ty >> return ty
 cstr_unify' other var@(VCVar _) = cstr_unify' var other
 cstr_unify' VType VType = return VType
 cstr_unify' (VArrow la lb) (VArrow ra rb) = do
@@ -72,7 +72,7 @@ cstr_join ca cb = do
   where
     cbshared = M.toList $ M.intersection ca cb
     cstr = M.union ca $ M.difference cb ca
-    merge = flip forM_ (\(name, bval) -> cstr_unify (VCVar name) bval)
+    merge = mapM_ (\(name, bval) -> cstr_unify (VCVar name) bval)
 
 data Context = Context{cxt_nextName :: Name}
   deriving Show
@@ -82,18 +82,18 @@ cxt_freshName = do
   modify (\cxt -> cxt{cxt_nextName = nm_next fresh})
   return . VCVar $ fresh
 
-bigtype Type _ = return $ (VType, cstr_empty)
+bigtype Type _ = return (VType, cstr_empty)
 bigtype (Arrow ta tb) env = do
   (vta, ca) <- bigtype ta env
   (vtb, cb) <- bigtype tb env
   cstr <- cstr_join ca cb
   (_, cstr') <- runStateT (cstr_unify vta VType >> cstr_unify vtb VType) cstr
-  return $ (VType, cstr')
-bigtype (Var name) env = return $ (env_lookup env name, cstr_empty)
+  return (VType, cstr')
+bigtype (Var name) env = return (env_lookup env name, cstr_empty)
 bigtype (Lam body) env = do
   fresh <- cxt_freshName
   (tbody, cstr) <- bigtype body (fresh : env)
-  return $ (VArrow fresh tbody, cstr)
+  return (VArrow fresh tbody, cstr)
 bigtype (App proc arg) env = do
   (tproc, ca) <- bigtype proc env
   (targ, cb) <- bigtype arg env
@@ -101,14 +101,14 @@ bigtype (App proc arg) env = do
   na <- cxt_freshName
   nb <- cxt_freshName
   (_, cstr') <- runStateT
-    (cstr_unify tproc (VArrow na nb) >> cstr_unify targ na) $ cstr
+    (cstr_unify tproc (VArrow na nb) >> cstr_unify targ na) cstr
   return (nb, cstr')
 bigtype (Ann term tyterm) env = do
   (tt, ca) <- bigtype tyterm env
   (tty, cb) <- bigtype term env
   cstr <- cstr_join ca cb
   let ty = bigeval tyterm env
-  runStateT (cstr_unify tt VType >> cstr_unify tty ty) $ cstr
+  runStateT (cstr_unify tt VType >> cstr_unify tty ty) cstr
 
 -- TODO: garbage collect constraints based on env reachability
 
@@ -121,7 +121,7 @@ test_app2 = test_k `App` test_k
 test_app3 = test_app1 `App` test_k
 test_app4 = test_app2 `App` test_k
 tests = [test_id, test_k, test_app0, test_app1, test_app2, test_app3, test_app4]
-test_evals = map (flip bigeval env_empty) tests
+test_evals = map (`bigeval` env_empty) tests
 runInit = runIdentity . runErrorT . flip runStateT cxt_empty
 test_types = map (runInit . flip bigtype env_empty) tests
 test = forM_ test_types print
