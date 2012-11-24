@@ -6,6 +6,18 @@ import Control.Monad.State
 import Control.Monad.Error
 import Control.Monad.Identity
 
+-- TODO
+-- type generalization
+--  univ quantification as lambdas
+--  free tvars stored in closures
+-- normal forms for quantifiers
+--  subsumption vs. unification
+-- fixpoints
+-- let generalization -> fully polymorphic arguments
+-- constructors/case-elimination -> records and variants
+-- implicits
+-- generalize the concept of constraint propagation in abstract interpretation
+
 type Name = Int
 nm_next name = name + 1
 type Env = [Value]
