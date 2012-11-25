@@ -9,12 +9,14 @@ import Control.Monad.Error
 import Control.Monad.Identity
 
 -- TODO
--- normal forms for quantifiers
+-- let generalization -> fully polymorphic arguments
+--  normal forms for quantifiers
 --  subsumption vs. unification
+-- constructors/case-elimination -> records and variants
+-- effects
 -- friendlier printing of fixpoints
 --  garbage collecting closures could help
--- let generalization -> fully polymorphic arguments
--- constructors/case-elimination -> records and variants
+--  won't truly stop spewing until recursion is broken by env/store split
 -- implicits
 -- generalize the concept of constraint propagation in abstract interpretation
 
@@ -116,7 +118,7 @@ cstr_join ca cb = do
   ((), cstr') <- runStateT (merge cbshared) cstr
   return cstr'
   where
-    cbshared = M.toList $ M.intersection ca cb
+    cbshared = M.toList $ M.intersection cb ca
     cstr = M.union ca $ M.difference cb ca
     merge = mapM_ (\(name, bval) -> cstr_unify (VCVar name) bval)
 cstr_freeInType = cstr_freeInType' ords_empty
@@ -197,6 +199,9 @@ test_fix = Fix . Lam . Lam . Lam $ Var 2 `App` (Var 3 `App` test_false `App` Var
 test_fixapp0 = test_fix `App` test_k `App` test_id `App` test_k
 -- 21 -> 21 -> 21
 test_fixapp1 = test_fix `App` test_k `App` test_false `App` test_k
+fakelet val body = Lam body `App` val
+-- should fail occurs check: 4 = 5 -> 4
+test_fakelet = fakelet test_id $ Var 0 `App` test_id `App` (Var 0 `App` test_k)
 test_app0 = test_id `App` test_id
 test_app1 = test_k `App` test_id
 test_app2 = test_k `App` test_k
