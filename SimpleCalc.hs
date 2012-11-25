@@ -54,7 +54,7 @@ ords_diffMeet oa ob = (ords_fromList ldiff, ords_fromList lmeet)
 data Term =
   Ann Term Term |
   Type | Arrow Term Term |
-  Var Name | App Term Term | Lam Term | Fix Term
+  Var Name | App Term Term | Lam Term | Fix Term | Let Term Term
   deriving (Show, Eq)
 
 -- TODO: unifiable neutral terms/types
@@ -70,11 +70,16 @@ bigeval (Lam body) env = VClo (env, body)
 bigeval (Fix body) env = result
   where result = bigeval body env'
         env' = env_extend env result
-bigeval (App proc arg) env = bigeval cbody nenv
+bigeval (App proc arg) env = bigapply clo varg
   where
-    VClo (cenv, cbody) = bigeval proc env
+    VClo clo = bigeval proc env
     varg = bigeval arg env
-    nenv = env_extend cenv varg
+bigeval (Let arg body) env = bigeval body nenv
+  where
+    varg = bigeval arg env
+    nenv = env_extend env varg
+bigapply (env, body) val = bigeval body nenv
+  where nenv = env_extend env val
 
 type Typing = (Value, Constraint)
 type Constraint = M.Map Name Term
@@ -155,6 +160,11 @@ cxt_freshName = do
   modify (\cxt -> cxt{cxt_nextName = nm_next fresh})
   return . VCVar $ fresh
 
+instantiate (VClo clo) = do
+  fresh <- cxt_freshName
+  instantiate $ bigapply clo fresh
+instantiate ty = return ty
+
 bigtype Type _ = return (VType, cstr_empty)
 bigtype (Arrow ta tb) env = do
   (vta, ca) <- bigtype ta env
@@ -172,14 +182,22 @@ bigtype (Fix body) env = do
   (tbody, cstr) <- bigtype body (fresh : env)
   runStateT (cstr_unify fresh tbody) cstr
 bigtype (App proc arg) env = do
-  (tproc, ca) <- bigtype proc env
-  (targ, cb) <- bigtype arg env
+  (gtproc, ca) <- bigtype proc env
+  (gtarg, cb) <- bigtype arg env
+  tproc <- instantiate gtproc
+  targ <- instantiate gtarg
   cstr <- cstr_join ca cb
   na <- cxt_freshName
   nb <- cxt_freshName
   (_, cstr') <- runStateT
     (cstr_unify tproc (VArrow na nb) >> cstr_unify targ na) cstr
   return (nb, cstr')
+bigtype (Let arg body) env = do
+  (targ, ca) <- bigtype arg env
+  (gtarg, cstr) <- runStateT (cstr_generalize targ env) ca
+  (tbody, cb) <- bigtype body $ gtarg : env
+  cstr' <- cstr_join cstr cb
+  return (tbody, cstr')
 bigtype (Ann term tyterm) env = do
   (tt, ca) <- bigtype tyterm env
   (tty, cb) <- bigtype term env
@@ -202,6 +220,8 @@ test_fixapp1 = test_fix `App` test_k `App` test_false `App` test_k
 fakelet val body = Lam body `App` val
 -- should fail occurs check: 4 = 5 -> 4
 test_fakelet = fakelet test_id $ Var 0 `App` test_id `App` (Var 0 `App` test_k)
+-- 5 -> 6 -> 5
+test_let = Let test_id $ Var 0 `App` test_id `App` (Var 0 `App` test_k)
 test_app0 = test_id `App` test_id
 test_app1 = test_k `App` test_id
 test_app2 = test_k `App` test_k
@@ -209,13 +229,16 @@ test_app3 = test_app1 `App` test_k
 test_app4 = test_app2 `App` test_k
 tests = [test_id, test_k, test_app0, test_app1, test_app2, test_app3, test_app4]
 testsf = [test_fix, test_fixapp0, test_fixapp1]
+testsl = [test_fakelet, test_let]
 test_evals = map (`bigeval` env_empty) tests
 runInit = runIdentity . runErrorT . flip runStateT cxt_empty
 runType = runInit . flip bigtype env_empty
 test_types = map runType tests
 test_typesf = map runType testsf
+test_typesl = map runType testsl
 test = forM_ test_types print
 testf = forM_ test_typesf print
+testl = forM_ test_typesl print
 runGeneralize term = do
   ((ty, cstr), _) <- runType term
   return $ runIdentity $ runStateT (cstr_generalize ty env_empty) cstr
