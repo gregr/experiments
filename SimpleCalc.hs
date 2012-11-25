@@ -11,7 +11,8 @@ import Control.Monad.Identity
 -- TODO
 -- normal forms for quantifiers
 --  subsumption vs. unification
--- fixpoints
+-- friendlier printing of fixpoints
+--  garbage collecting closures could help
 -- let generalization -> fully polymorphic arguments
 -- constructors/case-elimination -> records and variants
 -- implicits
@@ -51,7 +52,7 @@ ords_diffMeet oa ob = (ords_fromList ldiff, ords_fromList lmeet)
 data Term =
   Ann Term Term |
   Type | Arrow Term Term |
-  Var Name | Lam Term | App Term Term
+  Var Name | App Term Term | Lam Term | Fix Term
   deriving (Show, Eq)
 
 -- TODO: unifiable neutral terms/types
@@ -64,6 +65,9 @@ bigeval Type _ = VType
 bigeval (Arrow ta tb) env = VArrow (bigeval ta env) (bigeval tb env)
 bigeval (Var name) env = env_lookup env name
 bigeval (Lam body) env = VClo (env, body)
+bigeval (Fix body) env = result
+  where result = bigeval body env'
+        env' = env_extend env result
 bigeval (App proc arg) env = bigeval cbody nenv
   where
     VClo (cenv, cbody) = bigeval proc env
@@ -83,18 +87,24 @@ cstr_find (VCVar name) = do
       cstr_assign name ty'
       return ty'
 cstr_find ty = return ty
-cstr_occurs na (VCVar nb) = na == nb
-cstr_occurs name (VArrow ta tb) = any (cstr_occurs name) [ta, tb]
-cstr_occurs name _ = False
+cstr_occurs name ty = cstr_find ty >>= cstr_occurs' name
+  where
+    cstr_occurs' na (VCVar nb) = return $ na == nb
+    cstr_occurs' name (VArrow ta tb) = liftM2 (||) (occ ta) (occ tb)
+      where occ = cstr_occurs name
+    cstr_occurs' name _ = return False
 cstr_unify ta tb = do
   ta' <- cstr_find ta
   tb' <- cstr_find tb
   cstr_unify' ta' tb'
   where
     cstr_unify' (VCVar na) var@(VCVar nb) | na == nb = return var
-    cstr_unify' (VCVar name) ty
-      | cstr_occurs name ty = throwError $ "Occurs check: " ++ show (name, ty)
-      | otherwise = cstr_assign name ty >> return ty
+    cstr_unify' (VCVar name) ty = do
+      result <- cstr_occurs name ty
+      if result then do
+        cstr <- get
+        throwError $ "Occurs check: " ++ show (name, ty, cstr)
+        else cstr_assign name ty >> return ty
     cstr_unify' other var@(VCVar _) = cstr_unify' var other
     cstr_unify' VType VType = return VType
     cstr_unify' (VArrow la lb) (VArrow ra rb) = do
@@ -155,6 +165,10 @@ bigtype (Lam body) env = do
   fresh <- cxt_freshName
   (tbody, cstr) <- bigtype body (fresh : env)
   return (VArrow fresh tbody, cstr)
+bigtype (Fix body) env = do
+  fresh <- cxt_freshName
+  (tbody, cstr) <- bigtype body (fresh : env)
+  runStateT (cstr_unify fresh tbody) cstr
 bigtype (App proc arg) env = do
   (tproc, ca) <- bigtype proc env
   (targ, cb) <- bigtype arg env
@@ -176,17 +190,27 @@ bigtype (Ann term tyterm) env = do
 -- testing
 test_id = Lam $ Var 0
 test_k = Lam . Lam $ Var 1
+test_false = Lam . Lam $ Var 0
+-- (10 -> 10 -> 10) -> 10 -> 10 -> 10
+test_fix = Fix . Lam . Lam . Lam $ Var 2 `App` (Var 3 `App` test_false `App` Var 0 `App` Var 1) `App` Var 0
+-- should fail occurs check: 20 = 24 -> 23, 23 = 20
+test_fixapp0 = test_fix `App` test_k `App` test_id `App` test_k
+-- 21 -> 21 -> 21
+test_fixapp1 = test_fix `App` test_k `App` test_false `App` test_k
 test_app0 = test_id `App` test_id
 test_app1 = test_k `App` test_id
 test_app2 = test_k `App` test_k
 test_app3 = test_app1 `App` test_k
 test_app4 = test_app2 `App` test_k
 tests = [test_id, test_k, test_app0, test_app1, test_app2, test_app3, test_app4]
+testsf = [test_fix, test_fixapp0, test_fixapp1]
 test_evals = map (`bigeval` env_empty) tests
 runInit = runIdentity . runErrorT . flip runStateT cxt_empty
 runType = runInit . flip bigtype env_empty
 test_types = map runType tests
+test_typesf = map runType testsf
 test = forM_ test_types print
+testf = forM_ test_typesf print
 runGeneralize term = do
   ((ty, cstr), _) <- runType term
   return $ runIdentity $ runStateT (cstr_generalize ty env_empty) cstr
