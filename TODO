@@ -1,3 +1,85 @@
+Flesh these examples out in terms of how type inference works:
+
+================================
+This one should end up being like: ((a -> b) & (c -> d)) -> a -> c -> [b, d]
+
+\f* x y -> [f x, f y]
+
+================================
+polytwo is like: ((a -> b) & (b -> c)) -> a -> c
+(polytwo polytwo) should be like a polyfour:
+((a -> b) & (b -> c) & (c -> d) & (d -> e)) -> a -> e
+
+let polytwo = \f* x* -> f (f x)
+in polytwo polytwo
+
+while both two and (two two) are simply: (a -> a) -> a -> a
+
+let two = \f x -> f (f x)
+in two two
+
+what about partially-polymorphic (pptwo pptwo)? degenerates to (two two)?
+
+let pptwo = \f* x -> f (f x)
+in pptwo pptwo
+
+================================
+consider this to be apply f* args*:
+(note that empty tuple [] and pair [x, y] have different types)
+
+apply f [] = f
+apply f [first, rest] = apply (f first) rest
+
+================================
+I'm not sure how to indicate the polymorphism here without dependent types:
+
+format str = format' str ""
+  where format' ("%s" ++ rest) acc = \str -> format' rest (acc ++ str)
+        format' ("%%" ++ rest) acc = format' rest (acc ++ "%")
+        format' (ch :: rest) acc = format' rest (acc ++ [ch])
+        format' "" acc = acc
+
+=======================================================================================
+current feeling: assuming it always subsumes the inductive analysis described
+below, CFA may give effective solutions to recursive shapes in polymorphic
+type continuations (which makes sense since safety checks based on 0CFA behave
+like recursive types with subtyping); is this the best/simplest approach?
+
+flesh out polymorphic resumable typing continuations; given the below, it
+seems these need to support type shapes that are potentially recursive
+
+how does recursion work in the polymorphic case? how does letrec bind names?
+
+first attempt at [polymorphic] binding shapes: how to handle polymorphic return
+types? polymorphic return types whose only poly-dependencies are (recursively)
+themselves become monomorphic? seems to not always hold if not tail recursive
+consider two examples:
+  ending up monomorphic
+    func must return Num here, and so must its base case (if there
+    is no base case, it's Void): return (func a b + c)
+
+    how to resolve recursive type if base case is Int? say:
+      R = 0:Int | (Num a => (R + Num a))
+
+    how about looking at it inductively: base case is 0:Int, one step up from
+    that is (Num a => (0:Int + Num a)) which becomes Int
+
+  actually polymorphic
+    (how deep is the tower of tuples?): return [func a b, c]
+
+    if base case above is returning an empty tuple, this has recursive type:
+      R = [] | [R, c]
+
+    looking at this one inductively:
+      base case is [], one step up is [[], c], which yields no simplification
+
+throw in pi/sigma types or plain records/variants, and what happens?
+
+do typeclasses/implicits still fit?
+
+still must be able to run code dynamically if type checking is incomplete
+
+=======================================================================================
 symbol (1D) sets: ordered/unordered, discrete, ordered ranges (one or two endpoints), infinite
 examples: ints (ordered infinite), nats (ordered range with 0 as minimum); what would an unordered infinite set be like?
 ordered ranges may support modular arithmetic (wrapping/circular)
