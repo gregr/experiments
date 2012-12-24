@@ -1,3 +1,146 @@
+it turns out that super polymorphism can also be used for dependent types
+  case analysis desugars into record access
+  record access typing involves unifying all possible result types
+    possible result types are refined if the access depends on a super
+    polymorphic value; that value must be present to proceed with typing, and
+    since the value is present, only a single case alternative is considered
+  for value dependencies that aren't directly referenced in resulting types,
+  unification constraints are generated
+  satisfaction proofs must be discharged when values fulfill the dependencies
+    done automatically, as shown in the polymorphic recursion example below
+    it's possible that annotations will sometimes be needed to fully discharge
+
+is it possible that all fixpoint bindings can be super polymorphic even in
+settings where they could be monomorphic?  i'm thinking yes at the moment
+
+notation for mutually embedding terms and values (types in these examples):
+>|t|< indicates a neutral term (has type: Value)
+<|v|> indicates a literal value (has type: Term)
+
+examples (some of which are pretty hard to read):
+================================
+a polymorphic recursion example, adapted from
+(https://en.wikipedia.org/wiki/Polymorphic_recursion)
+haskell requires an annotation to type this example
+super polymorphism can type this example without annotation:
+
+data Nested a = a :<: (Nested [a]) | Epsilon
+infixr 5 :<:
+
+## length itself is made super polymorphic in this case
+length Epsilon    = 0
+length (_ :<: xs) = 1 + length xs
+
+desugars to (leaving case analysis sugared for simplicity):
+
+fix length* = \nested -> case nested of
+  Epsilon -> 0
+  (_ :<: xs) = 1 + length xs
+
+typing will begin as follows:
+forall a.
+>| fix length* = <|Nested a -> >|case <|Nested a|> of
+     Epsilon -> <|Int|>
+     (_ :<: xs) = <|Int|> + length <|Nested [a]|>
+   |< |>
+|<
+
+case analysis does not depend on a super polymorphic value,
+so alternatives are unified:
+
+Int UNIFY >|<|Int|> + length <|Nested [a]|>|<
+...simplifying...
+Int UNIFY >|length <|Nested [a]|>|<
+which remains as a proof to be discharged
+however it can only be unified to Int, giving us length's return type
+
+so, we have a generalized type
+  length : forall a. Nested a -> Int
+with a proof to discharge
+  Int UNIFY >|length <|Nested [a]|>|<
+maybe noted more like:
+  length : forall a. (Int UNIFY >|length <|Nested [a]|>|<) => Nested a -> Int
+since we already have the value depended on (length itself) we can proceed
+
+assuming the conclusion (I think this should be valid given termination)
+  Int UNIFY >|<|forall t. (Nested t -> Int)|> <|Nested [a]|>|<
+    ...
+  instantiate, fresh b:
+  Int UNIFY >|<|(Nested b -> Int)|> <|Nested [a]|>|<
+    ...
+  Nested b UNIFY Nested [a]
+  Int UNIFY Int
+    ...
+  b UNIFY [a]
+  Int UNIFY Int
+    ...
+  b = [a]:
+  Int UNIFY Int
+  QED
+
+================================
+## where apply and its second arg are super polymorphic
+apply f [] = f
+apply f [first, rest] = apply (f first) rest
+
+desugars to:
+
+fix apply* =
+  \f args* ->
+    ({[] = \[] -> f,
+      [_, _] = \[first, rest*] -> apply (f first) rest
+     } @ (type-of args)
+    ) args
+
+for instance, if
+  func : A -> B
+then
+  apply func : >|\args* ->
+                   ({[] = \[] -> <|A -> B|>,
+                     [A, _] = \[<|A|>, rest*] -> apply <|B|> rest
+                    } @ (type-of args)
+                   ) args|<
+which basically means that giving f the type A -> B constrains args to be
+  args : [] | [A, _]
+where | means 'or'
+
+constraining in the other direction also works; specifying part of the
+structure of 'args' will demand a certain type from 'f'
+
+\func more* -> apply func [A, [B, more]] :
+(A -> B -> R) -> >|\more* -> apply <|R|> more|<
+
+================================
+## format' and the first arg of format and format' is super polymorphic
+format str = format' str ""
+  where format' ("%s" ++ rest) acc = \str -> format' rest (acc ++ str)
+        format' ("%%" ++ rest) acc = format' rest (acc ++ "%")
+        format' (ch :: rest) acc = format' rest (acc ++ [ch])
+        format' "" acc = acc
+
+desugars to (leaving case analysis sugared for simplicity):
+
+format =
+\str* -> (fix format'* =
+  \str* acc -> case str of
+                 ("%s" ++ rest*) -> \str -> format' rest (acc ++ str)
+                 ("%%" ++ rest*) -> format' rest (acc ++ "%")
+                 (ch :: rest*) -> format' rest (acc ++ [ch])
+                 "" -> acc
+  ) str ""
+
+for instance:
+
+\more* -> format ("this: %s, and " ++ more)
+  : >| \more* -> <| String -> >| (fix format'* =
+          \str* -> <| String -> >| case str of
+            ("%s" ++ rest*) -> <| String -> >| format' rest <|String|> |< |>
+            ("%%" ++ rest*) -> format' rest <|String|>
+            (ch :: rest*) -> format' rest <|String|>
+            "" -> <|String|> |< |>
+                                 ) more <|String|> |< |> |<
+
+================================================================
 Flesh these examples out in terms of how type inference works:
 
 ================================
@@ -24,7 +167,7 @@ let pptwo = \f* x -> f (f x)
 in pptwo pptwo
 
 ================================
-consider this to be apply f* args*:
+consider this to be apply f args*:
 (note that empty tuple [] and pair [x, y] have different types)
 
 apply f [] = f
