@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns, RankNTypes #-}
 
 module Examples where
 
@@ -20,12 +20,16 @@ data Expr' key expr = Var key
                     | App expr expr
 newtype Expr key = Expr (Expr' key (Expr key))
 
-class Misc a where
-  misc :: a -> String
+{-class Misc a where-}
+  {-misc :: a -> String-}
 
-data (Misc a) => MiscHolder a = MH a
-                              | MH2 a a
-  deriving (Show)
+{-data (Misc a) => MiscHolder a = MH a-}
+                              {-| MH2 a a-}
+  {-deriving (Show)-}
 
-instance Misc Int where
-  misc x = show $ x + 1
+{-instance Misc Int where-}
+  {-misc x = show $ x + 1-}
+
+-- retident :: Int -> forall a. a -> a
+retident 0 = \x -> x
+retident _ = fst (retident 0, ((retident 0) 4, (retident 0) 'c'))
