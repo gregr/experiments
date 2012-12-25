@@ -1,3 +1,43 @@
+assertions?
+
+enforce satisfaction of arbitrary properties by attaching proof obligations to
+definitions in the form of predicates
+  how much automatic solving can be achieved?
+  how are manual solutions specified?
+
+================================================================
+two different sorts of super polymorphic bindings could be distinguished
+  (not sure if this is necessary to make things work)
+  polymorphic vs. dynamic
+  polymorphic is mostly concerned with types depending on types
+    if a polymorphic arg is itself polymorphic/dynamic, it's inlined
+  dynamic is concerned with types depending on values
+    it's an error to provide a simple variable as a dynamic arg
+alternatively, if these concepts are kept together, things would be simpler
+  (preferred approach)
+  providing simple vars as poly/dynamic args forces simple typing
+in either case
+  recursive dynamic applications should be memoized to avoid infinite unrolling
+    repeated application to the same args leaves evaluation incomplete
+      this should be temporary until more dynamic args are specified
+    it's an error for evaluation to be incomplete when all dynamic args have
+    been specified; is this only possible by passing simple vars?
+
+give 'fix' binders their own form of polymorphism to support poly recursion
+  if a type annotation is given, unification proceeds as usual
+  during type inference for the body, a fix binder is bottom: forall a. a
+  all unification attempts with the binder are saved as constraints for later
+  inference obtains a candidate type (may still be an incomplete poly type)
+  once all (if any) required poly bindings are provided
+    the full type should be generalized and used to solve the constraints
+      solving the constraints is just for discharging proofs
+      it should not affect the resulting type
+    internal (recursive) completions of a fix binder are resolved independently
+      this will probably discharge proofs before the parent is completed
+      in fact, i think that in most poly type cases all proofs will be
+      discharged before parent completion
+
+================================================================
 it turns out that super polymorphism can also be used for dependent types
   case analysis desugars into record access
   record access typing involves unifying all possible result types
