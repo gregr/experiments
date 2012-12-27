@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, RankNTypes #-}
+{-# LANGUAGE NamedFieldPuns, RankNTypes, ExistentialQuantification, MultiParamTypeClasses, FlexibleInstances, TypeFamilies #-}
 
 module Examples where
 
@@ -30,6 +30,16 @@ newtype Expr key = Expr (Expr' key (Expr key))
 {-instance Misc Int where-}
   {-misc x = show $ x + 1-}
 
--- retident :: Int -> forall a. a -> a
+retident :: Int -> forall a. a -> a
 retident 0 = \x -> x
 retident _ = fst (retident 0, ((retident 0) 4, (retident 0) 'c'))
+
+-- no need for dependent types for this example
+class ApplyTup args func result where
+  applyTup :: func -> args -> result
+
+instance (a ~ b) => ApplyTup () a b where
+  applyTup result () = result
+
+instance (ApplyTup b d result, a ~ c) => ApplyTup (a, b) (c -> d) result where
+  applyTup f (arg, rest) = applyTup (f arg) rest
