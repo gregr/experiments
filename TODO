@@ -1,3 +1,103 @@
+wanted: size inference (and polymorphism) to calculate totality information
+and distinguish inductive and coinductive situations
+  polymorphism over inductive/coinductive uses
+    the same function may have different required evaluation orders, depending
+
+the way to avoid non-termination is to never evaluate under neutral exprs
+unless new dynamic bindings are satisfied
+  evaluation only continues with exprs whose head has a dynamic binding in
+  a neutral position
+    let dv stand for a dynamic var
+    dv is in a neutral position at the head of the following exprs:
+      dv ## the lone var
+      (dv expr)
+      (case dv of ...)
+      (\... -> dv)
+      (type-of dv)
+    but not in the following:
+      (expr dv)
+    but the 'dv' sub-expr itself is neutral, and it alone is evaluated
+  btw, 'type-of' only operates dynamically, and so preserves parametricity
+    it won't produce more than a skolem constant for any term whose type ends
+    up as a quantified type var
+
+allow re-entering even under lambdas upon instantiation of a neutral dynamic
+binding, but this is only once at each such site, not repeatedly during
+recursive calls; repetition only happens when evaluation naturally reaches
+such a point; this way, totality should ensure termination
+
+dynamic application to monomorphic vars force monomorphic type resolution of
+that dynamic lambda, but not necessarily everything underneath
+monomorphic application to dynamic vars produce new monomorphic constraints
+for such vars, similar to intersection types
+  if such a dynamic var is only used at monomorphic positions, and all of its
+  generated constraints can be unified, it need not remain dynamic and is
+  monomorphised, ie:
+    toList : forall a. a -> [a]
+    (\f* x* -> f (f x)) toList
+    \x* -> toList (toList x) ## x only used monomorphically, drop the star
+    \x -> toList (toList x) ## full type : forall a. a -> [[a]]
+   now the original dynamic lambda should show the following type
+   (only at that position, other exprs with this lambda are unaffected, even
+   if coming from the same name/definition):
+    ((\f* x* -> f (f x)) : forall a. (forall b. b -> [b]) -> a -> [[a]]) toList
+   in this case, you get something similar to what the ML^F-related family of
+   type systems gives, even without annotations for lambdas not defined inline
+   with its application (though you still need the dynamic binder annotation)
+actually, an even simpler model
+  monomorphic application to dynamic vars still produces new monomorphic
+  constraints, (together forming an intersection type)
+  simple vs. dynamic binding doesn't otherwise matter for any application, and
+  evaluation always proceeds as usual up to neutral terms
+  at any point that there are dynamic lambdas that cannot be erased, the vars
+  they bind are monomorphised
+    unless some unsafe/dynamic flag is enabled yada yada
+    type vars that have not yet been unified nor quantified are considered
+    dynamic entry points for the purpose of determining still-reachable dynamic
+    lambdas
+      if a type var ends up unifying with a concrete type, that concrete type
+      supplies an abstract value that may satisfy continued dynamic evaluation
+  the above example still turns out the same way after such monomorphing
+as mentioned above, unifying type variables to a head-concrete form (a type
+constructor's args may still be vars) is also an event triggering continued
+dynamic evaluation (so is quantifying a type var? it becomes skolemized?)
+what is the parallel between dynamic and type vars?
+  dynamic evaluation operates in the type checking phase, so in this way,
+  dynamic vars and type vars are similar, though they differ in that type vars
+  unify whereas dynamic vars are substituted during reduction
+
+how do value ranges get tracked?
+  in some way similar to polymorphic variants?
+
+if it's possible to access a record whose key range is incomplete
+  forces key expr to have dynamic value? upward propagation?
+    maybe it's better to just end up with a type error: no variant will match
+  otherwise, value can be monomorphic since the full range is accessible
+should the same happen if access returns non-unifiable alternatives?
+  or maybe it could be due to an alternative containing a dynamic expr
+  but it's not just dispatching on a value's type that causes this
+    incomplete dispatch can also cause it
+    or complete dispatch leading to a dynamic expr
+final thoughts here: don't do anything special for now, do something similar
+to polymorphic variant unification; programmer can mark vars dynamic in
+response to these type errors
+
+key select vs. variant dispatch
+
+records with full key ranges allow for monomorphic key vars
+records with partial ranges need dynamic key vars or something similar to
+variants (unless a constraint solving system is developed)
+
+constraint solving would propagate assertions upward until they are either
+found to have been calculated, or concrete values are found from which the
+asserted property can be calculated
+  examples:
+    0 <= x < 10
+    length y > 0
+    z : List a {<Cons=(a, List a)>} ## as opposed to a full 'List a'
+    Sorted xs
+
+================================================================
 assertions?
 
 enforce satisfaction of arbitrary properties by attaching proof obligations to
