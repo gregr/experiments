@@ -8,48 +8,59 @@ import Control.Monad.State
 {-import Control.Monad.Error-}
 {-import Control.Monad.Identity-}
 
-newtype FreeName = FreeName Int
-  deriving (Show, Eq, Ord)
-newtype BoundName = BoundName Int
-  deriving (Show, Eq, Ord)
-bn_inc (BoundName idx) = BoundName $ idx + 1
-bn_lift (BoundName idx) (BoundName target) =
+type Address = Int
+type Name = Int
+
+{-newtype FreeName = FreeName Int-}
+  {-deriving (Show, Eq, Ord)-}
+{-newtype BoundName = BoundName Int-}
+  {-deriving (Show, Eq, Ord)-}
+bn_lift idx target =
   if idx >= target then idx + 1 else idx
-bn_lower (BoundName idx) (BoundName target) =
+bn_lower idx target =
   if idx == target then Nothing else
-    Just $ BoundName (if idx > target then idx - 1 else idx)
+    Just (if idx > target then idx - 1 else idx)
 -- TODO: lift to make room for a new lambda binding; does this operation make sense on bn?
 -- bn_abstract ... =
 bn_substitute idx target val =
   case bn_lower idx target of
     Nothing -> val
-    Just bname -> BoundVar bname
+    Just bname -> Var bname
 
-data TermT term = FreeVar FreeName | BoundVar BoundName | Lam term | App term term
+data TermT term = Var Name | Lam term | App term term
   deriving (Show, Eq)
+
+-- TODO: where to track open binders?
+type Labeled term = ((), term)
+type Addressed term = Either Address term
+data FinalTerm = FinalTerm (Addressed (Labeled (TermT FinalTerm)))
 -- TODO: term wrappers?
-term_substitute recsub term target@(BoundName idx) val = tsub term
+term_substitute rtsub term target val = tsub term
   where
-    tsub (BoundVar bname) = bn_substitute bname target val
-    tsub (Lam body) = Lam $ recsub body (BoundName $ idx + 1) val
-    tsub (App proc arg) = App (recsub proc target val) (recsub arg target val)
+    tsub (Var bname) = bn_substitute bname target val
+    tsub (Lam body) = Lam $ rtsub body (target + 1) val
+    tsub (App proc arg) = App (rtsub proc target val) (rtsub arg target val)
 
-data Graph term = Graph{gr_index :: M.Map FreeName term, gr_next :: FreeName}
-  deriving (Show, Eq)
-graph_new = Graph{gr_index = M.empty, gr_next = FreeName 0}
-graph_insert term = do
-  graph <- get
-  let
-    index = gr_index graph
-    fnext = gr_next graph
-    FreeName next = fnext
-    index' = M.insert fnext term index
-  put $ Graph{gr_index = index', gr_next = FreeName (next + 1)}
-  return fnext
+{-data Graph term = Graph{gr_index :: M.Map FreeName term, gr_next :: FreeName}-}
+  {-deriving (Show, Eq)-}
+{-graph_new = Graph{gr_index = M.empty, gr_next = FreeName 0}-}
+{-graph_insert term = do-}
+  {-graph <- get-}
+  {-let-}
+    {-index = gr_index graph-}
+    {-fnext = gr_next graph-}
+    {-FreeName next = fnext-}
+    {-index' = M.insert fnext term index-}
+  {-put $ Graph{gr_index = index', gr_next = FreeName (next + 1)}-}
+  {-return fnext-}
 
-type GraphTerm = TermT FreeName
-data BindingGraphTerm = BindingGraphTerm{bnd_term :: GraphTerm, bnd_deps :: S.Set BoundName}
-type BindingGraph = Graph BindingGraphTerm
+{-type GraphTerm = TermT FreeName-}
+{-data BindingGraphTerm = BindingGraphTerm{bnd_term :: GraphTerm, bnd_deps :: S.Set BoundName}-}
+{-type BindingGraph = Graph BindingGraphTerm-}
+
+
+
+
 
 {-data Substitution term = Offset Int | Bind term-}
 {---newtype Env term = Env (M.Map BoundName term)-}
