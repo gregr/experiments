@@ -25,8 +25,7 @@ bn_substitute idx target val =
     Nothing -> val
     Just bname -> BoundVar bname
 
--- use free vars after all; graphs under lambdas
-data TermT term = FreeVar FreeName | BoundVar BoundName | Lam {-graph-} term | App term term
+data TermT term = FreeVar FreeName | BoundVar BoundName | Lam term | App term term
   deriving (Show, Eq)
 -- TODO: term wrappers?
 term_substitute recsub term target@(BoundName idx) val = tsub term
