@@ -1,0 +1,101 @@
+data list = [] | _ : list
+
+append xs ys =
+  case xs of
+    [] -> ys
+    z : zs -> z : append zs ys
+
+reverse xs =
+  case xs of
+    [] -> []
+    y : ys -> append (reverse ys) [y]
+
+append-associativity = theorem
+  forall as bs cs
+    equal
+      append (append as bs) cs
+      append as (append bs cs)
+
+optimize reverse
+
+================================================================
+
+reverse xs =
+  case xs of
+    [] -> []
+    y : ys -> append (reverse ys) [y]
+
+h1 ys qs = append (reverse ys) qs
+
+# unfold append
+h1 ys qs = case (reverse ys) of
+            [] -> qs
+            z : zs -> z : append zs qs
+
+# unfold reverse
+h1 ys qs = case (
+                case ys of
+                  [] -> []
+                  w : ws -> append (reverse ws) [w]
+              ) of
+                [] -> qs
+                z : zs -> z : append zs qs
+
+# case propagation
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> case (append (reverse ws) [w]) of
+                        [] -> qs
+                        z : zs -> z : append zs qs
+
+# unfold append
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> case (
+                        case (reverse ws) of
+                          [] -> [w]
+                          x : xs -> x : append xs [w]
+                      ) of
+                        [] -> qs
+                        z : zs -> z : append zs qs
+
+# case propagation
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> case (reverse ws) of
+                        [] -> w : append [] qs
+                        x : xs -> x : append (append xs [w]) qs
+
+# rewrite append-associativity (this brings us from quadratic to linear time)
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> case (reverse ws) of
+                        [] -> w : append [] qs
+                        x : xs -> x : append xs (append [w] qs)
+
+# simplify
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> case (reverse ws) of
+                        [] -> w : qs
+                        x : xs -> x : append xs (w : qs)
+
+# fold append
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> append (reverse ws) (w : qs)
+
+# rewrite h1
+h1 ys qs = case ys of
+            [] -> qs
+            w : ws -> h1 ws (w : qs)
+
+reverse xs =
+  case xs of
+    [] -> []
+    y : ys -> h1 ys [y]
+
+# fold h1
+reverse xs = h1 xs []
+
+# reverse was transformed from time O(n^2) to O(n)

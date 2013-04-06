@@ -1,0 +1,273 @@
+data bool = false | true
+
+data nat =
+  O : nat
+  S : nat -> nat
+
+plus a b =
+  case a of
+    O -> b
+    S n -> S (plus n b)
+
+eq a b =
+  case a of
+    O ->
+      case b of
+        O -> true
+        S n -> false
+    S n ->
+      case b of
+        O -> false
+        S m -> eq n m
+
+theorem
+  forall x
+    eq (plus x O) x
+
+----
+  forall x
+    eq (plus x O) x
+
+  forall x
+    case (plus x O) of
+      O ->
+        case x of
+          O -> true
+          S n -> false
+      S n ->
+        case x of
+          O -> false
+          S m -> eq n m
+
+  forall x
+    case (case x of
+            O -> O
+            S n -> S (plus n O)) of
+      O ->
+        case x of
+          O -> true
+          S n -> false
+      S n ->
+        case x of
+          O -> false
+          S m -> eq n m
+
+  forall x
+    case x of
+      O ->
+        case x of
+          O -> true
+          S n -> false
+      S n ->
+        case S (plus n O) of
+          O ->
+            case x of
+              O -> true
+              S n -> false
+          S n ->
+            case x of
+              O -> false
+              S m -> eq n m
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case x of
+          O -> false
+          S m -> eq (plus n O) m
+
+  forall x
+    case x of
+      O -> true
+      S n -> eq (plus n O) n
+
+h x =
+  case x of
+    O -> true
+    S n -> h n
+
+h x = true
+
+----
+
+gt a b =
+  case a of
+    O -> false
+    S n ->
+      case b of
+        O -> true
+        S m -> gt n m
+
+lt a b =
+  case b of
+    O -> false
+    S n ->
+      case a of
+        O -> true
+        S m -> gt n m
+
+theorem
+  forall x
+    case gt x 2 of
+      false -> true
+      true -> gt x 1
+
+theorem
+  forall a b
+    case gt a b of
+      false -> true
+      true -> lt b a
+
+----
+
+theorem
+  forall x
+    case gt x 2 of
+      false -> true
+      true -> gt x 1
+
+  forall x
+    case (case x of
+            O -> false
+            S n ->
+              case (S (S O)) of
+                O -> true
+                S m -> gt n m) of
+      false -> true
+      true -> gt x 1
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case (case (S (S O)) of
+                O -> true
+                S m -> gt n m) of
+          false -> true
+          true -> gt x 1
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case (gt n (S O)) of
+          false -> true
+          true -> gt (S n) 1
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case (case n of
+                O -> false
+                S n -> gt n O) of
+          false -> true
+          true -> gt (S n) (S O)
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case n of
+          O -> true
+          S n -> case gt n O of
+                   false -> true
+                   true -> gt (S n) (S O)
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case n of
+          O -> true
+          S n -> case gt n O of
+                   false -> true
+                   true -> gt n O
+
+  forall x
+    case x of
+      O -> true
+      S n ->
+        case n of
+          O -> true
+          S n -> case gt n O of
+                   false -> true
+                   true -> true
+
+  forall x
+    true
+
+----
+
+theorem
+  forall a b
+    case gt a b of
+      false -> true
+      true -> lt b a
+
+  forall a b
+    case a of
+      O -> true
+      S n ->
+        case b of
+          O -> lt b a
+          S m -> case gt n m of
+                  false -> true
+                  true -> lt b a
+
+  forall a b
+    case a of
+      O -> true
+      S n ->
+        case b of
+          O ->
+            case a of
+              O -> false
+              S n ->
+                case b of
+                  O -> true
+                  S m -> gt n m
+          S m ->
+            case gt n m of
+              false -> true
+              true ->
+                case a of
+                  O -> false
+                  S n ->
+                    case b of
+                      O -> true
+                      S m -> gt n m
+
+  forall a b
+    case a of
+      O -> true
+      S n ->
+        case b of
+          O -> true
+          S m ->
+            case gt n m of
+              false -> true
+              true ->
+                S n ->
+                  case b of
+                    O -> true
+                    S m -> gt n m
+
+  forall a b
+    case a of
+      O -> true
+      S n ->
+        case b of
+          O -> true
+          S m ->
+            case gt n m of
+              false -> true
+              true ->
+                S n ->
+                  case b of
+                    O -> true
+                    S m -> true
+
+  forall a b
+    true

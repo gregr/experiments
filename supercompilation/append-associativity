@@ -1,0 +1,99 @@
+data list = [] | _ : list
+
+append xs ys =
+  case xs of
+    [] -> ys
+    z : zs -> z : append zs ys
+
+theorem
+  forall as bs cs
+    equal
+      append (append as bs) cs  # g
+      append as (append bs cs)  # h
+
+================================================================
+g as bs cs = append (append as bs) cs
+
+# unfold innermost first
+= append (
+    case as of
+      [] -> bs
+      z : zs -> z : append zs bs
+  ) cs
+
+# unfold
+= case (
+    case as of
+      [] -> bs
+      z : zs -> z : append zs bs
+  ) of
+    [] -> cs
+    w : ws -> w : append ws cs
+
+# propagate cases
+= case as of
+    [] -> case bs of
+            [] -> cs
+            w : ws -> w : append ws cs
+    z : zs -> z : append (append zs bs) cs
+
+# rewrite g
+= case as of
+    [] -> case bs of
+            [] -> cs
+            w : ws -> w : append ws cs
+    z : zs -> z : g zs bs cs
+
+================================================================
+h as bs cs = append as (append bs cs)
+
+# unfold outermost to destruct same var as in 'g'
+= case as of
+    [] -> (append bs cs)
+    z : zs -> z : append zs (append bs cs)
+
+# unfold
+= case as of
+    [] -> case bs of
+            [] -> cs
+            z : zs -> z : append zs cs
+    z : zs -> z : append zs (append bs cs)
+
+# alpha rename
+= case as of
+    [] -> case bs of
+            [] -> cs
+            w : ws -> w : append ws cs
+    z : zs -> z : append zs (append bs cs)
+
+# rewrite h
+= case as of
+    [] -> case bs of
+            [] -> cs
+            w : ws -> w : append ws cs
+    z : zs -> z : h zs bs cs
+
+================================================================
+
+theorem
+  forall as bs cs
+    equal
+      append (append as bs) cs
+      append as (append bs cs)
+
+theorem
+  equal g h
+
+g as bs cs = case as of
+              [] -> case bs of
+                      [] -> cs
+                      w : ws -> w : append ws cs
+              z : zs -> z : g zs bs cs
+
+h as bs cs = case as of
+              [] -> case bs of
+                      [] -> cs
+                      w : ws -> w : append ws cs
+              z : zs -> z : h zs bs cs
+
+# g and h are alpha-equivalent
