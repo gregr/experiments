@@ -42,7 +42,7 @@ import Control.Monad.State
 type Address = Int
 type Name = Int
 
-data ValueT term = Lam term -- | Tuple [Name] -- TODO: constructors must be in ANF
+data ValueT term = Lam term | Tuple [Name] -- TODO: constructors must be in ANF
   deriving (Show, Eq)
 data TermT term = Value (ValueT term) | Var Name | LetRec [(Name, term)] term | App term term
   deriving (Show, Eq)
@@ -55,5 +55,34 @@ newtype ALTerm = ALTerm (Addressed (Labeled (TermT ALTerm)))
 
 newtype SimpleTerm = SimpleTerm (TermT SimpleTerm)
   deriving (Show, Eq)
--- TODO: with zipper context?
---simple_eval
+
+data Env term = Env [(Env term, ValueT term)]
+  deriving (Show, Eq)
+env_lookup (Env vals) name = vals !! name
+env_extend (Env vals) val = Env $ val : vals
+
+-- TODO: evaluate with zipper context?
+
+data EvalCtrl a c d = EvalCtrl { ctrl_eval :: a, ctrl_env_lookup :: c, ctrl_env_extend :: d }
+
+applyT ctrl (Lam body) arg env = eval body env'
+  where eval = ctrl_eval ctrl
+        env' = ctrl_env_extend ctrl env arg
+applyT _ _ _ _ = error "bad proc"
+
+evalT ctrl (Value val) env = (env, val)
+evalT ctrl (Var name) env = ctrl_env_lookup ctrl env name
+evalT ctrl (App tproc targ) env = applyT ctrl proc arg penv
+  where (penv, proc) = eval tproc env
+        arg = eval targ env
+        eval = ctrl_eval ctrl
+
+simple_ctrl = EvalCtrl simple_eval env_lookup env_extend
+simple_eval (SimpleTerm term) env = evalT simple_ctrl term env
+
+app tp ta = SimpleTerm $ App tp ta
+lam = SimpleTerm . Value . Lam
+var = SimpleTerm . Var
+
+test_term = (app (lam $ var 0) (lam $ lam $ var 1))
+test = simple_eval test_term $ Env []
