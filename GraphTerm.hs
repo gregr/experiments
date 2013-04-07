@@ -41,25 +41,11 @@ import Control.Monad.State
 
 type Address = Int
 type Name = Int
+
 data ValueT term env value = Lam term env | Tuple [value]
   deriving (Show, Eq)
 data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term
   deriving (Show, Eq)
-
--- TODO: where to track open binders?
-type Labeled term = ((), term)
-type Addressed term = Either Address term
-newtype ALTerm = ALTerm (Addressed (Labeled (TermT ALTerm)))
-  deriving (Show, Eq)
-
-newtype SimpleTerm = SimpleTerm { simple_term :: (TermT SimpleTerm) }
-  deriving (Show, Eq)
-newtype SimpleValue = SimpleValue { simple_value :: (ValueT SimpleTerm SimpleEnv SimpleValue) }
-  deriving (Show, Eq)
-newtype SimpleEnv = SimpleEnv [SimpleValue]
-  deriving (Show, Eq)
-simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
-simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
 
 -- TODO: evaluate with zipper context?
 
@@ -82,6 +68,18 @@ evalT ctrl (App tproc targ) env = apply proc arg
         eval = ctrl_eval ctrl
         apply = ctrl_apply ctrl
 
+----------------------------------------------------------------
+-- Simple guiding example
+----------------------------------------------------------------
+newtype SimpleTerm = SimpleTerm { simple_term :: (TermT SimpleTerm) }
+  deriving (Show, Eq)
+newtype SimpleValue = SimpleValue { simple_value :: (ValueT SimpleTerm SimpleEnv SimpleValue) }
+  deriving (Show, Eq)
+newtype SimpleEnv = SimpleEnv [SimpleValue]
+  deriving (Show, Eq)
+simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
+simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
+
 simple_ctrl = EvalCtrl simple_eval simple_apply simple_env_lookup simple_env_extend
 simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
 simple_apply (SimpleValue proc) arg = simple_value $ applyT simple_ctrl proc arg
@@ -92,3 +90,12 @@ var = SimpleTerm . Var
 
 test_term = (app (lam $ var 0) (lam $ lam $ var 1))
 test = simple_eval test_term $ SimpleEnv []
+
+----------------------------------------------------------------
+-- Somewhat more heavy-duty approach
+----------------------------------------------------------------
+-- TODO: where to track open binders?
+type Labeled term = ((), term)
+type Addressed term = Either Address term
+newtype ALTerm = ALTerm (Addressed (Labeled (TermT ALTerm)))
+  deriving (Show, Eq)
