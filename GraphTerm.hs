@@ -42,6 +42,17 @@ import Control.Monad.State
 type Address = Int
 type Name = Int
 
+type Nat = Integer
+type SymUid = String
+type SymName = String
+type SymSet = (SymUid, [SymName])
+type Symbol = (SymUid, SymName)
+
+data ConstFiniteSet = CSNat [Nat] | CSInt [Integer] | CSSym SymSet
+  deriving (Show, Eq)
+data Constant = CNat Nat | CInt Integer | CSym Symbol | CInterpreted ConstFiniteSet Nat
+  deriving (Show, Eq)
+
 -- (ordered) (sub)sets of: nats; ints; symbols
 --   unique ids for sets so tags can be distinguished/unforgeable
 --   layering/association of ordered sets over nats to describe records on top of tuples
@@ -52,9 +63,9 @@ type Name = Int
 -- recombine: form a new tuple given [(tuple, range)]
 --   this can be used to achieve forms of copying, concatenation and slicing
 -- constructor tagging
-data ValueT term env value = Lam term env | Tuple [value]
+data ValueT term env value = Lam term env | Tuple [value] | Const Constant | Tagged Constant value
   deriving (Show, Eq)
-data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term
+data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term | TaggedGetConst term | TaggedGetPayload term
   deriving (Show, Eq)
 
 -- TODO: evaluate with zipper context?
@@ -64,24 +75,36 @@ data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)]
 --     any fixed eval order can also be defined
 --       maintain and traverse a sequence of get/put functions over a context's remaining 'still-a-term' subterms
 
-data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a, ctrl_apply :: b, ctrl_env_lookup :: c, ctrl_env_extend :: d }
+data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a, ctrl_unwrap :: b, ctrl_env_lookup :: c, ctrl_env_extend :: d }
 
-applyT ctrl (Lam body env) arg = eval body env'
-  where eval = ctrl_eval ctrl
-        env' = ctrl_env_extend ctrl env arg
-applyT _ _ _ = error "bad proc"
+evalT ctrl term env = evT term
+  where
+    eval = ctrl_eval ctrl
+    unwrap = ctrl_unwrap ctrl
+    env_lookup = ctrl_env_lookup ctrl
+    env_extend = ctrl_env_extend ctrl
 
-constructT ctrl (Lam body ()) env = Lam body env
-constructT ctrl (Tuple vals) env = Tuple $ map (`eval` env) vals
-  where eval = ctrl_eval ctrl
+    apply proc arg = case unwrap proc of
+      Lam body penv -> unwrap $ eval body env'
+        where env' = env_extend penv arg
+      otherwise -> error "bad proc"
 
-evalT ctrl (Value val) env = constructT ctrl val env
-evalT ctrl (Var name) env = ctrl_env_lookup ctrl env name
-evalT ctrl (App tproc targ) env = apply proc arg
-  where proc = eval tproc env
-        arg = eval targ env
-        eval = ctrl_eval ctrl
-        apply = ctrl_apply ctrl
+    untag ttagged = case unwrap $ eval ttagged env of
+      Tagged const payload -> (const, payload)
+      otherwise -> error "not a tagged value"
+
+    construct (Lam body ()) = Lam body env
+    construct (Tuple vals) = Tuple $ map (`eval` env) vals
+    construct (Const const) = Const const
+    construct (Tagged const val) = Tagged const $ eval val env
+
+    evT (Value val) = construct val
+    evT (Var name) = env_lookup env name
+    evT (App tproc targ) = apply proc arg
+      where proc = eval tproc env
+            arg = eval targ env
+    evT (TaggedGetConst ttagged) = Const . fst $ untag ttagged
+    evT (TaggedGetPayload ttagged) = unwrap . snd $ untag ttagged
 
 ----------------------------------------------------------------
 -- Simple guiding example
@@ -95,9 +118,8 @@ newtype SimpleEnv = SimpleEnv [SimpleValue]
 simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
 simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
 
-simple_ctrl = EvalCtrl simple_eval simple_apply simple_env_lookup simple_env_extend
+simple_ctrl = EvalCtrl simple_eval simple_value simple_env_lookup simple_env_extend
 simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
-simple_apply (SimpleValue proc) arg = simple_value $ applyT simple_ctrl proc arg
 
 app tp ta = SimpleTerm $ App tp ta
 lam body = SimpleTerm . Value $ Lam body ()
