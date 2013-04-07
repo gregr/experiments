@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Maybe
 import Control.Monad.State
+import Data.Graph.Inductive.Query.Monad ((><))
 {-import Control.Monad.Error-}
 {-import Control.Monad.Identity-}
 
@@ -65,7 +66,7 @@ data Constant = CNat Nat | CInt Integer | CSym Symbol | CInterpreted ConstFinite
 -- constructor tagging
 data ValueT term env value = Lam term env | Tuple [value] | Const Constant | Tagged Constant value
   deriving (Show, Eq)
-data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term | TaggedGetConst term | TaggedGetPayload term
+data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term | TupleRecombine [(term, (term, term))] | TaggedGetConst term | TaggedGetPayload term
   deriving (Show, Eq)
 
 -- TODO: evaluate with zipper context?
@@ -98,11 +99,30 @@ evalT ctrl term env = evT term
     construct (Const const) = Const const
     construct (Tagged const val) = Tagged const $ eval val env
 
+    asTup (Tuple vals) = vals
+    asTup _ = error "not a Tuple"
+
+    unConst (Const const) = const
+    unConst _ = error "not a Const"
+
+    asNat val = case unConst val of
+      CNat nat -> fromInteger nat -- fromInteger needed for recombine take/drop
+      otherwise -> error "not a Nat"
+
     evT (Value val) = construct val
     evT (Var name) = env_lookup env name
     evT (App tproc targ) = apply proc arg
       where proc = eval tproc env
             arg = eval targ env
+    evT (TupleRecombine tslices) = Tuple . concat $ map chop slices
+      where -- NOTE: end is not inclusive in range
+        eu = unwrap . (`eval` env)
+        slices = map (eu >< (eu >< eu)) tslices
+        chop (vtup, (vstart, vend)) = take (end - start) $ drop start tup
+          where
+            tup = asTup vtup
+            start = asNat vstart
+            end = asNat vend
     evT (TaggedGetConst ttagged) = Const . fst $ untag ttagged
     evT (TaggedGetPayload ttagged) = unwrap . snd $ untag ttagged
 
@@ -124,8 +144,17 @@ simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
 app tp ta = SimpleTerm $ App tp ta
 lam body = SimpleTerm . Value $ Lam body ()
 var = SimpleTerm . Var
+tuple = SimpleTerm . Value . Tuple
+constant = SimpleTerm . Value . Const
+recombine = SimpleTerm . TupleRecombine
+cnat = constant . CNat
 
-test_term = (app (lam $ var 0) (lam $ lam $ var 1))
+test_tup0 = tuple [cnat 0, cnat 1, cnat 2, cnat 3, cnat 4, cnat 5, cnat 6]
+test_tup1 = tuple [cnat 7, cnat 8, cnat 9, cnat 10, cnat 11, cnat 12]
+test_term = tuple [cnat 4,
+                   (app (lam $ var 0) (lam $ lam $ var 1)),
+                   recombine [(test_tup0, (cnat 2, cnat 6)),
+                              (test_tup1, (cnat 1, cnat 4))]]
 test = simple_eval test_term $ SimpleEnv []
 
 ----------------------------------------------------------------
