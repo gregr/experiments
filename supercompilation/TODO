@@ -1,0 +1,94 @@
+================================================================
+= dependency graph database
+================================================================
+
+creation of new nodes
+  definition of terms
+  evaluation of terms
+    evaluation traces track equalities between terms and their reductions and expansions
+
+node data
+  metadata/documentation
+  original definition
+  results of various analyses
+    evaluation traces
+
+lookup
+  index/location (will this be useful outside of debugging? nodes may move)
+  tag/uid
+  uri (human names for uids of current/previous roots)
+  direct term reference (traverse a dependency edge in the graph); references may need to be indirect to be efficient wrt node relocation (local env points to a particular uid instead of an index)
+  ambiguous search by fuzzy name or by metadata
+  definitional equality modulo renaming; probably something like a trie lookup
+  ambiguous search by fuzzy definitional or analyzed property matching (ie, type-based search as in hoogle)
+  homeomorphic embeddings; via tag bags?
+
+gc: current roots, previously roots, never roots
+
+a focus (see sub-db ideas below) corresponds to a collection of roots; would correspond to what the user (or some analysis) is or had been manipulating as a group; example: sub-graphs built and used by a supercompiler
+
+producing completely standalone programs
+
+producing programs that require dynamic linking
+  may require manual identification of common dependencies to build specific dlls?
+  or just consider these to depend on the entire graph db? then the program is simply like any other current root
+  maybe the interesting idea here is to build sub-databases; although a sub-database is really just a particular collection of roots if it is not completely independent of a parent database; over the network, possible to send a copy of only part of the main db needed for a given program/focus
+  sub-db defined as graph without any incoming dependency nodes from other dbs, but allowed to depend on other dbs
+    interesting sub-dbs to track may be those that are maximal wrt a single focus; nodes shared by these 'focus dbs' could be analyzed to find natural dll boundaries, but dll may not be a useful concept
+      this is starting to look like region analysis
+
+================================================================
+= termination analysis
+================================================================
+
+CBV supercompilation via strictness/linearity/purity analysis
+  possible without having done any termination analysis
+
+more expressive assertion of function termination properties via case analysis on algebraic parameters? (base cases for each constructor, plus one for delay/thunk)
+  this is probably overkill; instead, just use an approach similar to ACL2 with measures and well-founded orders
+  what approaches will work for Y/U-combinator-like non-termination detection?
+    simple typing: if simply typed, letrec/fix would be the only way to introduce non-termination
+    sub-tree relation for size comparison of closures
+  also, see how well supercompiler generalization can produce relevant info
+
+explicit delay
+  indicate a recursive function's tolerance for being interpreted as cofix
+  normally proof of full termination is attempted; in this case, also attempt to prove productivity in case full termination fails
+
+================================================================
+= supercompilation
+================================================================
+
+Figure out if it's worth attempting to supercompile "bottom up" when analyzing new definitions
+
+supercompile reduces state as far as possible (until whistle #1, there's a whistle internal to reduce as well) before splitting; split will re-invoke supercompile on subterms
+  this is memoized
+
+evaluation rules: terminating portion for state normalization interleaved with full beta rule (deref indirection to apply function) and termination test (whistle #2)
+  indirections: vars guaranteed to point to a 'value' in heap
+  what about in a CBV language where laziness is explicit?
+
+memo: name, free vars, alpha-normalized state; match via alpha-equivalence
+
+split: stuck and whistled states
+
+tag bags: tags only generated initially, one per program subterm; tag bag separates heap, focus, and stack tags
+  tagging of reduced terms must somehow be based on existing tags
+    set of tags should remain finite
+  termination test, apply current state bag to all previous bags in history, terminate if the following is true: quasiLTEQbag b1 b2 <===> set(b1) == set(b2) AND |b1| <= |b2|
+  rollback in reduce: store data (current state) in new history entries; "blamed" history entry state for whistle blowing is returned
+  rollback in sc: similar idea reduce, but old invocation needs to retrieve newest state to analyze for generalization (chsc uses a throw/catch approach for this); unfulfilled promises and their transitive dependents have to be discarded upon rollback (they will never be fulfilled)
+  generalization: terms with root marked by "blamed" tag (and their transitive dependencies according to chsc; does this really make sense?) are residualized at the unrolled state, and supercompiling continues there (residualized names don't occur in heap, and so end up being free vars, hence the generalization); if no tag is blamed, simply split and continue; not all blamed terms need to be residualized necessarily... chsc uses pruning heuristic where stack frame tags are residualized first; concept of computation-history "weight" may be useful (chsc uses this with growing literals built by primops)
+  speculate heap bindings: attempt to reduce to values; check for non-termination due to new heap bindings being produced by speculative eval; rollback similar to sc throwing style
+
+how to do lifting?
+  example, lift if/else out of tuple construction?
+  let b = odd unk in (if b then x else y;if b then y else x)
+
+thoughts: (f x (g y z)) does not match something like (f x (g term z)) where x, y, z are free vars; is it better to supercompile the free var expr, then supercompile the more specific expr starting from the supercompiled more general free var version? how to figure out when to do this?
+
+when analyzing a function definition, is there a nice way of determining which of its bound vars is "important" in terms of the supercompilation behavior? important to control flow?
+  new answer?: yes, by looking at which values determine termination-relevant control flow
+  example, if we define: f important peripheral = ... then finding a term of the form: f complex whatever; suggests that we might want to first supercompile something more general, such as: f simplified freevar; where simplified only retains important/central structure based on its own internal applications, converting peripheral terms to free vars
+    this may allow us to automatically identify useful 'theorems'
+    actually, this seems to be at least somewhat (maybe completely?) achieved by generalization already...
