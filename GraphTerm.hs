@@ -42,12 +42,27 @@ import Control.Monad.State
 type Address = Int
 type Name = Int
 
+-- (ordered) (sub)sets of: nats; ints; symbols
+--   unique ids for sets so tags can be distinguished/unforgeable
+--   layering/association of ordered sets over nats to describe records on top of tuples
+-- variable-sized tuple/array alloc, given initialization value
+--   can be given abstract value (type) for size-only initialization
+-- allocation in mutable regions
+-- read/write
+-- recombine: form a new tuple given [(tuple, range)]
+--   this can be used to achieve forms of copying, concatenation and slicing
+-- constructor tagging
 data ValueT term env value = Lam term env | Tuple [value]
   deriving (Show, Eq)
 data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term
   deriving (Show, Eq)
 
 -- TODO: evaluate with zipper context?
+--   small-step
+--   generic context over subterms that are: Either still-a-term already-a-value
+--     allows ad-hoc eval order (think user interaction)
+--     any fixed eval order can also be defined
+--       maintain and traverse a sequence of get/put functions over a context's remaining 'still-a-term' subterms
 
 data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a, ctrl_apply :: b, ctrl_env_lookup :: c, ctrl_env_extend :: d }
 
