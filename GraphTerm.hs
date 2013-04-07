@@ -129,9 +129,9 @@ evalT ctrl term env = evT term
 ----------------------------------------------------------------
 -- Simple guiding example
 ----------------------------------------------------------------
-newtype SimpleTerm = SimpleTerm { simple_term :: (TermT SimpleTerm) }
+newtype SimpleTerm = SimpleTerm { simple_term :: TermT SimpleTerm }
   deriving (Show, Eq)
-newtype SimpleValue = SimpleValue { simple_value :: (ValueT SimpleTerm SimpleEnv SimpleValue) }
+newtype SimpleValue = SimpleValue { simple_value :: ValueT SimpleTerm SimpleEnv SimpleValue }
   deriving (Show, Eq)
 newtype SimpleEnv = SimpleEnv [SimpleValue]
   deriving (Show, Eq)
@@ -152,7 +152,7 @@ cnat = constant . CNat
 test_tup0 = tuple [cnat 0, cnat 1, cnat 2, cnat 3, cnat 4, cnat 5, cnat 6]
 test_tup1 = tuple [cnat 7, cnat 8, cnat 9, cnat 10, cnat 11, cnat 12]
 test_term = tuple [cnat 4,
-                   (app (lam $ var 0) (lam $ lam $ var 1)),
+                   app (lam $ var 0) (lam $ lam $ var 1),
                    recombine [(test_tup0, (cnat 2, cnat 6)),
                               (test_tup1, (cnat 1, cnat 4))]]
 test = simple_eval test_term $ SimpleEnv []
