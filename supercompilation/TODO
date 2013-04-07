@@ -92,3 +92,22 @@ when analyzing a function definition, is there a nice way of determining which o
   example, if we define: f important peripheral = ... then finding a term of the form: f complex whatever; suggests that we might want to first supercompile something more general, such as: f simplified freevar; where simplified only retains important/central structure based on its own internal applications, converting peripheral terms to free vars
     this may allow us to automatically identify useful 'theorems'
     actually, this seems to be at least somewhat (maybe completely?) achieved by generalization already...
+
+================================================================
+= misc
+================================================================
+
+sources and sinks, with synchronization
+
+effect commutativity: reads, writes, input/output streams; concurrency
+
+(tuple/buffer-based?) cell/ref + take&put as both mutation and concurrency primitives; express compare-and-swap as a peep-hole optimization for specific machines
+  OS/scheduling expressed in DSL for modelling (virtual) machines
+    translation from model code to assembly
+    execution of assembly: refer upward to host (virtual) machine, passing it the code to run?
+
+tagged values are sealed
+
+{type-repr a} -> a -> result
+
+how to do supercompiler splitting/merging wrt records rather than cases?
