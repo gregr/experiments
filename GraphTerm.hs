@@ -41,10 +41,9 @@ import Control.Monad.State
 
 type Address = Int
 type Name = Int
-
-data ValueT term = Lam term | Tuple [Name] -- TODO: constructors must be in ANF
+data ValueT term env value = Lam term env | Tuple [value]
   deriving (Show, Eq)
-data TermT term = Value (ValueT term) | Var Name | LetRec [(Name, term)] term | App term term
+data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term
   deriving (Show, Eq)
 
 -- TODO: where to track open binders?
@@ -53,36 +52,43 @@ type Addressed term = Either Address term
 newtype ALTerm = ALTerm (Addressed (Labeled (TermT ALTerm)))
   deriving (Show, Eq)
 
-newtype SimpleTerm = SimpleTerm (TermT SimpleTerm)
+newtype SimpleTerm = SimpleTerm { simple_term :: (TermT SimpleTerm) }
   deriving (Show, Eq)
-
-data Env term = Env [(Env term, ValueT term)]
+newtype SimpleValue = SimpleValue { simple_value :: (ValueT SimpleTerm SimpleEnv SimpleValue) }
   deriving (Show, Eq)
-env_lookup (Env vals) name = vals !! name
-env_extend (Env vals) val = Env $ val : vals
+newtype SimpleEnv = SimpleEnv [SimpleValue]
+  deriving (Show, Eq)
+simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
+simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
 
 -- TODO: evaluate with zipper context?
 
-data EvalCtrl a c d = EvalCtrl { ctrl_eval :: a, ctrl_env_lookup :: c, ctrl_env_extend :: d }
+data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a, ctrl_apply :: b, ctrl_env_lookup :: c, ctrl_env_extend :: d }
 
-applyT ctrl (Lam body) arg env = eval body env'
+applyT ctrl (Lam body env) arg = eval body env'
   where eval = ctrl_eval ctrl
         env' = ctrl_env_extend ctrl env arg
-applyT _ _ _ _ = error "bad proc"
+applyT _ _ _ = error "bad proc"
 
-evalT ctrl (Value val) env = (env, val)
+constructT ctrl (Lam body ()) env = Lam body env
+constructT ctrl (Tuple vals) env = Tuple $ map (`eval` env) vals
+  where eval = ctrl_eval ctrl
+
+evalT ctrl (Value val) env = constructT ctrl val env
 evalT ctrl (Var name) env = ctrl_env_lookup ctrl env name
-evalT ctrl (App tproc targ) env = applyT ctrl proc arg penv
-  where (penv, proc) = eval tproc env
+evalT ctrl (App tproc targ) env = apply proc arg
+  where proc = eval tproc env
         arg = eval targ env
         eval = ctrl_eval ctrl
+        apply = ctrl_apply ctrl
 
-simple_ctrl = EvalCtrl simple_eval env_lookup env_extend
-simple_eval (SimpleTerm term) env = evalT simple_ctrl term env
+simple_ctrl = EvalCtrl simple_eval simple_apply simple_env_lookup simple_env_extend
+simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
+simple_apply (SimpleValue proc) arg = simple_value $ applyT simple_ctrl proc arg
 
 app tp ta = SimpleTerm $ App tp ta
-lam = SimpleTerm . Value . Lam
+lam body = SimpleTerm . Value $ Lam body ()
 var = SimpleTerm . Var
 
 test_term = (app (lam $ var 0) (lam $ lam $ var 1))
-test = simple_eval test_term $ Env []
+test = simple_eval test_term $ SimpleEnv []
