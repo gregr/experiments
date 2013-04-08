@@ -91,7 +91,7 @@ data ValueT term env value = Lam term env
   deriving (Show, Eq)
 data TermT term = Value (ValueT term () term)
                 | Var Name
-                | LetRec [(Name, term)] term
+                | LetRec [term] term
                 | App term term
                 | TupleRecombine [(term, (term, term))]
                 | TupleRead term term
@@ -150,6 +150,8 @@ evalT ctrl term env = evT term
 
     evT (Value val) = construct val
     evT (Var name) = env_lookup env name
+    evT (LetRec bindings body) = unwrap $ eval body env'
+      where env' = foldl env_extend env $ map (`eval` env') bindings
     evT (App tproc targ) = apply proc arg
       where proc = eval tproc env
             arg = eval targ env
@@ -201,6 +203,12 @@ recombine = SimpleTerm . TupleRecombine
 cnat = constant . CNat
 cfsidx cfs const = SimpleTerm $ ConstFinSetIndex cfs const
 
+-- TODO: recursion-friendly pretty-printing
+test_recfunc0 = lam $ var 0
+test_recfunc1 = lam $ app (var 3) $ cnat 64
+test_recfunc2 = lam $ app (var 2) $ var 0
+test_letrec = SimpleTerm $ LetRec [test_recfunc0, test_recfunc1, test_recfunc2] $ app (var 0) $ cnat 72
+
 test_sym = constant . CSym $ ("global", "two")
 test_cfs = value . ConstFinSet $ CSSym ("global", ["one", "two", "three"])
 test_tup0 = tuple [cnat 0, cnat 1, cnat 2, cnat 3, cnat 4, cnat 5, cnat 6]
@@ -210,7 +218,8 @@ test_term = tuple [cnat 4,
                    recombine [(test_tup0, (cnat 2, cnat 6)),
                               (test_tup1, (cnat 1, cnat 4))],
                    tupread (tuple [cnat 11, cnat 421]) (cnat 1),
-                   cfsidx test_cfs test_sym]
+                   cfsidx test_cfs test_sym,
+                   test_letrec]
 test = simple_eval test_term $ SimpleEnv []
 
 ----------------------------------------------------------------
