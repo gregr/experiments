@@ -51,7 +51,8 @@ type Symbol = (SymUid, SymName)
 
 data ConstFiniteSet = CSNat [Nat] | CSInt [Integer] | CSSym SymSet
   deriving (Show, Eq)
-data Constant = CNat Nat | CInt Integer | CSym Symbol | CInterpreted ConstFiniteSet Nat
+data Constant = CNat Nat | CInt Integer | CSym Symbol
+              | CInterpreted ConstFiniteSet Nat
   deriving (Show, Eq)
 
 -- (ordered) (sub)sets of: nats; ints; symbols
@@ -70,9 +71,19 @@ data Constant = CNat Nat | CInt Integer | CSym Symbol | CInterpreted ConstFinite
 --       something that sounds like execute, commit, or allocate?
 --   maybe subrange should also be separated; recombine over other recombines or subranges
 -- everything from recombination down needs rethinking
-data ValueT term env value = Lam term env | Tuple [value] | Const Constant | Tagged Constant value
+data ValueT term env value = Lam term env
+                           | Tuple [value]
+                           | Const Constant
+                           | Tagged Constant value
   deriving (Show, Eq)
-data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term | TupleRecombine [(term, (term, term))] | TaggedGetConst term | TaggedGetPayload term
+data TermT term = Value (ValueT term () term)
+                | Var Name
+                | LetRec [(Name, term)] term
+                | App term term
+                | TupleRecombine [(term, (term, term))]
+                | TupleRead term term
+                | TaggedGetConst term
+                | TaggedGetPayload term
   deriving (Show, Eq)
 
 -- TODO: evaluate with zipper context?
@@ -82,12 +93,16 @@ data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)]
 --     any fixed eval order can also be defined
 --       maintain and traverse a sequence of get/put functions over a context's remaining 'still-a-term' subterms
 
-data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a, ctrl_unwrap :: b, ctrl_env_lookup :: c, ctrl_env_extend :: d }
+data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a
+                                 , ctrl_unwrap :: b
+                                 , ctrl_env_lookup :: c
+                                 , ctrl_env_extend :: d }
 
 evalT ctrl term env = evT term
   where
     eval = ctrl_eval ctrl
     unwrap = ctrl_unwrap ctrl
+    evalUnwrap = unwrap . (`eval` env)
     env_lookup = ctrl_env_lookup ctrl
     env_extend = ctrl_env_extend ctrl
 
@@ -122,13 +137,18 @@ evalT ctrl term env = evT term
             arg = eval targ env
     evT (TupleRecombine tslices) = Tuple . concat $ map chop slices
       where -- NOTE: end is not inclusive in range
-        eu = unwrap . (`eval` env)
+        eu = evalUnwrap
         slices = map (eu >< (eu >< eu)) tslices
         chop (vtup, (vstart, vend)) = take (end - start) $ drop start tup
           where
             tup = asTup vtup
             start = asNat vstart
             end = asNat vend
+    evT (TupleRead ttup tidx) =
+      if idx < length tup then unwrap $ tup !! idx
+        else error "Tuple index out of bounds"
+      where tup = asTup $ evalUnwrap ttup
+            idx = asNat $ evalUnwrap tidx
     evT (TaggedGetConst ttagged) = Const . fst $ untag ttagged
     evT (TaggedGetPayload ttagged) = unwrap . snd $ untag ttagged
 
@@ -137,20 +157,23 @@ evalT ctrl term env = evT term
 ----------------------------------------------------------------
 newtype SimpleTerm = SimpleTerm { simple_term :: TermT SimpleTerm }
   deriving (Show, Eq)
-newtype SimpleValue = SimpleValue { simple_value :: ValueT SimpleTerm SimpleEnv SimpleValue }
+newtype SimpleValue =
+  SimpleValue { simple_value :: ValueT SimpleTerm SimpleEnv SimpleValue }
   deriving (Show, Eq)
 newtype SimpleEnv = SimpleEnv [SimpleValue]
   deriving (Show, Eq)
 simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
 simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
 
-simple_ctrl = EvalCtrl simple_eval simple_value simple_env_lookup simple_env_extend
+simple_ctrl =
+  EvalCtrl simple_eval simple_value simple_env_lookup simple_env_extend
 simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
 
 app tp ta = SimpleTerm $ App tp ta
 lam body = SimpleTerm . Value $ Lam body ()
 var = SimpleTerm . Var
 tuple = SimpleTerm . Value . Tuple
+tupread tup idx = SimpleTerm $ TupleRead tup idx
 constant = SimpleTerm . Value . Const
 recombine = SimpleTerm . TupleRecombine
 cnat = constant . CNat
@@ -160,7 +183,8 @@ test_tup1 = tuple [cnat 7, cnat 8, cnat 9, cnat 10, cnat 11, cnat 12]
 test_term = tuple [cnat 4,
                    app (lam $ var 0) (lam $ lam $ var 1),
                    recombine [(test_tup0, (cnat 2, cnat 6)),
-                              (test_tup1, (cnat 1, cnat 4))]]
+                              (test_tup1, (cnat 1, cnat 4))],
+                   tupread (tuple [cnat 11, cnat 421]) (cnat 1)]
 test = simple_eval test_term $ SimpleEnv []
 
 ----------------------------------------------------------------
