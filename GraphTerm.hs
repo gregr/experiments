@@ -59,11 +59,17 @@ data Constant = CNat Nat | CInt Integer | CSym Symbol | CInterpreted ConstFinite
 --   layering/association of ordered sets over nats to describe records on top of tuples
 -- variable-sized tuple/array alloc, given initialization value
 --   can be given abstract value (type) for size-only initialization
--- allocation in mutable regions
--- read/write
--- recombine: form a new tuple given [(tuple, range)]
---   this can be used to achieve forms of copying, concatenation and slicing
--- constructor tagging
+-- tuples:
+--   allocation in mutable regions
+--   read/write
+--   recombine: form a new pre-tuple given [(tuple, range)]
+--     this can be used to achieve forms of copying, concatenation and slicing
+--   flatten: flatten the recombined pre-tuple into an actual tuple
+--     this separation minimizes construction of new tuples from algebraic data
+--     maybe there's a better name for flatten if subrange is alsy separated
+--       something that sounds like execute, commit, or allocate?
+--   maybe subrange should also be separated; recombine over other recombines or subranges
+-- everything from recombination down needs rethinking
 data ValueT term env value = Lam term env | Tuple [value] | Const Constant | Tagged Constant value
   deriving (Show, Eq)
 data TermT term = Value (ValueT term () term) | Var Name | LetRec [(Name, term)] term | App term term | TupleRecombine [(term, (term, term))] | TaggedGetConst term | TaggedGetPayload term
