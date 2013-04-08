@@ -3,6 +3,7 @@ module GraphTerm where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import Data.List
 import Data.Maybe
 import Control.Monad.State
 import Data.Graph.Inductive.Query.Monad ((><))
@@ -54,6 +55,17 @@ data ConstFiniteSet = CSNat [Nat] | CSInt [Integer] | CSSym SymSet
 data Constant = CNat Nat | CInt Integer | CSym Symbol
               | CInterpreted ConstFiniteSet Nat
   deriving (Show, Eq)
+cfs_index (CSNat nats) (CNat nat) = setIndex nat nats
+cfs_index (CSInt ints) (CInt int) = setIndex int ints
+cfs_index (CSSym (uid0, names)) (CSym (uid1, name)) =
+  if uid0 == uid1 then setIndex name names
+    else error "mismatching symbol family"
+cfs_index _ _ = error "mismatching constant and set type"
+
+setIndex elem elems = CNat . toInteger $
+  case elemIndex elem elems of
+    Just idx -> idx
+    Nothing -> length elems -- if target has default, it will be at this index
 
 -- (ordered) (sub)sets of: nats; ints; symbols
 --   unique ids for sets so tags can be distinguished/unforgeable
@@ -74,6 +86,7 @@ data Constant = CNat Nat | CInt Integer | CSym Symbol
 data ValueT term env value = Lam term env
                            | Tuple [value]
                            | Const Constant
+                           | ConstFinSet ConstFiniteSet
                            | Tagged Constant value
   deriving (Show, Eq)
 data TermT term = Value (ValueT term () term)
@@ -82,6 +95,7 @@ data TermT term = Value (ValueT term () term)
                 | App term term
                 | TupleRecombine [(term, (term, term))]
                 | TupleRead term term
+                | ConstFinSetIndex term term
                 | TaggedGetConst term
                 | TaggedGetPayload term
   deriving (Show, Eq)
@@ -118,6 +132,7 @@ evalT ctrl term env = evT term
     construct (Lam body ()) = Lam body env
     construct (Tuple vals) = Tuple $ map (`eval` env) vals
     construct (Const const) = Const const
+    construct (ConstFinSet cfs) = ConstFinSet cfs
     construct (Tagged const val) = Tagged const $ eval val env
 
     asTup (Tuple vals) = vals
@@ -129,6 +144,9 @@ evalT ctrl term env = evT term
     asNat val = case unConst val of
       CNat nat -> fromInteger nat -- fromInteger needed for recombine take/drop
       otherwise -> error "not a Nat"
+
+    asCfs (ConstFinSet cfs) = cfs
+    asCfs _ = error "not a ConstFinSet"
 
     evT (Value val) = construct val
     evT (Var name) = env_lookup env name
@@ -149,6 +167,9 @@ evalT ctrl term env = evT term
         else error "Tuple index out of bounds"
       where tup = asTup $ evalUnwrap ttup
             idx = asNat $ evalUnwrap tidx
+    evT (ConstFinSetIndex tcfs tconst) = Const $ cfs_index cfs const
+      where cfs = asCfs $ evalUnwrap tcfs
+            const = unConst $ evalUnwrap tconst
     evT (TaggedGetConst ttagged) = Const . fst $ untag ttagged
     evT (TaggedGetPayload ttagged) = unwrap . snd $ untag ttagged
 
@@ -172,19 +193,24 @@ simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
 app tp ta = SimpleTerm $ App tp ta
 lam body = SimpleTerm . Value $ Lam body ()
 var = SimpleTerm . Var
-tuple = SimpleTerm . Value . Tuple
+value = SimpleTerm . Value
+tuple = value . Tuple
 tupread tup idx = SimpleTerm $ TupleRead tup idx
-constant = SimpleTerm . Value . Const
+constant = value . Const
 recombine = SimpleTerm . TupleRecombine
 cnat = constant . CNat
+cfsidx cfs const = SimpleTerm $ ConstFinSetIndex cfs const
 
+test_sym = constant . CSym $ ("global", "two")
+test_cfs = value . ConstFinSet $ CSSym ("global", ["one", "two", "three"])
 test_tup0 = tuple [cnat 0, cnat 1, cnat 2, cnat 3, cnat 4, cnat 5, cnat 6]
 test_tup1 = tuple [cnat 7, cnat 8, cnat 9, cnat 10, cnat 11, cnat 12]
 test_term = tuple [cnat 4,
                    app (lam $ var 0) (lam $ lam $ var 1),
                    recombine [(test_tup0, (cnat 2, cnat 6)),
                               (test_tup1, (cnat 1, cnat 4))],
-                   tupread (tuple [cnat 11, cnat 421]) (cnat 1)]
+                   tupread (tuple [cnat 11, cnat 421]) (cnat 1),
+                   cfsidx test_cfs test_sym]
 test = simple_eval test_term $ SimpleEnv []
 
 ----------------------------------------------------------------
