@@ -67,22 +67,36 @@ setIndex elem elems = CNat . toInteger $
     Just idx -> idx
     Nothing -> length elems -- if target has default, it will be at this index
 
+-- TODO
+-- bubble up annotated undefined results instead of errors
+-- memory store; addresses
+-- TupleWrite and test
+-- recursion-friendly pretty printing
+-- switch to zipper contexts
+--   small-step
+--   generic context over subterms that are: Either still-a-term already-a-value
+--     allows ad-hoc eval order (think user interaction)
+--     any fixed eval order can also be defined
+--       maintain and traverse a sequence of get/put functions over a context's remaining 'still-a-term' subterms
+-- eval/substitute at arbitrary term positions
+-- define evaluation orders as zipper traversals
+-- try to simplify EvalCtrl
+-- const/mutable regions?
+
+-- NOTES
 -- (ordered) (sub)sets of: nats; ints; symbols
 --   unique ids for sets so tags can be distinguished/unforgeable
 --   layering/association of ordered sets over nats to describe records on top of tuples
 -- variable-sized tuple/array alloc, given initialization value
 --   can be given abstract value (type) for size-only initialization
 -- tuples:
---   allocation in mutable regions
+--   allocation
+--     indicate allocations performed in a mutable region: (mutable expr-that-allocates)
+--       'mutable' means that mutability can be observed from a distance; implies sharing
+--       linear/unshared tuples can be modified without having been allocated in a mutable region
+--         allows efficient initialization dynamically-sized of yet-to-be-shared 'constant' tuples
 --   read/write
---   recombine: form a new pre-tuple given [(tuple, range)]
---     this can be used to achieve forms of copying, concatenation and slicing
---   flatten: flatten the recombined pre-tuple into an actual tuple
---     this separation minimizes construction of new tuples from algebraic data
---     maybe there's a better name for flatten if subrange is alsy separated
---       something that sounds like execute, commit, or allocate?
---   maybe subrange should also be separated; recombine over other recombines or subranges
--- everything from recombination down needs rethinking
+--     in order to implement write, need to represent memory store and addresses into it
 data ValueT term env value = Lam term env
                            | Tuple [value]
                            | Const Constant
@@ -100,13 +114,6 @@ data TermT term = Value (ValueT term () term)
                 | TaggedGetPayload term
   deriving (Show, Eq)
 
--- TODO: evaluate with zipper context?
---   small-step
---   generic context over subterms that are: Either still-a-term already-a-value
---     allows ad-hoc eval order (think user interaction)
---     any fixed eval order can also be defined
---       maintain and traverse a sequence of get/put functions over a context's remaining 'still-a-term' subterms
-
 data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a
                                  , ctrl_unwrap :: b
                                  , ctrl_env_lookup :: c
@@ -120,6 +127,7 @@ evalT ctrl term env = evT term
     env_lookup = ctrl_env_lookup ctrl
     env_extend = ctrl_env_extend ctrl
 
+    -- TODO: instead of errors, produce appropriate 'Undefined's
     apply proc arg = case unwrap proc of
       Lam body penv -> unwrap $ eval body env'
         where env' = env_extend penv arg
