@@ -102,6 +102,7 @@ data ValueT term env value = Lam term env
                            | Const Constant
                            | ConstFinSet ConstFiniteSet
                            | Tagged Constant value
+                           | Undefined String
   deriving (Show, Eq)
 data TermT term = Value (ValueT term () term)
                 | Var Name
@@ -130,20 +131,22 @@ evalT ctrl term env = evT term
     apply proc arg = case unwrap proc of
       Lam body penv -> unwrap $ eval body env'
         where env' = env_extend penv arg
-      otherwise -> error "bad proc"
+      otherwise -> Undefined "Attempt to apply non-procedure"
 
     untag ttagged = case unwrap $ eval ttagged env of
       Tagged const payload -> (const, payload)
-      otherwise -> error "not a tagged value"
+      otherwise -> error "Attempt to untag non-tagged value"
 
     construct (Lam body ()) = Lam body env
     construct (Tuple vals) = Tuple $ map (`eval` env) vals
     construct (Const const) = Const const
     construct (ConstFinSet cfs) = ConstFinSet cfs
     construct (Tagged const val) = Tagged const $ eval val env
+    construct (Undefined description) = Undefined description
 
     asTup (Tuple vals) = vals
     asTup _ = error "not a Tuple"
+    evalTup = asTup . evalUnwrap
 
     unConst (Const const) = const
     unConst _ = error "not a Const"
@@ -151,6 +154,7 @@ evalT ctrl term env = evT term
     asNat val = case unConst val of
       CNat nat -> fromInteger nat -- fromInteger needed for recombine take/drop
       otherwise -> error "not a Nat"
+    evalNat = asNat . evalUnwrap
 
     asCfs (ConstFinSet cfs) = cfs
     asCfs _ = error "not a ConstFinSet"
@@ -164,9 +168,9 @@ evalT ctrl term env = evT term
             arg = eval targ env
     evT (TupleRead ttup tidx) =
       if idx < length tup then unwrap $ tup !! idx
-        else error "Tuple index out of bounds"
-      where tup = asTup $ evalUnwrap ttup
-            idx = asNat $ evalUnwrap tidx
+        else Undefined "TupleRead: index out of bounds"
+      where tup = evalTup ttup
+            idx = evalNat tidx
     evT (ConstFinSetIndex tcfs tconst) = Const $ cfs_index cfs const
       where cfs = asCfs $ evalUnwrap tcfs
             const = unConst $ evalUnwrap tconst
