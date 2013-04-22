@@ -108,20 +108,24 @@ data TermT term = Value (ValueT term () term)
                 | Var Name
                 | LetRec [term] term
                 | App term term
+                | TupleAlloc term
                 | TupleRead term term
                 | ConstFinSetIndex term term
                 | TaggedGetConst term
                 | TaggedGetPayload term
   deriving (Show, Eq)
 
-data EvalCtrl a b c d = EvalCtrl { ctrl_eval :: a
-                                 , ctrl_unwrap :: b
-                                 , ctrl_env_lookup :: c
-                                 , ctrl_env_extend :: d }
+data EvalCtrl a b c d e = EvalCtrl
+  { ctrl_eval :: a
+  , ctrl_wrap :: b
+  , ctrl_unwrap :: c
+  , ctrl_env_lookup :: d
+  , ctrl_env_extend :: e }
 
 evalT ctrl term env = evT term
   where
     eval = ctrl_eval ctrl
+    wrap = ctrl_wrap ctrl
     unwrap = ctrl_unwrap ctrl
     evalUnwrap = unwrap . (`eval` env)
     env_lookup = ctrl_env_lookup ctrl
@@ -166,6 +170,9 @@ evalT ctrl term env = evT term
     evT (App tproc targ) = apply proc arg
       where proc = eval tproc env
             arg = eval targ env
+    evT (TupleAlloc tsize) = Tuple $ replicate size undef
+      where size = evalNat tsize
+            undef = wrap $ Undefined "TupleAlloc: uninitialized slot"
     evT (TupleRead ttup tidx) =
       if idx < length tup then unwrap $ tup !! idx
         else Undefined "TupleRead: index out of bounds"
@@ -191,7 +198,7 @@ simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
 simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
 
 simple_ctrl =
-  EvalCtrl simple_eval simple_value simple_env_lookup simple_env_extend
+  EvalCtrl simple_eval SimpleValue simple_value simple_env_lookup simple_env_extend
 simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
 
 app tp ta = SimpleTerm $ App tp ta
@@ -199,6 +206,7 @@ lam body = SimpleTerm . Value $ Lam body ()
 var = SimpleTerm . Var
 value = SimpleTerm . Value
 tuple = value . Tuple
+tupalloc sz = SimpleTerm $ TupleAlloc sz
 tupread tup idx = SimpleTerm $ TupleRead tup idx
 constant = value . Const
 cnat = constant . CNat
@@ -217,6 +225,7 @@ test_tup1 = tuple [cnat 7, cnat 8, cnat 9, cnat 10, cnat 11, cnat 12]
 test_term = tuple [cnat 4,
                    app (lam $ var 0) (lam $ lam $ var 1),
                    tupread (tuple [cnat 11, cnat 421]) (cnat 1),
+                   tupalloc (cnat 2),
                    cfsidx test_cfs test_sym,
                    test_letrec]
 test = simple_eval test_term $ SimpleEnv []
