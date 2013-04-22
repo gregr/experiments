@@ -77,6 +77,7 @@ _cfs_elemIndex elem elems = Right . CNat $ toInteger idx
 -- define evaluation orders as zipper traversals
 -- try to simplify EvalCtrl
 -- const/mutable regions?
+-- need garbage collection of memory store?
 
 -- NOTES
 -- (ordered) (sub)sets of: nats; ints; symbols
@@ -110,12 +111,15 @@ data TermT term = Value (ValueT term () term)
                 | TaggedGetPayload term
   deriving (Show, Eq)
 
-data EvalCtrl a b c d e = EvalCtrl
+data EvalCtrl a b c d e f g h = EvalCtrl
   { ctrl_eval :: a
   , ctrl_wrap :: b
   , ctrl_unwrap :: c
   , ctrl_env_lookup :: d
-  , ctrl_env_extend :: e }
+  , ctrl_env_extend :: e
+  , ctrl_store_lookup :: f
+  , ctrl_store_extend :: g
+  , ctrl_store_update :: h }
 
 evalT ctrl term env = do
   result <- evT term
@@ -129,6 +133,20 @@ evalT ctrl term env = do
     evalUnwrap term = liftM unwrap $ eval term env
     env_lookup = ctrl_env_lookup ctrl
     env_extend = ctrl_env_extend ctrl
+    store_deref address = do
+      store <- get
+      return $ fromMaybe undef $ ctrl_store_lookup ctrl store address
+      where undef = wrap $ Undefined "dereferenced invalid address"
+    store_allocate values = do
+      store <- get
+      let (store', addresses) = ctrl_store_extend ctrl store values
+      put store'
+      return addresses
+    store_assign address value = do
+      store <- get
+      case ctrl_store_update ctrl store address value of
+        Nothing -> Undefined "assigned value to invalid address"
+        Just store' -> put store' >> return $ Tuple []
 
     apply proc arg = case unwrap proc of
       Lam body penv -> liftM (Right . unwrap) $ eval body env'
@@ -210,12 +228,30 @@ newtype SimpleValue =
   deriving (Show, Eq)
 newtype SimpleEnv = SimpleEnv [SimpleValue]
   deriving (Show, Eq)
-simple_env_lookup (SimpleEnv vals) name = simple_value $ vals !! name
-simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
+data SimpleStore = SimpleStore
+  { sstore_values :: M.Map Address SimpleValue
+  , sstore_next :: Address }
+  deriving (Show, Eq)
+senv_lookup (SimpleEnv vals) name = simple_value $ vals !! name
+senv_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
+sstore_empty = SimpleStore M.empty 0
+sstore_lookup store address = M.lookup address $ sstore_values store
+sstore_extend store vals = (store', addresses)
+  where current = sstore_next store
+        next = current + length vals
+        addresses = [current .. next - 1]
+        assocs = zip addresses vals
+        values' = foldr (uncurry M.insert) (sstore_values store) assocs
+        store' = store {sstore_values = values', sstore_next = next}
+sstore_update store address val =
+  if M.member address values then Just store' else Nothing
+  where values = sstore_values store
+        store' = store { sstore_values = M.insert address val values }
 
 simple_ctrl =
-  EvalCtrl simple_eval SimpleValue simple_value simple_env_lookup simple_env_extend
-simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
+  EvalCtrl simple_eval SimpleValue simple_value
+  senv_lookup senv_extend
+  sstore_lookup sstore_extend sstore_update
 simple_eval (SimpleTerm term) env = do
   value <- evalT simple_ctrl term env
   return $ SimpleValue value
@@ -247,7 +283,7 @@ test_term = tuple [cnat 4,
                    tupalloc (cnat 2),
                    cfsidx test_cfs test_sym,
                    test_letrec]
-test = simple_eval test_term $ SimpleEnv []
+test = runState (simple_eval test_term $ SimpleEnv []) sstore_empty
 
 ----------------------------------------------------------------
 -- Somewhat more heavy-duty approach
