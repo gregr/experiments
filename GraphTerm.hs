@@ -107,7 +107,6 @@ data TermT term = Value (ValueT term () term)
                 | Var Name
                 | LetRec [term] term
                 | App term term
-                | TupleRecombine [(term, (term, term))]
                 | TupleRead term term
                 | ConstFinSetIndex term term
                 | TaggedGetConst term
@@ -163,15 +162,6 @@ evalT ctrl term env = evT term
     evT (App tproc targ) = apply proc arg
       where proc = eval tproc env
             arg = eval targ env
-    evT (TupleRecombine tslices) = Tuple . concat $ map chop slices
-      where -- NOTE: end is not inclusive in range
-        eu = evalUnwrap
-        slices = map (eu >< (eu >< eu)) tslices
-        chop (vtup, (vstart, vend)) = take (end - start) $ drop start tup
-          where
-            tup = asTup vtup
-            start = asNat vstart
-            end = asNat vend
     evT (TupleRead ttup tidx) =
       if idx < length tup then unwrap $ tup !! idx
         else error "Tuple index out of bounds"
@@ -207,7 +197,6 @@ value = SimpleTerm . Value
 tuple = value . Tuple
 tupread tup idx = SimpleTerm $ TupleRead tup idx
 constant = value . Const
-recombine = SimpleTerm . TupleRecombine
 cnat = constant . CNat
 cfsidx cfs const = SimpleTerm $ ConstFinSetIndex cfs const
 
@@ -223,8 +212,6 @@ test_tup0 = tuple [cnat 0, cnat 1, cnat 2, cnat 3, cnat 4, cnat 5, cnat 6]
 test_tup1 = tuple [cnat 7, cnat 8, cnat 9, cnat 10, cnat 11, cnat 12]
 test_term = tuple [cnat 4,
                    app (lam $ var 0) (lam $ lam $ var 1),
-                   recombine [(test_tup0, (cnat 2, cnat 6)),
-                              (test_tup1, (cnat 1, cnat 4))],
                    tupread (tuple [cnat 11, cnat 421]) (cnat 1),
                    cfsidx test_cfs test_sym,
                    test_letrec]
