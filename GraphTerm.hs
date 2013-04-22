@@ -7,7 +7,6 @@ import Data.List
 import Data.Maybe
 import Control.Monad.State
 import Data.Graph.Inductive.Query.Monad ((><))
-{-import Control.Monad.Error-}
 {-import Control.Monad.Identity-}
 
 -- TODO: will probably need this later for ad-hoc evaluation
@@ -55,20 +54,17 @@ data ConstFiniteSet = CSNat [Nat] | CSInt [Integer] | CSSym SymSet
 data Constant = CNat Nat | CInt Integer | CSym Symbol
               | CInterpreted ConstFiniteSet Nat
   deriving (Show, Eq)
-cfs_index (CSNat nats) (CNat nat) = setIndex nat nats
-cfs_index (CSInt ints) (CInt int) = setIndex int ints
+cfs_index (CSNat nats) (CNat nat) = _cfs_elemIndex nat nats
+cfs_index (CSInt ints) (CInt int) = _cfs_elemIndex int ints
 cfs_index (CSSym (uid0, names)) (CSym (uid1, name)) =
-  if uid0 == uid1 then setIndex name names
-    else error "mismatching symbol family"
-cfs_index _ _ = error "mismatching constant and set type"
-
-setIndex elem elems = CNat . toInteger $
-  case elemIndex elem elems of
-    Just idx -> idx
-    Nothing -> length elems -- if target has default, it will be at this index
+  if uid0 == uid1 then _cfs_elemIndex name names
+    else Left "cfs_index: mismatching symbol family"
+cfs_index _ _ = Left "cfs_index: mismatching constant and set type"
+_cfs_elemIndex elem elems = Right . CNat $ toInteger idx
+    where default_idx = length elems
+          idx = fromMaybe default_idx $ elemIndex elem elems
 
 -- TODO
--- bubble up annotated undefined results instead of errors
 -- memory store; addresses
 -- TupleWrite and test
 -- recursion-friendly pretty printing
@@ -122,7 +118,9 @@ data EvalCtrl a b c d e = EvalCtrl
   , ctrl_env_lookup :: d
   , ctrl_env_extend :: e }
 
-evalT ctrl term env = evT term
+evalT ctrl term env = case evT term of
+  Left msg -> Undefined msg
+  Right val -> val
   where
     eval = ctrl_eval ctrl
     wrap = ctrl_wrap ctrl
@@ -131,15 +129,14 @@ evalT ctrl term env = evT term
     env_lookup = ctrl_env_lookup ctrl
     env_extend = ctrl_env_extend ctrl
 
-    -- TODO: instead of errors, produce appropriate 'Undefined's
     apply proc arg = case unwrap proc of
-      Lam body penv -> unwrap $ eval body env'
+      Lam body penv -> Right . unwrap $ eval body env'
         where env' = env_extend penv arg
-      otherwise -> Undefined "Attempt to apply non-procedure"
+      otherwise -> Left "expected Lam"
 
     untag ttagged = case unwrap $ eval ttagged env of
-      Tagged const payload -> (const, payload)
-      otherwise -> error "Attempt to untag non-tagged value"
+      Tagged const payload -> Right (const, payload)
+      otherwise -> Left "expected Tagged"
 
     construct (Lam body ()) = Lam body env
     construct (Tuple vals) = Tuple $ map (`eval` env) vals
@@ -148,41 +145,50 @@ evalT ctrl term env = evT term
     construct (Tagged const val) = Tagged const $ eval val env
     construct (Undefined description) = Undefined description
 
-    asTup (Tuple vals) = vals
-    asTup _ = error "not a Tuple"
+    asTup (Tuple vals) = Right vals
+    asTup _ = Left "expected Tuple"
     evalTup = asTup . evalUnwrap
 
-    unConst (Const const) = const
-    unConst _ = error "not a Const"
+    asConst (Const const) = Right const
+    asConst _ = Left "expected Const"
 
-    asNat val = case unConst val of
-      CNat nat -> fromInteger nat -- fromInteger needed for recombine take/drop
-      otherwise -> error "not a Nat"
+    asNat val = do
+      cnat <- asConst val
+      case cnat of
+        CNat nat -> Right $ fromInteger nat
+        otherwise -> Left "expected Nat"
     evalNat = asNat . evalUnwrap
 
-    asCfs (ConstFinSet cfs) = cfs
-    asCfs _ = error "not a ConstFinSet"
+    asCfs (ConstFinSet cfs) = Right cfs
+    asCfs _ = Left "expected ConstFinSet"
 
-    evT (Value val) = construct val
-    evT (Var name) = env_lookup env name
-    evT (LetRec bindings body) = unwrap $ eval body env'
+    evT (Value val) = Right $ construct val
+    evT (Var name) = Right $ env_lookup env name
+    evT (LetRec bindings body) = Right . unwrap $ eval body env'
       where env' = foldl env_extend env $ map (`eval` env') bindings
     evT (App tproc targ) = apply proc arg
       where proc = eval tproc env
             arg = eval targ env
-    evT (TupleAlloc tsize) = Tuple $ replicate size undef
-      where size = evalNat tsize
-            undef = wrap $ Undefined "TupleAlloc: uninitialized slot"
-    evT (TupleRead ttup tidx) =
-      if idx < length tup then unwrap $ tup !! idx
-        else Undefined "TupleRead: index out of bounds"
-      where tup = evalTup ttup
-            idx = evalNat tidx
-    evT (ConstFinSetIndex tcfs tconst) = Const $ cfs_index cfs const
-      where cfs = asCfs $ evalUnwrap tcfs
-            const = unConst $ evalUnwrap tconst
-    evT (TaggedGetConst ttagged) = Const . fst $ untag ttagged
-    evT (TaggedGetPayload ttagged) = unwrap . snd $ untag ttagged
+    evT (TupleAlloc tsize) = do
+      size <- evalNat tsize
+      Right . Tuple $ replicate size undef
+      where undef = wrap $ Undefined "TupleAlloc: uninitialized slot"
+    evT (TupleRead ttup tidx) = do
+      tup <- evalTup ttup
+      idx <- evalNat tidx
+      if idx < length tup then Right . unwrap $ tup !! idx
+        else Left "TupleRead: index out of bounds"
+    evT (ConstFinSetIndex tcfs tconst) = do
+      cfs <- asCfs $ evalUnwrap tcfs
+      const <- asConst $ evalUnwrap tconst
+      index <- cfs_index cfs const
+      Right $ Const index
+    evT (TaggedGetConst ttagged) = do
+      (tag, _) <- untag ttagged
+      Right $ Const tag
+    evT (TaggedGetPayload ttagged) = do
+      (_, payload) <- untag ttagged
+      Right $ unwrap payload
 
 ----------------------------------------------------------------
 -- Simple guiding example
