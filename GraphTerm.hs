@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction, DoRec #-}
 module GraphTerm where
 
 import qualified Data.Map as M
@@ -7,7 +7,6 @@ import Data.List
 import Data.Maybe
 import Control.Monad.State
 import Data.Graph.Inductive.Query.Monad ((><))
-{-import Control.Monad.Identity-}
 
 -- TODO: will probably need this later for ad-hoc evaluation
 {-bn_lift idx target =-}
@@ -65,7 +64,7 @@ _cfs_elemIndex elem elems = Right . CNat $ toInteger idx
           idx = fromMaybe default_idx $ elemIndex elem elems
 
 -- TODO
--- memory store; addresses
+-- memory store; addresses; probably use state monad
 -- TupleWrite and test
 -- recursion-friendly pretty printing
 -- switch to zipper contexts
@@ -118,36 +117,40 @@ data EvalCtrl a b c d e = EvalCtrl
   , ctrl_env_lookup :: d
   , ctrl_env_extend :: e }
 
-evalT ctrl term env = case evT term of
-  Left msg -> Undefined msg
-  Right val -> val
+evalT ctrl term env = do
+  result <- evT term
+  return $ case result of
+    Left msg -> Undefined msg
+    Right val -> val
   where
     eval = ctrl_eval ctrl
     wrap = ctrl_wrap ctrl
     unwrap = ctrl_unwrap ctrl
-    evalUnwrap = unwrap . (`eval` env)
+    evalUnwrap term = liftM unwrap $ eval term env
     env_lookup = ctrl_env_lookup ctrl
     env_extend = ctrl_env_extend ctrl
 
     apply proc arg = case unwrap proc of
-      Lam body penv -> Right . unwrap $ eval body env'
+      Lam body penv -> liftM (Right . unwrap) $ eval body env'
         where env' = env_extend penv arg
-      otherwise -> Left "expected Lam"
+      otherwise -> return $ Left "expected Lam"
 
-    untag ttagged = case unwrap $ eval ttagged env of
-      Tagged const payload -> Right (const, payload)
-      otherwise -> Left "expected Tagged"
+    untag ttagged = do
+      tagged <- eval ttagged env
+      return $ case unwrap tagged of
+        Tagged const payload -> Right (const, payload)
+        otherwise -> Left "expected Tagged"
 
-    construct (Lam body ()) = Lam body env
-    construct (Tuple vals) = Tuple $ map (`eval` env) vals
-    construct (Const const) = Const const
-    construct (ConstFinSet cfs) = ConstFinSet cfs
-    construct (Tagged const val) = Tagged const $ eval val env
-    construct (Undefined description) = Undefined description
+    construct (Lam body ()) = return $ Lam body env
+    construct (Tuple vals) = liftM Tuple $ mapM (`eval` env) vals
+    construct (Const const) = return $ Const const
+    construct (ConstFinSet cfs) = return $ ConstFinSet cfs
+    construct (Tagged const val) = liftM (Tagged const) $ eval val env
+    construct (Undefined description) = return $ Undefined description
 
     asTup (Tuple vals) = Right vals
     asTup _ = Left "expected Tuple"
-    evalTup = asTup . evalUnwrap
+    evalTup = liftM asTup . evalUnwrap
 
     asConst (Const const) = Right const
     asConst _ = Left "expected Const"
@@ -157,38 +160,45 @@ evalT ctrl term env = case evT term of
       case cnat of
         CNat nat -> Right $ fromInteger nat
         otherwise -> Left "expected Nat"
-    evalNat = asNat . evalUnwrap
+    evalNat = liftM asNat . evalUnwrap
 
     asCfs (ConstFinSet cfs) = Right cfs
     asCfs _ = Left "expected ConstFinSet"
 
-    evT (Value val) = Right $ construct val
-    evT (Var name) = Right $ env_lookup env name
-    evT (LetRec bindings body) = Right . unwrap $ eval body env'
-      where env' = foldl env_extend env $ map (`eval` env') bindings
-    evT (App tproc targ) = apply proc arg
-      where proc = eval tproc env
-            arg = eval targ env
+    evT (Value val) = liftM Right $ construct val
+    evT (Var name) = return . Right $ env_lookup env name
+    evT (LetRec bindings body) = do
+      rec env' <- liftM (foldl env_extend env) $ mapM (`eval` env') bindings
+      liftM (Right . unwrap) $ eval body env'
+    evT (App tproc targ) = do
+      proc <- eval tproc env
+      arg <- eval targ env
+      apply proc arg
     evT (TupleAlloc tsize) = do
-      size <- evalNat tsize
-      Right . Tuple $ replicate size undef
+      esize <- evalNat tsize
+      return (do
+        size <- esize
+        Right . Tuple $ replicate size undef)
       where undef = wrap $ Undefined "TupleAlloc: uninitialized slot"
     evT (TupleRead ttup tidx) = do
-      tup <- evalTup ttup
-      idx <- evalNat tidx
-      if idx < length tup then Right . unwrap $ tup !! idx
-        else Left "TupleRead: index out of bounds"
+      etup <- evalTup ttup
+      eidx <- evalNat tidx
+      return (do
+        tup <- etup
+        idx <- eidx
+        if idx < length tup then Right . unwrap $ tup !! idx
+          else Left "TupleRead: index out of bounds")
     evT (ConstFinSetIndex tcfs tconst) = do
-      cfs <- asCfs $ evalUnwrap tcfs
-      const <- asConst $ evalUnwrap tconst
-      index <- cfs_index cfs const
-      Right $ Const index
-    evT (TaggedGetConst ttagged) = do
-      (tag, _) <- untag ttagged
-      Right $ Const tag
-    evT (TaggedGetPayload ttagged) = do
-      (_, payload) <- untag ttagged
-      Right $ unwrap payload
+      vcfs <- evalUnwrap tcfs
+      vconst <- evalUnwrap tconst
+      return (do
+        cfs <- asCfs vcfs
+        const <- asConst vconst
+        liftM Const $ cfs_index cfs const)
+    evT (TaggedGetConst ttagged) = withTagged (Const . fst) ttagged
+    evT (TaggedGetPayload ttagged) = withTagged (unwrap . snd) ttagged
+
+    withTagged f = liftM (liftM f) . untag
 
 ----------------------------------------------------------------
 -- Simple guiding example
@@ -206,6 +216,9 @@ simple_env_extend (SimpleEnv vals) val = SimpleEnv $ val : vals
 simple_ctrl =
   EvalCtrl simple_eval SimpleValue simple_value simple_env_lookup simple_env_extend
 simple_eval (SimpleTerm term) env = SimpleValue $ evalT simple_ctrl term env
+simple_eval (SimpleTerm term) env = do
+  value <- evalT simple_ctrl term env
+  return $ SimpleValue value
 
 app tp ta = SimpleTerm $ App tp ta
 lam body = SimpleTerm . Value $ Lam body ()
