@@ -94,6 +94,24 @@ when analyzing a function definition, is there a nice way of determining which o
     actually, this seems to be at least somewhat (maybe completely?) achieved by generalization already...
 
 ================================================================
+= correctness of transformations
+================================================================
+
+partial correctness (no observable difference in pure computations, ignoring effects)
+  reductions correspond to small-step rules of evaluator (in any order)
+  semantic equivalence of term rewrites/substitutions
+    new term must fully reduce to the same value as the original term
+operational correctness (no observable difference in effects, including termination)
+  terms that always terminate or are always evaluated (strictness) regardless of reduction order may be reduced in any order
+    those which do not fall into the above category must be reduced in the evaluator's canonical order
+  impure terms additionally restrict order of reduction to avoid observable differences in side effects
+    linearity: effects must not be duplicated, unless idempotent
+    commutativity: order of effects must not be interchanged unless the effects are commutative
+  operational equivalence of term rewrites/substitutions
+    new term must fully reduce at least as quickly as the original term
+    improvement condition of the HLSC paper
+
+================================================================
 = misc
 ================================================================
 
