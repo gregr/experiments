@@ -64,7 +64,6 @@ _cfs_elemIndex elem elems = Right . CNat $ toInteger idx
           idx = fromMaybe default_idx $ elemIndex elem elems
 
 -- TODO
--- memory store; addresses; probably use state monad
 -- TupleWrite and test
 -- recursion-friendly pretty printing
 -- switch to zipper contexts
@@ -83,24 +82,21 @@ _cfs_elemIndex elem elems = Right . CNat $ toInteger idx
 -- (ordered) (sub)sets of: nats; ints; symbols
 --   unique ids for sets so tags can be distinguished/unforgeable
 --   layering/association of ordered sets over nats to describe records on top of tuples
--- variable-sized tuple/array alloc, given initialization value
---   can be given abstract value (type) for size-only initialization
 -- tuples:
 --   allocation
 --     indicate allocations performed in a mutable region: (mutable expr-that-allocates)
 --       'mutable' means that mutability can be observed from a distance; implies sharing
 --       linear/unshared tuples can be modified without having been allocated in a mutable region
 --         allows efficient initialization dynamically-sized of yet-to-be-shared 'constant' tuples
---   read/write
---     in order to implement write, need to represent memory store and addresses into it
-data ValueT term env value = Lam term env
-                           | Tuple [value]
-                           | Const Constant
-                           | ConstFinSet ConstFiniteSet
-                           | Tagged Constant value
-                           | Undefined String
+data ValueT term env value1 value2 =
+    Lam term env
+  | Tuple [value1]
+  | Const Constant
+  | ConstFinSet ConstFiniteSet
+  | Tagged Constant value2
+  | Undefined String
   deriving (Show, Eq)
-data TermT term = Value (ValueT term () term)
+data TermT term = Value (ValueT term () term term)
                 | Var Name
                 | LetRec [term] term
                 | App term term
@@ -160,7 +156,8 @@ evalT ctrl term env = do
         otherwise -> Left "expected Tagged"
 
     construct (Lam body ()) = return $ Lam body env
-    construct (Tuple vals) = liftM Tuple $ mapM (`eval` env) vals
+    construct (Tuple vals) =
+      liftM Tuple $ store_allocate =<< mapM (`eval` env) vals
     construct (Const const) = return $ Const const
     construct (ConstFinSet cfs) = return $ ConstFinSet cfs
     construct (Tagged const val) = liftM (Tagged const) $ eval val env
@@ -194,18 +191,21 @@ evalT ctrl term env = do
       apply proc arg
     evT (TupleAlloc tsize) = do
       esize <- evalNat tsize
-      return (do
-        size <- esize
-        Right . Tuple $ replicate size undef)
+      case esize of
+        Left msg -> return $ Left msg
+        Right size ->
+          liftM (Right . Tuple) $ store_allocate $ replicate size undef
       where undef = wrap $ Undefined "TupleAlloc: uninitialized slot"
     evT (TupleRead ttup tidx) = do
       etup <- evalTup ttup
       eidx <- evalNat tidx
-      return (do
+      case (do
         tup <- etup
         idx <- eidx
-        if idx < length tup then Right . unwrap $ tup !! idx
-          else Left "TupleRead: index out of bounds")
+        if idx < length tup then Right $ tup !! idx
+          else Left "TupleRead: index out of bounds") of
+        Left msg -> return $ Left msg
+        Right address -> liftM (Right . unwrap) $ store_deref address
     evT (ConstFinSetIndex tcfs tconst) = do
       vcfs <- evalUnwrap tcfs
       vconst <- evalUnwrap tconst
@@ -223,8 +223,8 @@ evalT ctrl term env = do
 ----------------------------------------------------------------
 newtype SimpleTerm = SimpleTerm { simple_term :: TermT SimpleTerm }
   deriving (Show, Eq)
-newtype SimpleValue =
-  SimpleValue { simple_value :: ValueT SimpleTerm SimpleEnv SimpleValue }
+newtype SimpleValue = SimpleValue {
+  simple_value :: ValueT SimpleTerm SimpleEnv Address SimpleValue }
   deriving (Show, Eq)
 newtype SimpleEnv = SimpleEnv [SimpleValue]
   deriving (Show, Eq)
