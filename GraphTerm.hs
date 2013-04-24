@@ -64,7 +64,6 @@ _cfs_elemIndex elem elems = Right . CNat $ toInteger idx
           idx = fromMaybe default_idx $ elemIndex elem elems
 
 -- TODO
--- TupleWrite and test
 -- recursion-friendly pretty printing
 -- switch to zipper contexts
 --   small-step
@@ -275,6 +274,7 @@ value = SimpleTerm . Value
 tuple = value . Tuple
 tupalloc sz = SimpleTerm $ TupleAlloc sz
 tupread tup idx = SimpleTerm $ TupleRead tup idx
+tupwrite tup idx val = SimpleTerm $ TupleWrite tup idx val
 constant = value . Const
 cnat = constant . CNat
 cfsidx cfs const = SimpleTerm $ ConstFinSetIndex cfs const
@@ -285,6 +285,14 @@ test_recfunc1 = lam $ app (var 3) $ cnat 64
 test_recfunc2 = lam $ app (var 2) $ var 0
 test_letrec = SimpleTerm $ LetRec [test_recfunc0, test_recfunc1, test_recfunc2] $ app (var 0) $ cnat 72
 
+-- TODO: saner way to build test cases; most of the pain is manually tracking de Bruijn indices
+test_seq taction tresult = app (lam tresult) taction
+test_writer = lam $ lam $ app
+  (lam (test_seq (tupwrite (var 0) (cnat 0) (var 2))
+       (test_seq (tupwrite (var 1) (cnat 1) (var 2))
+                 (var 2))))
+  (tupalloc (cnat 2))
+
 test_sym = constant . CSym $ ("global", "two")
 test_cfs = value . ConstFinSet $ CSSym ("global", ["one", "two", "three"])
 test_tup0 = tuple [cnat 0, cnat 1, cnat 2, cnat 3, cnat 4, cnat 5, cnat 6]
@@ -293,6 +301,7 @@ test_term = tuple [cnat 4,
                    app (lam $ var 0) (lam $ lam $ var 1),
                    tupread (tuple [cnat 11, cnat 421]) (cnat 1),
                    tupalloc (cnat 2),
+                   app (app test_writer (cnat 987)) (cnat 654),
                    cfsidx test_cfs test_sym,
                    test_letrec]
 test = runState (simple_eval test_term $ SimpleEnv []) sstore_empty
