@@ -102,6 +102,7 @@ data TermT term = Value (ValueT term () term term)
                 | App term term
                 | TupleAlloc term
                 | TupleRead term term
+                | TupleWrite term term term
                 | ConstFinSetIndex term term
                 | TaggedGetConst term
                 | TaggedGetPayload term
@@ -141,8 +142,8 @@ evalT ctrl term env = do
     store_assign address value = do
       store <- get
       case ctrl_store_update ctrl store address value of
-        Nothing -> Undefined "assigned value to invalid address"
-        Just store' -> put store' >> return $ Tuple []
+        Nothing -> return . Right $ Undefined "assigned value to invalid address"
+        Just store' -> put store' >> (return . Right $ Tuple [])
 
     apply proc arg = case unwrap proc of
       Lam body penv -> liftM (Right . unwrap) $ eval body env'
@@ -206,6 +207,17 @@ evalT ctrl term env = do
           else Left "TupleRead: index out of bounds") of
         Left msg -> return $ Left msg
         Right address -> liftM (Right . unwrap) $ store_deref address
+    evT (TupleWrite ttup tidx targ) = do
+      etup <- evalTup ttup
+      eidx <- evalNat tidx
+      arg <- eval targ env
+      case (do
+        tup <- etup
+        idx <- eidx
+        if idx < length tup then Right (tup !! idx, arg)
+          else Left "TupleWrite: index out of bounds") of
+        Left msg -> return $ Left msg
+        Right (address, arg) -> store_assign address arg
     evT (ConstFinSetIndex tcfs tconst) = do
       vcfs <- evalUnwrap tcfs
       vconst <- evalUnwrap tconst
