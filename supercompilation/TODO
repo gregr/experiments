@@ -93,6 +93,13 @@ when analyzing a function definition, is there a nice way of determining which o
     this may allow us to automatically identify useful 'theorems'
     actually, this seems to be at least somewhat (maybe completely?) achieved by generalization already...
 
+CBV sc is missing something: it seems to need a special way of generalizing contexts (and possibly heap bindings?), maybe treating them as if they are accumulators; related to this, CBV sc needs to do something when supercompiling constructors that CBN sc doesn't do, and how are dead/finished expressions treated here or in the context in general?
+embedded-tuple lifting/tieback; maybe more accurate to call it 'vectorized' tieback, and extend it to work with any situation with linear applicative evaluation (unknown function call, constructor, etc.)
+  possible to do this search when the original and final tuple constructor share the same syntax tag: just search each position for an embedded version of the original expr in that same position
+  study this via a tuple-deconstructing let? or a new flavor of case?
+  do constructors need a special rule or heuristic for finding improvement lemmas by parallel lifting? is that the right way to deal with this?
+  can vectorization be undone easily in tuple deconstruction contexts? an alternative would be to use something like equality saturation for potential supercompilings of an expression.  When supercompiling an expression, for any given sub-expression, choose the best supercompiling wrt its context (choice between explicit tuple construction vs. vectorized recursive function; if the context is tuple deconstruction, the first is easier to work with)
+
 ================================================================
 = correctness of transformations
 ================================================================
@@ -110,6 +117,95 @@ operational correctness (no observable difference in effects, including terminat
   operational equivalence of term rewrites/substitutions
     new term must fully reduce at least as quickly as the original term
     improvement condition of the HLSC paper
+
+================================================================
+= theorem proving
+================================================================
+
+transformation and theorem proving meta-level provided by reflection (somewhat inspired by milawa)
+possible proof operations: total, strict, pure, defined?; rewrite, neutralize?, normalize, unfold, fold, abstract/generalize, erase, skip, split, finish, lemma?
+liveness/productivity? effects?
+memory safety policy for direct address space access/manipulation; ie, how to show gc, or anything built with exposure to direct memory allocation is safe
+  memory effect notation: ME = VARIABLE | empty-memory | (alloc addr ME) | (dealloc? addr ME) | (write addr val ME) | (eval-effect term ME)
+  what are addresses, really?
+is mobile PCC more more effective for original/high-level code, or generated code?
+can proofs for high-level language be straightforwardly transformed into proofs for low-level language during compilation?
+
+================================================================
+= implementation strategy
+================================================================
+
+to attempt to satisfy the de bruijn criterion, start simple
+minimal pure functional language with let-rec and data structures:
+  value:
+    lambda
+    symbol
+    pair
+    unit
+  operation:
+    application
+    if-symbols-equal
+    pair-left, pair-right
+    let-rec (could do without, but seems to simplify supercompilation)
+evaluation state components:
+  focus: term
+  continuation: list of one-hole contexts
+  environment: binder -> address
+  catalog: address -> value ; this is just for sharing constant values, it is not a mutable store
+  next-address: address
+
+see how hard it is to extend this to include a pair of streams for input and output
+
+given this simple foundation, attempt to build a more fully-featured high-level language
+  example extensions:
+    n-ary tuples
+    mutable cells
+    delimited continuations
+    concurrency inspired by a process calculus
+    linear resource analysis
+    optional control over data representation
+    bit-level values and operations
+    os interaction
+    foreign language interop
+
+later, attempt to design a low-level language
+  inspired by continuation-enhanced SSA language used in MLton?
+    http://mlton.org/pipermail/mlton/2003-March/023325.html
+    http://mlton.org/pipermail/mlton/2003-March/023326.html
+    http://mlton.org/pipermail/mlton/2003-January/023054.html
+  hopefully not just a compilation target
+    use to describe runtime support (such as gc)
+    use to describe a kernel
+    these may be easiest to achieve through direct code generation via high-level language library
+
+================================================================
+= syntactic abstraction
+================================================================
+
+this is somewhat inspired by the kernel language, but simpler for analysis
+additional constructs can be satisfied entirely as a pre-processing phase, avoiding any complication of the calculus under study
+syntax combinations evaluate operator, reify the operands, and leave behind a residual procedure application to be performed at runtime
+  reification strategy for variables allows explicit evaluation via meta-circular interpretation
+  macros defined as procedures that directly implement the desired effect via explicit evaluation
+    more straightforward; application of a macro does NOT involve generating a quoted form that then needs expansion itself
+    avoiding the quotation dance makes it easy to maintain hygene, but also easy to be unhygienic when intended
+
+three additional constructs:
+  syntax-lambda to bind a syntactic operator
+    'application' of such an operator causes its argument expressions to be reified as data
+  syntax-application to indicate that arguments should be reified, even if the operator was not bound by syntax-lambda
+  standard-application to indicate that arguments should not be reified, even if the operator was bound by syntax-lambda
+
+reification:
+  keyword -> (pair 'keyword' (pair symbol symbol))
+  variable -> (pair 'variable' (pair symbol evaluated-value)) ; this is key
+  combination -> (pair 'combination' (list of reified expressions))
+  reified environments map symbols to values, but only for variables being reified
+    this makes information-flow analysis much simpler by avoiding unintentional capture
+    if desired, broader or narrower environments specified manually to extend or limit variable capture beyond the default
+
+explicit evaluation:
+  no runtime support should be needed; can be implemented as a meta-circular interpreter with this reification strategy
 
 ================================================================
 = misc
