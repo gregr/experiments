@@ -88,18 +88,18 @@
   (clg-assumption (assumed)))
 ; (clg-memory-effect ())
 ; (clg-stream-effect ())
+; (clg-reset (marker))
 ; etc.
 (data assumption
   (assume-eq (key0 key1))
   (assume-neq (key0 key1))
   (assume-value (key new-keys value)))
-(data control
+(data cont
+  (ohc (cont oh))
   (halt ())
   (return-caller (cont env))
-  (return-context (cont env ctlg-rev)))
-(variant (cont (ohs ctrl)))
-(variant (state (focus cont env)))
-(variant (evaluator (state clg clg-next-key)))
+  (return-context (cont env clg-replay)))
+(variant (state (focus cont env clg clg-next-key)))
 
 (data penv (penv (syntax vars)))
 (define penv-empty (penv dict-empty '()))
