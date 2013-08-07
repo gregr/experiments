@@ -5,13 +5,12 @@
 (data value
   (lam (body env))
   (sym (name))
-  ; uid?
   (pair (l r))
   (uno ()))
 
 (data term
   (val (x))
-  (var (idx))
+  (bound (idx))
   (app (proc arg))
   (if-eq (sym0 sym1 true false))
   (pair-left (x))
@@ -165,7 +164,7 @@
   (do either-monad
     idx <- (maybe->either (format "unbound variable '~a'" name)
                           (penv-vars-get pe name))
-    (pure (var idx))))
+    (pure (bound idx))))
 (define (parse-app pe form)
   (do either-monad
     form <- (map-parse pe form)
