@@ -100,6 +100,55 @@
   (return-context (cont env clg-replay)))
 (variant (state (focus cont env clg clg-next-key)))
 
+
+(define (denote-eval term) ((denote term) denote-env-empty))
+
+(define (denote term)
+  (match term
+    ((val v) (denote-value v))
+    ((bound idx) (lambda (env) (denote-env-lookup env idx)))
+    ((app proc arg)
+      (let ((dproc (denote proc)) (darg (denote arg)))
+        (lambda (env)
+          (let ((vproc (dproc env)) (varg (darg env)))
+            (vproc varg)))))
+    ((if-eq sym0 sym1 true false)
+      (let ((ds0 (denote sym0)) (ds1 (denote sym1))
+            (dt (denote true)) (df (denote false)))
+        (lambda (env) (if (eq? (ds0 env) (ds1 env)) (dt env) (df env)))))
+    ((pair-left x) (let ((dx (denote x))) (lambda (env) (car (dx env)))))
+    ((pair-right x) (let ((dx (denote x))) (lambda (env) (cdr (dx env)))))
+    ((let-rec defs body)
+      (let ((dbody (denote body)) (ddefs (map denote-lam defs)))
+        (lambda (env)
+          (let* ((xenv (let loop ((env env) (ndefs (length ddefs)))
+                        (if (> ndefs 0)
+                          (loop (denote-env-extend env (void)) (- ndefs 1))
+                          env)))
+                (vdefs (map (lambda (ddef) (ddef xenv)) ddefs)))
+            (begin (denote-env-backfill xenv vdefs) (body xenv))))))))
+
+(define denote-env-empty '())
+(define (denote-env-lookup env idx) (unbox (list-ref env idx)))
+(define (denote-env-extend env v) (cons (box v) env))
+(define (denote-env-backfill env vs)
+  (let loop ((vs (reverse vs)))
+    (match vs
+      ('() (void))
+      ((cons v vs) (begin (set-box! (car env) v) (loop vs))))))
+(define (denote-lam body)
+  (let ((dbody (denote body)))
+    (lambda (env) (lambda (arg) (dbody (denote-env-extend env arg))))))
+
+(define (denote-value v)
+  (match v
+    ((lam body _) (denote-lam body))
+    ((sym name) (lambda (env) name))
+    ((pair l r) (let ((dl (denote l)) (dr (denote r)))
+                  (lambda (env) (cons (dl env) (dr env)))))
+    ((uno) (lambda (env) '()))))
+
+
 (data penv (penv (syntax vars)))
 (define penv-empty (penv dict-empty '()))
 (define (penv-syntax-add pe name op)
@@ -221,9 +270,22 @@
            (pair-right ,parse-pair-right)
            (let-rec ,parse-let-rec))))
 
+(define (parse-form form) (parse penv-init form))
+(define (denote-form form)
+  (do either-monad
+    term <- (parse-form form)
+    (pure (denote term))))
+(define (denote-eval-form form)
+  (do either-monad
+    term <- (parse-form form)
+    (pure (denote-eval term))))
+
 ; testing
 (define tests
-  `((lam x x)
+  `((((lam x (lam y ())) (sym one)) (sym two))
+    (((lam x (lam y x)) (sym one)) (sym two))
+    (((lam x (lam y y)) (sym one)) (sym two))
+    (lam x x)
     (lam x (lam y x))
     ()
     (pair () ())
@@ -235,10 +297,19 @@
     (x y)
     (pair () () ())))
 
-(map (lambda (form) (parse penv-init form)) tests)
+(define parsed-tests (map (lambda (form) (parse penv-init form)) tests))
+parsed-tests
 
 (displayln "map-parse:")
 (map-parse penv-init tests)
+
+;> (denote-eval (right-x (list-ref parsed-tests 0)))
+;'()
+;> (denote-eval (right-x (list-ref parsed-tests 1)))
+;'one
+;> (denote-eval (right-x (list-ref parsed-tests 2)))
+;'two
+;>
 
 ;> (define pe (penv-vars-add (penv-vars-add (penv-syntax-add penv-empty 'x 'y) 'z) 'w))
 ;> (penv-syntax-rename pe 'x 'y)
