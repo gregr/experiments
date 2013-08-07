@@ -207,7 +207,7 @@
     `(,_ ,name) = form
     (pure (val (sym name)))))
 (define parse-if-eq (parse-apply if-eq 5))
-(define parse-pair (parse-apply pair 3))
+(define parse-pair (parse-apply (compose1 val pair) 3))
 (define parse-pair-left (parse-apply pair-left 2))
 (define parse-pair-right (parse-apply pair-right 2))
 
