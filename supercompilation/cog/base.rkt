@@ -2,14 +2,18 @@
 
 (require "util.rkt")
 
-(data value
+(data value-atomic
+  (indirect (key))
+  (uno ())
+  (sym (name)))
+
+(data value-compound
   (lam (body env))
-  (sym (name))
-  (pair (l r))
-  (uno ()))
+  (pair (l r)))
 
 (data term
-  (val (x))
+  (val-a (x))
+  (val-c (x))
   (bound (idx))
   (app (proc arg))
   (if-eq (sym0 sym1 true false))
@@ -19,8 +23,8 @@
 
 (data one-hole
   ; value
-  (oh-pair-l (r))
-  (oh-pair-r (l))
+  ;(oh-pair-l (r))
+  ;(oh-pair-r (l))
   ; term
   (oh-app-proc (arg))
   (oh-app-arg (proc))
@@ -105,7 +109,8 @@
 
 (define (denote term)
   (match term
-    ((val v) (denote-value v))
+    ((val-a v) (denote-atom v))
+    ((val-c v) (denote-compound v))
     ((bound idx) (lambda (env) (denote-env-lookup env idx)))
     ((app proc arg)
       (let ((dproc (denote proc)) (darg (denote arg)))
@@ -140,13 +145,15 @@
   (let ((dbody (denote body)))
     (lambda (env) (lambda (arg) (dbody (denote-env-extend env arg))))))
 
-(define (denote-value v)
+(define (denote-atom v)
+  (match v
+    ((sym name) (lambda (env) name))
+    ((uno) (lambda (env) '()))))
+(define (denote-compound v)
   (match v
     ((lam body _) (denote-lam body))
-    ((sym name) (lambda (env) name))
     ((pair l r) (let ((dl (denote l)) (dr (denote r)))
-                  (lambda (env) (cons (dl env) (dr env)))))
-    ((uno) (lambda (env) '()))))
+                  (lambda (env) (cons (dl env) (dr env)))))))
 
 
 (data penv (penv (syntax vars)))
@@ -187,7 +194,7 @@
 
 (define (parse pe form)
   (match form
-    ('() (right (val (uno))))
+    ('() (right (val-a (uno))))
     ((? symbol?) (parse-var pe form))
     ((cons op rest) (parse-combination pe op form))
     (_ (left (format "cannot parse: ~s" form)))))
@@ -228,7 +235,7 @@
     _ <- (check-arity 3 form)
     `(,_ ,name ,body) = form
     body <- (parse-under pe name body)
-    (pure (val (lam body '())))))
+    (pure (val-c (lam body '())))))
 (define (parse-let-rec pe form)
   (define-struct lrdef (name param body))
   (define (lr-def form)
@@ -253,9 +260,9 @@
   (do either-monad
     _ <- (check-arity 2 form)
     `(,_ ,name) = form
-    (pure (val (sym name)))))
+    (pure (val-a (sym name)))))
 (define parse-if-eq (parse-apply if-eq 5))
-(define parse-pair (parse-apply (compose1 val pair) 3))
+(define parse-pair (parse-apply (compose1 val-c pair) 3))
 (define parse-pair-left (parse-apply pair-left 2))
 (define parse-pair-right (parse-apply pair-right 2))
 
@@ -303,6 +310,10 @@ parsed-tests
 (displayln "map-parse:")
 (map-parse penv-init tests)
 
+(displayln "eval:")
+(denote-eval (right-x (list-ref parsed-tests 0)))
+(denote-eval (right-x (list-ref parsed-tests 1)))
+(denote-eval (right-x (list-ref parsed-tests 2)))
 ;> (denote-eval (right-x (list-ref parsed-tests 0)))
 ;'()
 ;> (denote-eval (right-x (list-ref parsed-tests 1)))
