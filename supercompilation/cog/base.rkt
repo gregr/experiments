@@ -22,10 +22,6 @@
   (let-rec (defs body)))
 
 (data one-hole
-  ; value
-  ;(oh-pair-l (r))
-  ;(oh-pair-r (l))
-  ; term
   (oh-app-proc (arg))
   (oh-app-arg (proc))
   (oh-if-eq-0 (sym1 true false))
@@ -152,9 +148,10 @@
 (define (denote-compound v)
   (match v
     ((lam body _) (denote-lam body))
-    ((pair l r) (let ((dl (denote l)) (dr (denote r)))
-                  (lambda (env) (cons (dl env) (dr env)))))))
-
+    ((pair l r) (lambda (env)
+                  (let ((dl (denote-env-lookup env l))
+                        (dr (denote-env-lookup env r)))
+                    (cons dl dr))))))
 
 (data penv (penv (syntax vars)))
 (define penv-empty (penv dict-empty '()))
@@ -195,7 +192,7 @@
 (define (parse pe form)
   (match form
     ('() (right (val-a (uno))))
-    ((? symbol?) (parse-var pe form))
+    ((? symbol?) (parse-bound pe form))
     ((cons op rest) (parse-combination pe op form))
     (_ (left (format "cannot parse: ~s" form)))))
 (define (parse-combination pe op form)
@@ -216,10 +213,15 @@
     pe = (penv-vars-add pe param)
     (parse pe body)))
 
-(define (parse-var pe name)
+(define (parse-bound-index pe name)
   (do either-monad
+    _ <- (check-symbol name)
     idx <- (maybe->either (format "unbound variable '~a'" name)
                           (penv-vars-get pe name))
+    (pure idx)))
+(define (parse-bound pe name)
+  (do either-monad
+    idx <- (parse-bound-index pe name)
     (pure (bound idx))))
 (define (parse-app pe form)
   (do either-monad
@@ -261,8 +263,14 @@
     _ <- (check-arity 2 form)
     `(,_ ,name) = form
     (pure (val-a (sym name)))))
+(define (parse-pair pe form)
+  (do either-monad
+    _ <- (check-arity 3 form)
+    `(,_ ,vl ,vr) = form
+    il <- (parse-bound-index pe vl)
+    ir <- (parse-bound-index pe vr)
+    (pure (val-c (pair il ir)))))
 (define parse-if-eq (parse-apply if-eq 5))
-(define parse-pair (parse-apply (compose1 val-c pair) 3))
 (define parse-pair-left (parse-apply pair-left 2))
 (define parse-pair-right (parse-apply pair-right 2))
 
@@ -287,21 +295,23 @@
     term <- (parse-form form)
     (pure (denote-eval term))))
 
+; TODO: use racket's test facilities
 ; testing
 (define tests
   `((((lam x (lam y ())) (sym one)) (sym two))
     (((lam x (lam y x)) (sym one)) (sym two))
     (((lam x (lam y y)) (sym one)) (sym two))
+    (((lam x (lam y (pair-left (pair x y)))) (sym left)) (sym right))
+    (((lam x (lam y (pair-right (pair x y)))) (sym left)) (sym right))
     (lam x x)
     (lam x (lam y x))
     ()
-    (pair () ())
-    (pair-left (pair () ()))
-    (pair-right (pair () ()))
+    (lam x (pair x x))
     (sym abc)
     (if-eq (sym abc) (sym def) () ())
     (let-rec ((x y (y x))) (x x))
     (x y)
+    (pair () ())
     (pair () () ())))
 
 (define parsed-tests (map (lambda (form) (parse penv-init form)) tests))
@@ -314,6 +324,8 @@ parsed-tests
 (denote-eval (right-x (list-ref parsed-tests 0)))
 (denote-eval (right-x (list-ref parsed-tests 1)))
 (denote-eval (right-x (list-ref parsed-tests 2)))
+(denote-eval (right-x (list-ref parsed-tests 3)))
+(denote-eval (right-x (list-ref parsed-tests 4)))
 ;> (denote-eval (right-x (list-ref parsed-tests 0)))
 ;'()
 ;> (denote-eval (right-x (list-ref parsed-tests 1)))
