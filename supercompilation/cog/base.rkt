@@ -21,14 +21,6 @@
   (pair-right (x))
   (let-rec (defs body)))
 
-(data one-hole
-  (oh-app-proc (arg))
-  (oh-app-arg (proc))
-  (oh-if-eq-0 (sym1 true false))
-  (oh-if-eq-1 (sym0 true false))
-  (oh-pair-left ())
-  (oh-pair-right ()))
-
 ; TODO
 ; eager and lazy CBV operational semantics
 ;   CBV describes observable semantics while lazy/eager describes operational strategy
@@ -80,6 +72,26 @@
 ;   case D, where e's depend on D, c's do not depend on D at all, x's depend only on D's effect
 ; newer ---------------------------------- older
 ; ... e e e e (assume D = _) x x x D c c c c ...
+
+(variant (term-context (base finished pending)))
+
+(define (term->context term)
+  (match-let (((cons base pending)
+    (match term
+      ((val-a x)                    (cons term '()))
+      ((val-c (lam body env))       (cons (val-c (lam (term->context body) env))
+                                                 '()))
+      ((val-c (pair l r))           (cons (val-c (pair '() '())) (list l r)))
+      ((bound idx)                  (cons term '()))
+      ((app proc arg)               (cons (app '() '()) (list proc arg)))
+      ((if-eq sym0 sym1 true false) (cons (if-eq '() '() true false)
+                                          (list sym0 sym1)))
+      ((pair-left x)                (cons (pair-left '()) (list x)))
+      ((pair-right x)               (cons (pair-right '()) (list x)))
+      ((let-rec defs body)          (cons (let-rec (map term->context defs)
+                                                   (term->context body))
+                                          '())))))
+    (term-context base '() (map term->context pending))))
 
 (data clg-entry
   (clg-data (kvs))  ; plural, allowing SCCs (let-rec) to satisfy partition property
@@ -148,10 +160,8 @@
 (define (denote-compound v)
   (match v
     ((lam body _) (denote-lam body))
-    ((pair l r) (lambda (env)
-                  (let ((dl (denote-env-lookup env l))
-                        (dr (denote-env-lookup env r)))
-                    (cons dl dr))))))
+    ((pair l r) (let ((dl (denote l)) (dr (denote r)))
+                  (lambda (env) (cons (dl env) (dr env)))))))
 
 (data penv (penv (syntax vars)))
 (define penv-empty (penv dict-empty '()))
@@ -263,14 +273,8 @@
     _ <- (check-arity 2 form)
     `(,_ ,name) = form
     (pure (val-a (sym name)))))
-(define (parse-pair pe form)
-  (do either-monad
-    _ <- (check-arity 3 form)
-    `(,_ ,vl ,vr) = form
-    il <- (parse-bound-index pe vl)
-    ir <- (parse-bound-index pe vr)
-    (pure (val-c (pair il ir)))))
 (define parse-if-eq (parse-apply if-eq 5))
+(define parse-pair (parse-apply (compose1 val-c pair) 3))
 (define parse-pair-left (parse-apply pair-left 2))
 (define parse-pair-right (parse-apply pair-right 2))
 
@@ -326,6 +330,8 @@ parsed-tests
 (denote-eval (right-x (list-ref parsed-tests 2)))
 (denote-eval (right-x (list-ref parsed-tests 3)))
 (denote-eval (right-x (list-ref parsed-tests 4)))
+
+(term->context (right-x (list-ref parsed-tests 4)))
 ;> (denote-eval (right-x (list-ref parsed-tests 0)))
 ;'()
 ;> (denote-eval (right-x (list-ref parsed-tests 1)))
