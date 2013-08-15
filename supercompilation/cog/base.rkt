@@ -116,6 +116,25 @@
                                           '())))))
     (term-context base '() (map term->context pending))))
 
+(define (context->term base finished)
+  (let ((finished (reverse finished)))
+    (match base
+      ((val-a x)              base)
+      ((val-c (lam _ _))      base)
+      ((val-c (pair _ _))     (val-c (apply pair finished)))
+      ((bound idx)            base)
+      ((app proc arg)         (apply app finished))
+      ((if-eq _ _ true false) (apply (lambda (s0 s1) (if-eq s0 s1 true false))
+                                    finished))
+      ((pair-left _)          (apply pair-left finished))
+      ((pair-right _)         (apply pair-right finished))
+      ((let-rec _ _)          base))))
+
+(define (term-context-add tc val)
+  (match tc
+    ((term-context base finished pending)
+     (term-context base (cons val finished) pending))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; small-step interpretation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
