@@ -2,25 +2,6 @@
 
 (require "util.rkt")
 
-(data value-atomic
-  (indirect (key))
-  (uno ())
-  (sym (name)))
-
-(data value-compound
-  (lam (body env))
-  (pair (l r)))
-
-(data term
-  (val-a (x))
-  (val-c (x))
-  (bound (idx))
-  (app (proc arg))
-  (if-eq (sym0 sym1 true false))
-  (pair-left (x))
-  (pair-right (x))
-  (let-rec (defs body)))
-
 ; TODO
 ; eager and lazy CBV operational semantics
 ;   CBV describes observable semantics while lazy/eager describes operational strategy
@@ -72,6 +53,48 @@
 ;   case D, where e's depend on D, c's do not depend on D at all, x's depend only on D's effect
 ; newer ---------------------------------- older
 ; ... e e e e (assume D = _) x x x D c c c c ...
+;
+; future small-step ideas
+;(data assumption
+  ;(assume-eq (key0 key1))
+  ;(assume-neq (key0 key1))
+  ;(assume-value (key new-keys value)))
+;(data clg-entry
+  ;(clg-data (kvs)))   plural, allowing SCCs (let-rec) to satisfy partition property
+  ;(clg-obligation (key term env notes))
+  ;(clg-assumption (assumed)))
+  ;(clg-memory-effect ())
+  ;(clg-stream-effect ())
+  ;(clg-reset (marker))
+  ;etc.
+;(data cont
+  ;(ohc (cont oh))
+  ;(halt ())
+  ;(return-caller (cont env)))
+  ;(return-context (cont env clg-replay)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; abstract syntax
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(data value-atomic
+  (indirect (key))
+  (uno ())
+  (sym (name)))
+
+(data value-compound
+  (lam (body env))
+  (pair (l r)))
+
+(data term
+  (val-a (x))
+  (val-c (x))
+  (bound (idx))
+  (app (proc arg))
+  (if-eq (sym0 sym1 true false))
+  (pair-left (x))
+  (pair-right (x))
+  (let-rec (defs body)))
 
 (variant (term-context (base finished pending)))
 
@@ -93,25 +116,23 @@
                                           '())))))
     (term-context base '() (map term->context pending))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; small-step interpretation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (data clg-entry
-  (clg-data (kvs))  ; plural, allowing SCCs (let-rec) to satisfy partition property
-  (clg-obligation (key term env notes))
-  (clg-assumption (assumed)))
-; (clg-memory-effect ())
-; (clg-stream-effect ())
-; (clg-reset (marker))
-; etc.
-(data assumption
-  (assume-eq (key0 key1))
-  (assume-neq (key0 key1))
-  (assume-value (key new-keys value)))
+  (clg-data (kvs)))  ; plural, allowing SCCs (let-rec) to satisfy partition property
+
 (data cont
   (ohc (cont oh))
   (halt ())
-  (return-caller (cont env))
-  (return-context (cont env clg-replay)))
+  (return-caller (cont env)))
+
 (variant (state (focus cont env clg clg-next-key)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; denotational interpretation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (denote-eval term) ((denote term) denote-env-empty))
 
@@ -162,6 +183,10 @@
     ((lam body _) (denote-lam body))
     ((pair l r) (let ((dl (denote l)) (dr (denote r)))
                   (lambda (env) (cons (dl env) (dr env)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; parsing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (data penv (penv (syntax vars)))
 (define penv-empty (penv dict-empty '()))
@@ -289,6 +314,10 @@
            (pair-right ,parse-pair-right)
            (let-rec ,parse-let-rec))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; testing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (parse-form form) (parse penv-init form))
 (define (denote-form form)
   (do either-monad
@@ -300,7 +329,6 @@
     (pure (denote-eval term))))
 
 ; TODO: use racket's test facilities
-; testing
 (define tests
   `((((lam x (lam y ())) (sym one)) (sym two))
     (((lam x (lam y x)) (sym one)) (sym two))
