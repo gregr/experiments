@@ -89,13 +89,13 @@
         (if (equal? key0 key) (just index) (loop lst key (+ index 1)))))))
 
 (define alist-empty '())
-(define (alist-add alst key val) (cons (cons key (just val)) alst))
-(define (alist-del alst key) (cons (cons key (nothing)) alst))
+(define (alist-build keys vals) (map cons keys vals))
+(define (alist-add alst key val) (cons (cons key val) alst))
 (define (alist-get alst key)
   (match alst
     ('() (nothing))
     ((cons (cons key0 val) alst)
-      (if (equal? key0 key) val
+      (if (equal? key0 key) (just val)
         (alist-get alst key)))))
 (define (alist-get-default alst key default)
   (match (alist-get alst key)
@@ -105,11 +105,20 @@
 ; TODO: implement as a persistent hash table?
 (data dict (dict (alist)))
 (define dict-empty (dict alist-empty))
-(define (dict-add dct key val) (dict (alist-add (dict-alist dct) key val)))
-(define (dict-del dct key) (dict (alist-del (dict-alist dct) key)))
-(define (dict-get dct key) (alist-get (dict-alist dct) key))
+(define (dict-add dct key val) (dict (alist-add (dict-alist dct) key (just val))))
+(define (dict-del dct key) (dict (alist-add (dict-alist dct) key (nothing))))
+(define (dict-get dct key)
+  (match (alist-get (dict-alist dct) key)
+    ((nothing) (nothing))
+    ((just x) x)))
 (define (dict-get-default dct key default)
-  (alist-get-default (dict-alist dct) key default))
+  (match (dict-get dct key)
+    ((nothing) default)
+    ((just x) x)))
+
+; TODO:
+; lenses?
+; for1[-monad]: flip last two params of map[-monad]
 
 ; testing
 ;(display
