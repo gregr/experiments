@@ -116,19 +116,22 @@
                                           '())))))
     (term-context base '() (map term->context pending))))
 
-(define (context->term base finished)
-  (let ((finished (reverse finished)))
-    (match base
-      ((val-a x)              base)
-      ((val-c (lam _ _))      base)
-      ((val-c (pair _ _))     (val-c (apply pair finished)))
-      ((bound idx)            base)
-      ((app proc arg)         (apply app finished))
-      ((if-eq _ _ true false) (apply (lambda (s0 s1) (if-eq s0 s1 true false))
-                                    finished))
-      ((pair-left _)          (apply pair-left finished))
-      ((pair-right _)         (apply pair-right finished))
-      ((let-rec _ _)          base))))
+(define (context->term tc)
+  (match tc
+    ((term-context base finished _)
+     (let ((finished (reverse finished)))
+       (match base
+         ((val-a x)              base)
+         ((val-c (lam _ _))      base)
+         ((val-c (pair _ _))     (val-c (apply pair finished)))
+         ((bound idx)            base)
+         ((app proc arg)         (apply app finished))
+         ((if-eq _ _ true false) (apply
+                                   (lambda (s0 s1) (if-eq s0 s1 true false))
+                                   finished))
+         ((pair-left _)          (apply pair-left finished))
+         ((pair-right _)         (apply pair-right finished))
+         ((let-rec _ _)          base))))))
 
 (define (term-context-add tc val)
   (match tc
@@ -284,7 +287,7 @@
           ((cons focus pending)
            (let ((tc-hole (term-context base finished pending)))
              (right (state focus (ohc tc-hole cont) env clg cur-key))))
-          ('() (state-activate-term st (context->term base finished)))))))))
+          ('() (state-activate-term st (context->term focus)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; denotational interpretation
@@ -520,7 +523,7 @@ parsed-tests
 tstart
 
 (define (step-n st count)
-  (if (= count 0) st
+  (if (= count 0) (right st)
     (do either-monad
       next <- (state-step st)
       (step-n next (- count 1)))))
