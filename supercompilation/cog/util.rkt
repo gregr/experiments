@@ -20,8 +20,8 @@
 
 (define-syntax do-with
   (syntax-rules (<-)
-    ((_ combine var <- stmt rest ...)
-      (combine stmt (lambda (var) (do-with combine rest ...))))
+    ((_ combine pat <- stmt rest ...)
+      (combine stmt (match-lambda (pat (do-with combine rest ...)))))
     ((_ combine pat = stmt rest ...)
       (match-let ((pat stmt)) (do-with combine rest ...)))
     ((_ combine stmt) stmt)))
