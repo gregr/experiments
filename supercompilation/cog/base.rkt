@@ -290,6 +290,94 @@
           ('() (state-activate-term st (context->term focus)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; visualization
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (val-a-show val)
+  (match val
+    ((? void?)      "_")
+    ((indirect key) (format "@~a" key))
+    ((uno)          "{}")
+    ((sym name)     (format "'~a'" name))
+    (_ val)))
+(define (val-c-show val)
+  (match val
+    ((lam body env) (format "(lam ~a ~a)" (term-context-show body) (env-show env)))
+    ((pair l r)     (format "{~a . ~a}" (val-a-show l) (val-a-show r)))))
+(define (term-context-show tc)
+  (match tc
+    ((term-context base finished pending)
+     (let* ((finished (map (lambda (atom) (format "<~a>" (val-a-show atom))) finished))
+            (term (context->term
+                    (term-context base (append (reverse (map term-context-show pending)) finished) '()))))
+       (match term
+         ((val-a x)                (val-a-show x))
+         ((val-c x)                (val-c-show x))
+         ((bound idx)              (format "$~a" idx))
+         ((app proc arg)           (format "(~a ~a)" proc arg))
+         ((if-eq s0 s1 true false) (format "(if (~a = ~a) ~a ~a)" s0 s1
+                                           (term-context-show true)
+                                           (term-context-show false)))
+         ((pair-left p)            (format "(pair-left ~a)" p))
+         ((pair-right p)           (format "(pair-right ~a)" p))
+         ((let-rec defs body)      (format "(let-rec ~a; ~a)"
+                                           (string-join
+                                             (map term-context-show defs) "; ")
+                                           (term-context-show body))))))))
+
+(define (cont-group-show cont)
+  (let group ((cont cont) (tcs '()))
+    (match cont
+      ((ohc oh cont)
+       (let ((tc (format "~a" (term-context-show
+                                (term-context-add oh (void))))))
+         (group cont (cons tc tcs))))
+      ((return-caller env cont)
+       (cons
+         (cons (reverse tcs) (string-append "return: " (env-show env)))
+         (group cont '())))
+      ((halt) (list (cons (reverse tcs) "halt!"))))))
+(define (cont-show cont)
+  (string-join (map (match-lambda
+                      ((cons tcs delim)
+                       (string-append (string-join tcs " |> "
+                                                   #:before-first "[| "
+                                                   #:after-last " |]")
+                                      "\n" delim)))
+                    (cont-group-show cont))
+               "\n"))
+(define (env-show env)
+  (let ((strs (map (lambda (a) (format "~a" (val-a-show a))) env)))
+    (string-join strs ", " #:before-first "[" #:after-last "]")))
+(define (clg-entry-show entry)
+  (match entry
+    ((clg-data kvs)
+     (string-join
+       (map (match-lambda
+              ((cons key val) (format "@~a: ~a" key (val-c-show val)))) kvs)
+       "\n"))))
+(define (clg-show clg) (string-join (map clg-entry-show clg) "\n"))
+
+(define (state-show st)
+  (define border (make-string 79 #\=))
+  (define divider (make-string 79 #\-))
+  (match st
+    ((state focus cont env clg cur-key)
+     (string-join
+       (list
+         border
+         (term-context-show focus)
+         divider
+         (cont-show cont)
+         divider
+         (env-show env)
+         divider
+         (clg-show clg)
+         (format "~a" cur-key)
+         border)
+       "\n"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; denotational interpretation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -522,13 +610,20 @@ parsed-tests
   (state-init (term->context (right-x (list-ref parsed-tests 4)))))
 tstart
 
-(define (step-n st count)
+(define (step-n st count (act (lambda (x) (void))))
   (if (= count 0) (right st)
-    (do either-monad
-      next <- (state-step st)
-      (step-n next (- count 1)))))
+    (begin (act st)
+           (do either-monad
+             next <- (state-step st)
+             (step-n next (- count 1) act)))))
 
-(step-n tstart 25)
+(define (step-n-show st count)
+  (match (step-n st count (lambda (sti) (printf "~a\n\n\n" (state-show sti))))
+    ((left msg) (begin (displayln msg) st))
+    ((right st) (begin (displayln (state-show st)) st))))
+
+(displayln "\n")
+(step-n-show tstart -1)
 ;(left "halted on: #(struct:sym right)")
 
 ;> (denote-eval (right-x (list-ref parsed-tests 0)))
