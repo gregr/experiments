@@ -143,11 +143,148 @@
   (clg-data (kvs)))  ; plural, allowing SCCs (let-rec) to satisfy partition property
 
 (data cont
-  (ohc (cont oh))
+  (ohc (oh cont))
   (halt ())
-  (return-caller (cont env)))
+  (return-caller (env cont)))
 
 (variant (state (focus cont env clg clg-next-key)))
+
+(define clg-empty '())
+(define (clg-add clg entry) (cons entry clg))
+(define (clg-add-data clg keys vals)
+  (clg-add clg (clg-data (alist-build keys vals))))
+(define (clg-find-datum clg key)
+  (match clg
+    ('() (nothing))
+    ((cons entry clg)
+     (match entry
+       ((clg-data kvs)
+        (match (alist-get kvs key)
+          ((nothing) (clg-find-datum clg key))
+          ((just val) (just val))))))))
+
+(define (atom->compound pred desc-str clg atom)
+  (match atom
+    ((indirect key)
+     (do either-monad
+       val <- (maybe->either
+                (format "key ~a not found in catalog: ~s" clg key)
+                (clg-find-datum clg key))
+       (if (pred val) (right val)
+         (left (format "expected ~a but found: ~s" desc-str val)))))
+    (_ (left (format "expected indirection but found: ~s" atom)))))
+(define (atom->lam clg atom) (atom->compound lam? "lambda" clg atom))
+(define (atom->pair clg atom) (atom->compound pair? "pair" clg atom))
+(define (atom->sym atom)
+  (match atom
+    ((sym name) (right name))
+    (_ (left (format "expected symbol but found: ~s" atom)))))
+
+(define env-empty '())
+(define (env-extend env v) (cons v env))
+(define (env-extends env vs) (append (reverse vs) env))
+(define (env-lookup env idx)
+  (match env
+    ('() (nothing))
+    ((cons val env)
+     (if (= idx 0) (just val) (env-lookup env (- idx 1))))))
+
+(define (val-a-context atom) (term->context (val-a atom)))
+
+(define (state-init tctxt) (state tctxt (halt) env-empty clg-empty 0))
+(define (state-clg-alloc-keys st count)
+  (match st
+    ((state foc cont env clg cur-key)
+     (let* ((new-key (+ cur-key count))
+            (keys (sequence->list (in-range cur-key new-key))))
+       (cons (state foc cont env clg new-key) keys)))))
+(define (state-clg-alloc-one st val)
+  (match st
+    ((state focus cont env clg cur-key)
+     (let ((clg (clg-add-data clg (list cur-key) (list val)))
+           (focus (val-a-context (indirect cur-key)))
+           (next-key (+ cur-key 1)))
+       (state focus cont env clg next-key)))))
+(define (state-focus! st focus)
+  (match st
+    ((state _ cont env clg cur-key) (state focus cont env clg cur-key))))
+(define (state-focus+cont! st focus cont)
+  (match st
+    ((state _ _ env clg cur-key) (state focus cont env clg cur-key))))
+(define (state-cont+env! st cont env)
+  (match st
+    ((state focus _ _ clg cur-key) (state focus cont env clg cur-key))))
+(define (state-call! st body env)
+  (let ((ret-cont (return-caller (state-env st) (state-cont st))))
+        (state-focus! (state-cont+env! st ret-cont env) body)))
+(define (state-add-data st keys vals)
+  (match st
+    ((state focus cont env clg cur-key)
+     (let ((clg (clg-add-data clg keys vals)))
+       (state focus cont env clg cur-key)))))
+
+(define (state-activate-val-a st atom)
+  (match (state-cont st)
+    ((ohc oh cont)
+     (right (state-focus+cont! st (term-context-add oh atom) cont)))
+    ((return-caller env cont) (right (state-cont+env! st cont env)))
+    ((halt) (left (format "halted on: ~s" atom)))))
+(define (state-activate-val-c st val)
+  (match val
+    ((lam body _) (right (state-clg-alloc-one st (lam body (state-env st)))))
+    ((pair _ _) (right (state-clg-alloc-one st val)))))
+(define (state-activate-bound st idx)
+  (do either-monad
+    env = (state-env st)
+    atom <- (maybe->either
+              (format "invalid index ~a in env: ~s" env idx)
+              (env-lookup env idx))
+    focus = (val-a-context atom)
+    (pure (state-focus! st focus))))
+(define (state-activate-app st proc arg)
+  (do either-monad
+    (lam body env) <- (atom->lam (state-clg st) proc)
+    env = (env-extend env arg)
+    (pure (state-call! st body env))))
+(define (state-activate-if-eq st sym0 sym1 true false)
+  (do either-monad
+    n0 <- (atom->sym sym0)
+    n1 <- (atom->sym sym1)
+    focus = (if (equal? n0 n1) true false)
+    (pure (state-focus! st focus))))
+(define (state-activate-pair-select select st atom)
+  (do either-monad
+    pair <- (atom->pair (state-clg st) atom)
+    (pure (state-focus! st (val-a-context (select pair))))))
+(define (state-activate-let-rec st defs body)
+  (match-let* (((cons st keys) (state-clg-alloc-keys st (length defs)))
+               (renv (env-extends (state-env st) keys))
+               (vals (map (lambda (dbody) (lam dbody renv)) defs))
+               (st (state-add-data st keys vals)))
+    (right (state-call! st body renv))))
+
+(define (state-activate-term st term)
+  (match term
+    ((val-a x) (state-activate-val-a st x))
+    ((val-c x) (state-activate-val-c st x))
+    ((bound idx) (state-activate-bound st idx))
+    ((app proc arg) (state-activate-app st proc arg))
+    ((if-eq sym0 sym1 true false)
+     (state-activate-if-eq st sym0 sym1 true false))
+    ((pair-left x) (state-activate-pair-select pair-l st x))
+    ((pair-right x) (state-activate-pair-select pair-r st x))
+    ((let-rec defs body) (state-activate-let-rec st defs body))))
+
+(define (state-step st)
+  (match st
+    ((state focus cont env clg cur-key)
+     (match focus
+       ((term-context base finished pending)
+        (match pending
+          ((cons focus pending)
+           (let ((tc-hole (term-context base finished pending)))
+             (right (state focus (ohc tc-hole cont) env clg cur-key))))
+          ('() (state-activate-term st (context->term base finished)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; denotational interpretation
@@ -376,9 +513,21 @@ parsed-tests
 (denote-eval (right-x (list-ref parsed-tests 1)))
 (denote-eval (right-x (list-ref parsed-tests 2)))
 (denote-eval (right-x (list-ref parsed-tests 3)))
-(denote-eval (right-x (list-ref parsed-tests 4)))
+(denote-eval (right-x (list-ref parsed-tests 4))) ; 'right
 
-(term->context (right-x (list-ref parsed-tests 4)))
+(define tstart
+  (state-init (term->context (right-x (list-ref parsed-tests 4)))))
+tstart
+
+(define (step-n st count)
+  (if (= count 0) st
+    (do either-monad
+      next <- (state-step st)
+      (step-n next (- count 1)))))
+
+(step-n tstart 25)
+;(left "halted on: #(struct:sym right)")
+
 ;> (denote-eval (right-x (list-ref parsed-tests 0)))
 ;'()
 ;> (denote-eval (right-x (list-ref parsed-tests 1)))
