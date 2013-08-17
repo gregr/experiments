@@ -261,7 +261,7 @@
     (pure (state-focus! st (val-a-context (select pair))))))
 (define (state-activate-let-rec st defs body)
   (match-let* (((cons st keys) (state-clg-alloc-keys st (length defs)))
-               (renv (env-extends (state-env st) keys))
+               (renv (env-extends (state-env st) (map indirect keys)))
                (vals (map (lambda (dbody) (lam dbody renv)) defs))
                (st (state-add-data st keys vals)))
     (right (state-call! st body renv))))
@@ -320,10 +320,12 @@
                                            (term-context-show false)))
          ((pair-left p)            (format "(pair-left ~a)" p))
          ((pair-right p)           (format "(pair-right ~a)" p))
-         ((let-rec defs body)      (format "(let-rec ~a; ~a)"
-                                           (string-join
-                                             (map term-context-show defs) "; ")
-                                           (term-context-show body))))))))
+         ((let-rec defs body)
+          (format "(let-rec ~a; ~a)"
+                  (string-join
+                    (map (lambda (defstr) (format "(lam ~a [])" defstr))
+                         (map term-context-show defs)) "; ")
+                  (term-context-show body))))))))
 
 (define (cont-group-show cont)
   (let group ((cont cont) (tcs '()))
@@ -403,20 +405,20 @@
       (let ((dbody (denote body)) (ddefs (map denote-lam defs)))
         (lambda (env)
           (let* ((xenv (let loop ((env env) (ndefs (length ddefs)))
-                        (if (> ndefs 0)
-                          (loop (denote-env-extend env (void)) (- ndefs 1))
-                          env)))
-                (vdefs (map (lambda (ddef) (ddef xenv)) ddefs)))
-            (begin (denote-env-backfill xenv vdefs) (body xenv))))))))
+                         (if (> ndefs 0)
+                           (loop (denote-env-extend env (void)) (- ndefs 1))
+                           env)))
+                 (vdefs (map (lambda (ddef) (ddef xenv)) ddefs)))
+            (begin (denote-env-backfill xenv vdefs) (dbody xenv))))))))
 
 (define denote-env-empty '())
 (define (denote-env-lookup env idx) (unbox (list-ref env idx)))
 (define (denote-env-extend env v) (cons (box v) env))
 (define (denote-env-backfill env vs)
-  (let loop ((vs (reverse vs)))
+  (let loop ((env env) (vs (reverse vs)))
     (match vs
       ('() (void))
-      ((cons v vs) (begin (set-box! (car env) v) (loop vs))))))
+      ((cons v vs) (begin (set-box! (car env) v) (loop (cdr env) vs))))))
 (define (denote-lam body)
   (let ((dbody (denote body)))
     (lambda (env) (lambda (arg) (dbody (denote-env-extend env arg))))))
@@ -582,13 +584,15 @@
     (((lam x (lam y y)) (sym one)) (sym two))
     (((lam x (lam y (pair-left (pair x y)))) (sym left)) (sym right))
     (((lam x (lam y (pair-right (pair x y)))) (sym left)) (sym right))
+    (let-rec ((x arg (y arg)) (y arg arg)) (x ()))
+    (let-rec ((x y (y x))) (x x))
+    (let-rec ((x arg (y arg)) (y arg (x arg))) (x ()))
     (lam x x)
     (lam x (lam y x))
     ()
     (lam x (pair x x))
     (sym abc)
     (if-eq (sym abc) (sym def) () ())
-    (let-rec ((x y (y x))) (x x))
     (x y)
     (pair () ())
     (pair () () ())))
@@ -605,6 +609,9 @@ parsed-tests
 (denote-eval (right-x (list-ref parsed-tests 2)))
 (denote-eval (right-x (list-ref parsed-tests 3)))
 (denote-eval (right-x (list-ref parsed-tests 4))) ; 'right
+(denote-eval (right-x (list-ref parsed-tests 5))) ; '()
+;(denote-eval (right-x (list-ref parsed-tests 6))) ; infinite loop
+;(denote-eval (right-x (list-ref parsed-tests 7))) ; another infinite loop
 
 (define tstart
   (state-init (term->context (right-x (list-ref parsed-tests 4)))))
@@ -624,6 +631,15 @@ tstart
 
 (displayln "\n")
 (step-n-show tstart -1)
+(displayln "\n")
+
+(define tinfloop
+  (state-init (term->context (right-x (list-ref parsed-tests 7)))))
+tinfloop
+(displayln "\n")
+(step-n-show tinfloop 21)
+(displayln "\n")
+
 ;(left "halted on: #(struct:sym right)")
 
 ;> (denote-eval (right-x (list-ref parsed-tests 0)))
