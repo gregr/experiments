@@ -142,9 +142,6 @@
 ;;; small-step interpretation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(data clg-entry
-  (clg-data (kvs)))  ; plural, allowing SCCs (let-rec) to satisfy partition property
-
 (data cont
   (ohc (oh cont))
   (halt ())
@@ -152,19 +149,11 @@
 
 (variant (state (focus cont env clg clg-next-key)))
 
-(define clg-empty '())
-(define (clg-add clg entry) (cons entry clg))
+(variant (catalog (data)))
+(define clg-empty (catalog dict-empty))
 (define (clg-add-data clg keys vals)
-  (clg-add clg (clg-data (alist-build keys vals))))
-(define (clg-find-datum clg key)
-  (match clg
-    ('() (nothing))
-    ((cons entry clg)
-     (match entry
-       ((clg-data kvs)
-        (match (alist-get kvs key)
-          ((nothing) (clg-find-datum clg key))
-          ((just val) (just val))))))))
+  (catalog (foldl (lambda (k v cd) (dict-add cd k v)) (catalog-data clg) keys vals)))
+(define (clg-find-datum clg key) (dict-get (catalog-data clg) key))
 
 (define (atom->compound pred desc-str clg atom)
   (match atom
@@ -351,14 +340,12 @@
 (define (env-show env)
   (let ((strs (map (lambda (a) (format "~a" (val-a-show a))) env)))
     (string-join strs ", " #:before-first "[" #:after-last "]")))
-(define (clg-entry-show entry)
-  (match entry
-    ((clg-data kvs)
-     (string-join
-       (map (match-lambda
-              ((cons key val) (format "@~a: ~a" key (val-c-show val)))) kvs)
-       "\n"))))
-(define (clg-show clg) (string-join (map clg-entry-show clg) "\n"))
+(define (clg-show clg)
+  (let* ((kvs (sort (dict->alist (catalog-data clg)) (assoc-cmp >=)))
+         (kvstrs (map (match-lambda ((cons k (just v))
+                                     (format "@~a: ~a" k (val-c-show v))))
+                      kvs)))
+    (string-join kvstrs "\n")))
 
 (define (state-show st)
   (define border (make-string 79 #\=))

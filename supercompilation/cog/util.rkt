@@ -110,6 +110,10 @@
   (match (dict-get dct key)
     ((nothing) default)
     ((just x) x)))
+(define (dict->alist dct) (hash->list dct))
+
+(define (assoc-cmp kcmp)
+  (match-lambda** (((cons k0 v0) (cons k1 v1)) (kcmp k0 k1))))
 
 ; TODO:
 ; lenses?
