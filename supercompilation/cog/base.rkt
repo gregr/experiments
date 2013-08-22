@@ -78,7 +78,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (data value-atomic
-  (indirect (key))
+  (promise (uid))
+  (indirect (uid))
   (uno ())
   (sym (name)))
 
@@ -102,8 +103,9 @@
   (match-let (((cons base pending)
     (match term
       ((val-a x)                    (cons term '()))
-      ((val-c (lam body env))       (cons (val-c (lam (term->context body) env))
-                                                 '()))
+      ((val-c (lam body env))       (cons (val-c
+                                            (lam (term->context body) env))
+                                          '()))
       ((val-c (pair l r))           (cons (val-c (pair '() '())) (list l r)))
       ((bound idx)                  (cons term '()))
       ((app proc arg)               (cons (app '() '()) (list proc arg)))
@@ -145,23 +147,43 @@
 (data cont
   (ohc (oh cont))
   (halt ())
-  (return-caller (env cont)))
+  (return-caller (env cont))
+  (return-update (puid env cont)))
 
-(variant (state (focus cont env clg clg-next-key)))
+(variant (state (focus cont env clg next-uid)))
 
-(variant (catalog (data)))
-(define clg-empty (catalog dict-empty))
-(define (clg-add-data clg keys vals)
-  (catalog (foldl (lambda (k v cd) (dict-add cd k v)) (catalog-data clg) keys vals)))
-(define (clg-find-datum clg key) (dict-get (catalog-data clg) key))
+(data promise-entry
+  (delayed (tc env))
+  (kept (atom))
+  (broken (x)))
+
+(data promise-entry-broken
+  (skolem (uid))
+  (abandoned (tc env))
+  (sym-ineq (names promises)))
+
+(variant (catalog (data promises)))
+(define clg-empty (catalog dict-empty dict-empty))
+(define (clg-add-datum clg uid val)
+  (match clg
+    ((catalog data promises)
+     (catalog (dict-add data uid val) promises))))
+(define (clg-add-data clg uids vals)
+  (foldl (lambda (k v c) (clg-add-datum c k v)) clg uids vals))
+(define (clg-get-datum clg uid) (dict-get (catalog-data clg) uid))
+(define (clg-add-promise clg uid prom)
+  (match clg
+    ((catalog data promises)
+     (catalog data (dict-add promises uid prom)))))
+(define (clg-get-promise clg uid) (dict-get (catalog-promises clg) uid))
 
 (define (atom->compound pred desc-str clg atom)
   (match atom
-    ((indirect key)
+    ((indirect uid)
      (do either-monad
        val <- (maybe->either
-                (format "key ~a not found in catalog: ~s" clg key)
-                (clg-find-datum clg key))
+                (format "(indirect ~a) not found in catalog: ~s" clg uid)
+                (clg-get-datum clg uid))
        (if (pred val) (right val)
          (left (format "expected ~a but found: ~s" desc-str val)))))
     (_ (left (format "expected indirection but found: ~s" atom)))))
@@ -184,47 +206,54 @@
 (define (val-a-context atom) (term->context (val-a atom)))
 
 (define (state-init tctxt) (state tctxt (halt) env-empty clg-empty 0))
-(define (state-clg-alloc-keys st count)
+(define (state-refocus st clg-inject item uid->atom)
+  (let ((clg (state-clg st)) (cur-uid (state-next-uid st)))
+    (let ((clg (clg-inject clg cur-uid item))
+          (focus (val-a-context (uid->atom cur-uid)))
+          (next-uid (+ cur-uid 1)))
+      (state focus (state-cont st) (state-env st) clg next-uid))))
+(define (state-alloc st val) (state-refocus st clg-add-datum val indirect))
+(define (state-alloc-uids st count)
   (match st
-    ((state foc cont env clg cur-key)
-     (let* ((new-key (+ cur-key count))
-            (keys (sequence->list (in-range cur-key new-key))))
-       (cons (state foc cont env clg new-key) keys)))))
-(define (state-clg-alloc-one st val)
-  (match st
-    ((state focus cont env clg cur-key)
-     (let ((clg (clg-add-data clg (list cur-key) (list val)))
-           (focus (val-a-context (indirect cur-key)))
-           (next-key (+ cur-key 1)))
-       (state focus cont env clg next-key)))))
+    ((state foc cont env clg cur-uid)
+     (let* ((new-uid (+ cur-uid count))
+            (uids (sequence->list (in-range cur-uid new-uid))))
+       (cons (state foc cont env clg new-uid) uids)))))
 (define (state-focus! st focus)
   (match st
-    ((state _ cont env clg cur-key) (state focus cont env clg cur-key))))
+    ((state _ cont env clg cur-uid) (state focus cont env clg cur-uid))))
 (define (state-focus+cont! st focus cont)
   (match st
-    ((state _ _ env clg cur-key) (state focus cont env clg cur-key))))
+    ((state _ _ env clg cur-uid) (state focus cont env clg cur-uid))))
 (define (state-cont+env! st cont env)
   (match st
-    ((state focus _ _ clg cur-key) (state focus cont env clg cur-key))))
+    ((state focus _ _ clg cur-uid) (state focus cont env clg cur-uid))))
 (define (state-call! st body env)
   (let ((ret-cont (return-caller (state-env st) (state-cont st))))
         (state-focus! (state-cont+env! st ret-cont env) body)))
-(define (state-add-data st keys vals)
+(define (state-clg-update st proc)
   (match st
-    ((state focus cont env clg cur-key)
-     (let ((clg (clg-add-data clg keys vals)))
-       (state focus cont env clg cur-key)))))
+    ((state focus cont env clg cur-uid)
+     (let ((clg (proc clg)))
+       (state focus cont env clg cur-uid)))))
+(define (state-add-data st uids vals)
+  (state-clg-update st (lambda (clg) (clg-add-data clg uids vals))))
+(define (state-add-promise st uid prom)
+  (state-clg-update st (lambda (clg) (clg-add-promise clg uid prom))))
 
 (define (state-activate-val-a st atom)
   (match (state-cont st)
     ((ohc oh cont)
      (right (state-focus+cont! st (term-context-add oh atom) cont)))
     ((return-caller env cont) (right (state-cont+env! st cont env)))
-    ((halt) (left (format "halted on: ~s" atom)))))
+    ((return-update puid env cont)
+     (let ((st (state-add-promise st puid (kept atom))))
+       (right (state-cont+env! st cont env))))
+    ((halt) (left (format "halted on: ~a" (val-a-show atom))))))
 (define (state-activate-val-c st val)
   (match val
-    ((lam body _) (right (state-clg-alloc-one st (lam body (state-env st)))))
-    ((pair _ _) (right (state-clg-alloc-one st val)))))
+    ((lam body _) (right (state-alloc st (lam body (state-env st)))))
+    ((pair _ _) (right (state-alloc st val)))))
 (define (state-activate-bound st idx)
   (do either-monad
     env = (state-env st)
@@ -249,10 +278,10 @@
     pair <- (atom->pair (state-clg st) atom)
     (pure (state-focus! st (val-a-context (select pair))))))
 (define (state-activate-let-rec st defs body)
-  (match-let* (((cons st keys) (state-clg-alloc-keys st (length defs)))
-               (renv (env-extends (state-env st) (map indirect keys)))
+  (match-let* (((cons st uids) (state-alloc-uids st (length defs)))
+               (renv (env-extends (state-env st) (map indirect uids)))
                (vals (map (lambda (dbody) (lam dbody renv)) defs))
-               (st (state-add-data st keys vals)))
+               (st (state-add-data st uids vals)))
     (right (state-call! st body renv))))
 
 (define (state-activate-term st term)
@@ -269,14 +298,43 @@
 
 (define (state-step st)
   (match st
-    ((state focus cont env clg cur-key)
+    ((state focus cont env clg cur-uid)
      (match focus
        ((term-context base finished pending)
         (match pending
           ((cons focus pending)
            (let ((tc-hole (term-context base finished pending)))
-             (right (state focus (ohc tc-hole cont) env clg cur-key))))
+             (right (state focus (ohc tc-hole cont) env clg cur-uid))))
           ('() (state-activate-term st (context->term focus)))))))))
+
+(define (state-delay st)
+  (right (state-refocus st clg-add-promise
+                        (delayed (state-focus st) (state-env st)) promise)))
+
+(define (state-force st)
+  (match st
+    ((state focus cont env clg cur-uid)
+     (match focus
+       ((term-context base finished pending)
+        (if (= 0 (length pending))
+          (match (context->term focus)
+            ((val-a (promise uid))
+              (do either-monad
+                prom <- (maybe->either
+                          (format "(promise ~a) not found in catalog: ~s"
+                                  clg uid)
+                          (clg-get-promise clg uid))
+                (match prom
+                  ((delayed dtc denv)
+                   (let ((update-cont (return-update uid env cont)))
+                     (right (state dtc update-cont denv clg cur-uid))))
+                  ((kept atom) (right (state-focus! st (val-a-context atom))))
+                  ((broken bp)
+                   (left (format "forced broken promise: ~s" bp))))))
+            (term (left (format "expected promise but found: ~a"
+                                (term-context-show focus)))))
+          (left (format "expected promise but found: ~a"
+                        (term-context-show focus)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; visualization
@@ -285,20 +343,38 @@
 (define (val-a-show val)
   (match val
     ((? void?)      "_")
-    ((indirect key) (format "@~a" key))
+    ((promise uid)  (format "?~a" uid))
+    ((indirect uid) (format "@~a" uid))
     ((uno)          "{}")
     ((sym name)     (format "'~a'" name))
     (_ val)))
 (define (val-c-show val)
   (match val
-    ((lam body env) (format "(lam ~a ~a)" (term-context-show body) (env-show env)))
+    ((lam body env) (format "(lam ~a ~a)"
+                            (term-context-show body) (env-show env)))
     ((pair l r)     (format "{~a . ~a}" (val-a-show l) (val-a-show r)))))
+(define (promise-show prom)
+  (match prom
+    ((delayed tc env) (format "(delayed ~a ~a)"
+                              (term-context-show tc) (env-show env)))
+    ((kept atom)      (format "(kept ~a)" (val-a-show atom)))
+    ((broken x)
+     (match x
+       ((skolem uid)              (format "*~a*" uid))
+       ((abandoned tc env)        (format "(abandoned ~a ~a)"
+                                          (term-context-show tc)
+                                          (env-show env)))
+       ((sym-ineq names promises) (format "(sym-!= ~s ~s)" names promises))))))
+
 (define (term-context-show tc)
   (match tc
     ((term-context base finished pending)
-     (let* ((finished (map (lambda (atom) (format "<~a>" (val-a-show atom))) finished))
+     (let* ((finished (map (lambda (atom) (format "<~a>" (val-a-show atom)))
+                           finished))
             (term (context->term
-                    (term-context base (append (reverse (map term-context-show pending)) finished) '()))))
+                    (term-context
+                      base (append (reverse (map term-context-show pending))
+                                   finished) '()))))
        (match term
          ((val-a x)                (val-a-show x))
          ((val-c x)                (val-c-show x))
@@ -327,6 +403,11 @@
        (cons
          (cons (reverse tcs) (string-append "return: " (env-show env)))
          (group cont '())))
+      ((return-update uid env cont)
+       (cons
+         (cons (reverse tcs)
+               (string-append (format "update ?~a: " uid) (env-show env)))
+         (group cont '())))
       ((halt) (list (cons (reverse tcs) "halt!"))))))
 (define (cont-show cont)
   (string-join (map (match-lambda
@@ -340,18 +421,23 @@
 (define (env-show env)
   (let ((strs (map (lambda (a) (format "~a" (val-a-show a))) env)))
     (string-join strs ", " #:before-first "[" #:after-last "]")))
-(define (clg-show clg)
-  (let* ((kvs (sort (dict->alist (catalog-data clg)) (assoc-cmp >=)))
-         (kvstrs (map (match-lambda ((cons k (just v))
-                                     (format "@~a: ~a" k (val-c-show v))))
+(define (dict-show prefix val-show dict)
+  (let* ((kvs (sort (dict->alist dict) (assoc-cmp >=)))
+         (kvstrs (map (match-lambda
+                        ((cons k (just v))
+                         (format "~a~a: ~a" prefix k (val-show v))))
                       kvs)))
     (string-join kvstrs "\n")))
+(define (clg-show clg)
+  (string-join
+    (list (dict-show "@" val-c-show (catalog-data clg))
+          (dict-show "?" promise-show (catalog-promises clg))) "\n"))
 
 (define (state-show st)
   (define border (make-string 79 #\=))
   (define divider (make-string 79 #\-))
   (match st
-    ((state focus cont env clg cur-key)
+    ((state focus cont env clg cur-uid)
      (string-join
        (list
          border
@@ -361,8 +447,8 @@
          divider
          (env-show env)
          divider
-         (clg-show clg)
-         (format "~a" cur-key)
+         (string-trim (clg-show clg))
+         (format "~a" cur-uid)
          border)
        "\n"))))
 
@@ -616,16 +702,28 @@ tstart
     ((left msg) (begin (displayln msg) st))
     ((right st) (begin (displayln (state-show st)) st))))
 
-(displayln "\n")
-(step-n-show tstart -1)
-(displayln "\n")
-
 (define tinfloop
   (state-init (term->context (right-x (list-ref parsed-tests 7)))))
 tinfloop
-(displayln "\n")
-(step-n-show tinfloop 21)
-(displayln "\n")
+
+(define (state-interact st)
+  (let loop ((st st))
+    (printf "\n~a\n\n" (state-show st))
+    (display "[s]tep,[d]elay,[f]orce,[c]omplete,[q]uit> ")
+    (do either-monad
+      st <- (match (read-line)
+              ("s" (state-step st))
+              ("d" (state-delay st))
+              ("f" (state-force st))
+              ("c" (step-n st -1))
+              ("q" (left "quitting"))
+              (_ (displayln "invalid choice") (right st)))
+      (loop st))))
+
+(displayln "")
+(state-interact tstart)
+(displayln "")
+(state-interact tinfloop)
 
 ;(left "halted on: #(struct:sym right)")
 
