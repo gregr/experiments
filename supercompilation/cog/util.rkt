@@ -102,13 +102,11 @@
     ((nothing) default)
     ((just x) x)))
 
-; TODO: implement as a persistent hash table?
-(data dict (dict (alist)))
-(define dict-empty (dict alist-empty))
-(define (dict-add dct key val) (dict (alist-add (dict-alist dct) key (just val))))
-(define (dict-del dct key) (dict (alist-add (dict-alist dct) key (nothing))))
+(define dict-empty alist-empty)
+(define (dict-add dct key val) (alist-add dct key (just val)))
+(define (dict-del dct key) (alist-add dct key (nothing)))
 (define (dict-get dct key)
-  (match (alist-get (dict-alist dct) key)
+  (match (alist-get dct key)
     ((nothing) (nothing))
     ((just x) x)))
 (define (dict-get-default dct key default)
