@@ -337,6 +337,12 @@
                         (term-context-show focus)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; term/state conversion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (term->state term) (state-init (term->context term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; visualization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -686,8 +692,7 @@ parsed-tests
 ;(denote-eval (right-x (list-ref parsed-tests 6))) ; infinite loop
 ;(denote-eval (right-x (list-ref parsed-tests 7))) ; another infinite loop
 
-(define tstart
-  (state-init (term->context (right-x (list-ref parsed-tests 4)))))
+(define tstart (term->state (right-x (list-ref parsed-tests 4))))
 tstart
 
 (define (step-n st count (act (lambda (x) (void))))
@@ -702,8 +707,7 @@ tstart
     ((left msg) (begin (displayln msg) st))
     ((right st) (begin (displayln (state-show st)) st))))
 
-(define tinfloop
-  (state-init (term->context (right-x (list-ref parsed-tests 7)))))
+(define tinfloop (term->state (right-x (list-ref parsed-tests 7))))
 tinfloop
 
 (define (state-interact st)
