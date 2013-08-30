@@ -115,11 +115,62 @@
 (define (assoc-cmp kcmp)
   (match-lambda** (((cons k0 v0) (cons k1 v1)) (kcmp k0 k1))))
 
+(define graph-empty (hash))
+(define (graph-add-edge gr src tgt) (hash-update gr src (curry cons tgt) '()))
+(define (graph-edges gr src) (hash-ref gr src '()))
+(define graph->alist hash->list)
+(define (alist->graph as)
+  (foldr (match-lambda** (((cons src tgt) gr) (graph-add-edge gr src tgt)))
+         graph-empty as))
+(define graph-srcs hash-keys)
+(define (graph-reverse gr)
+  (foldl (match-lambda**
+           (((cons src tgts) gr)
+            (foldr (lambda (tgt gr) (graph-add-edge gr tgt src)) gr tgts)))
+         graph-empty (graph->alist gr)))
+(define (graph-dfs gr srcs visited)
+  (let search ((pending srcs) (visited visited) (finished '()))
+    (foldl
+      (match-lambda**
+        ((src (list visited finished))
+          (if (set-member? visited src) (list visited finished)
+            (match-let* ((targets (graph-edges gr src))
+                        ((list visited finished)
+                          (search targets (set-add visited src) finished)))
+              (list visited (cons src finished))))))
+      (list visited finished)
+      pending)))
+(define (graph-topsort gr)
+  (match-let*
+    (((list _ finished)
+      (graph-dfs gr (graph-srcs gr) (set)))
+     (rgr (graph-reverse gr))
+     ((list _ sccs)
+      (foldl (match-lambda**
+               ((src (list visited sccs))
+                (match-let
+                  (((list visited finished)
+                    (graph-dfs rgr (list src) visited)))
+                  (list visited
+                        (if (null? finished) sccs (cons finished sccs))))))
+             (list (set) '()) finished)))
+    sccs))
+
 ; TODO:
 ; lenses?
 ; for1[-monad]: flip last two params of map[-monad]
 
 ; testing
+
+;(define test-graph
+  ;(alist->graph '((a . b) (b . c) (b . d) (c . e) (d . e) (e . f))))
+;(define test-graph2
+  ;(alist->graph '((a . b) (b . c) (b . d) (c . e) (d . e) (e . f) (e . b))))
+;(graph-topsort test-graph)
+;'((f) (e) (c) (d) (b) (a))
+;(graph-topsort test-graph2)
+;'((f) (c b e d) (a))
+
 ;(display
   ;(do-with (lambda (prev next) (+ 1 (next prev)))
     ;a (+ 3 4)
