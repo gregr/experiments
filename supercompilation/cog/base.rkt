@@ -122,8 +122,8 @@
 
 (define (context->term tc)
   (match tc
-    ((term-context base finished _)
-     (let ((finished (reverse finished)))
+    ((term-context base finished pending)
+     (let ((finished (append (reverse finished) (map context->term pending))))
        (match base
          ((val-a x)              base)
          ((val-c (lam _ _))      base)
@@ -137,10 +137,19 @@
          ((pair-right _)         (apply pair-right finished))
          ((let-rec _ _)          base))))))
 
-(define (term-context-add tc val)
-  (match tc
+(define (term-context-finish ohc val)
+  (match ohc
     ((term-context base finished pending)
      (term-context base (cons val finished) pending))))
+(define (term-context-pend ohc tc)
+  (match ohc
+    ((term-context base finished pending)
+     (term-context base finished (cons tc pending)))))
+(define (term-context-rewind tc)
+  (match tc
+    ((term-context base finished pending)
+     (let ((finished (map val-a-context finished)))
+       (term-context base '() (append (reverse finished) pending))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; small-step interpretation
@@ -150,7 +159,8 @@
   (ohc (oh cont))
   (halt ())
   (return-caller (env cont))
-  (return-update (puid env cont)))
+  (return-update (puid env cont))
+  (return-skolem (suid env cont)))
 
 (variant (state (focus cont env clg next-uid)))
 
@@ -199,6 +209,7 @@
 (define env-empty '())
 (define (env-extend env v) (cons v env))
 (define (env-extends env vs) (append (reverse vs) env))
+(define (env-append env0 env1) (append env1 env0))
 (define (env-lookup env idx)
   (match env
     ('() (nothing))
@@ -206,6 +217,7 @@
      (if (= idx 0) (just val) (env-lookup env (- idx 1))))))
 
 (define (val-a-context atom) (term->context (val-a atom)))
+(define (val-c-context vc) (term-context (val-c vc) '() '()))
 
 (define (state-init tctxt) (state tctxt (halt) env-empty clg-empty 0))
 (define (state-refocus st clg-inject item uid->atom)
@@ -246,7 +258,7 @@
 (define (state-activate-val-a st atom)
   (match (state-cont st)
     ((ohc oh cont)
-     (right (state-focus+cont! st (term-context-add oh atom) cont)))
+     (right (state-focus+cont! st (term-context-finish oh atom) cont)))
     ((return-caller env cont) (right (state-cont+env! st cont env)))
     ((return-update puid env cont)
      (let ((st (state-add-promise st puid (kept atom))))
@@ -344,6 +356,209 @@
 
 (define (term->state term) (state-init (term->context term)))
 
+(define (val-atomic-roots va)
+  (match va
+    ((promise uid) (set va))
+    ((indirect uid) (set va))
+    ((uno) set-empty)
+    ((sym name) set-empty)))
+
+(define (val-compound-roots env vc)
+  (define (atom-or-null-roots aon)
+    (if (null? aon) set-empty (val-atomic-roots aon)))
+  (match vc
+    ((lam body le)
+     ((term-context-roots (env-extend (env-append env le) (uno))) body))
+    ((pair l r) (set-unions (map atom-or-null-roots (list l r))))))
+
+(define (promise-roots prom)
+  (match prom
+    ((delayed tc env) ((term-context-roots env) tc))
+    ((kept atom) (val-atomic-roots atom))
+    ((broken x)
+     (match x
+       ((skolem suid) set-empty)
+       ((abandoned tc env) ((term-context-roots env) tc))
+       (_ set-empty)))))
+
+(define ((term-context-roots env) tc)
+  (let ((common-roots
+          (set-unions
+            (append (map val-atomic-roots (term-context-finished tc))
+                    (map (term-context-roots env) (term-context-pending tc)))))
+        (special-roots
+          (match (term-context-base tc)
+            ((val-a x) (val-atomic-roots x))
+            ((val-c x) (val-compound-roots env x))
+            ((bound idx) (val-atomic-roots (just-x (env-lookup env idx))))
+            ((if-eq _ _ true false)
+             (set-unions
+               (map (term-context-roots env) (list true false))))
+            ((let-rec defs body)
+             (let* ((env0 (env-extends env (make-list (length defs) (uno))))
+                    (env1 (env-extend env0 (uno))))
+               (set-unions
+                 (cons ((term-context-roots env0) body)
+                       (map (term-context-roots env1) defs)))))
+            (_ set-empty))))
+    (set-union common-roots special-roots)))
+
+(define (term-context-unbind env threshold tc)
+  (match tc
+    ((term-context base finished pending)
+     (term-context
+       (match base
+         ((val-c (lam body le))
+          (val-c (lam (term-context-unbind env (+ threshold 1) body) le)))
+         ((bound idx)
+          (if (< idx threshold) base
+            (val-a (just-x (env-lookup env (- idx threshold))))))
+         ((if-eq s0 s1 true false)
+          (if-eq s0 s1
+                 (term-context-unbind env threshold true)
+                 (term-context-unbind env threshold false)))
+         ((let-rec defs body)
+          (let* ((threshold (+ threshold (length defs)))
+                 (defs (map (curry term-context-unbind env (+ threshold 1))
+                            defs))
+                 (body (term-context-unbind env threshold body)))
+            (let-rec defs body)))
+         (_ base))
+       finished
+       (map (curry term-context-unbind env threshold) pending)))))
+
+(define (root-inline clg iop)
+  (match iop
+    ((indirect uid)
+     (compound-inline (just-x (clg-get-datum clg uid))))
+    ((promise uid) (promise-inline (just-x (clg-get-promise clg uid))))))
+(define (compound-inline vc)
+  (match vc
+    ((pair l r) (term-context (val-c (pair '() '())) (list l r) '()))
+    ((lam body env)
+     (val-c-context (lam (term-context-unbind env 1 body) env-empty)))))
+(define (promise-inline prom)
+  (match prom
+    ((delayed tc env) (term-context-unbind env 0 tc))
+    ((kept atom) (val-a-context atom))
+    ((broken x)
+     (match x
+       ((skolem _) (val-a-context (uno)))  ; should not happen
+       ((abandoned tc env) (term-context-unbind env 0 tc))
+       ((sym-ineq _ _) (val-a-context (uno)))))))  ; also should not happen
+
+(define (focus+cont-collapse focus cont env)
+  (define (cont-collapse focus cont env)
+    (match cont
+      ((ohc oh cont)
+       (let* ((tc (term-context-unbind env 0 oh))
+              (tc (term-context-pend tc focus))
+              (tc (term-context-rewind tc)))
+         (cont-collapse tc cont env)))
+      ((halt) (list focus cont))
+      ((return-caller env cont) (cont-collapse focus cont env))
+      ((return-update puid env cont) (cont-collapse focus cont env))
+      ((return-skolem puid _ _) (list focus cont))))
+  (cont-collapse
+    (term-context-rewind (term-context-unbind env 0 focus))
+    cont env))
+
+(define (roots->graph clg roots)
+  (define (root-roots clg root)
+    (match root
+      ((indirect iuid) (val-compound-roots env-empty
+                                           (just-x (clg-get-datum clg iuid))))
+      ((promise puid) (promise-roots (just-x (clg-get-promise clg puid))))))
+  (define (graphify src visited gr)
+    (if (set-member? visited src) (list visited gr)
+      (foldl (match-lambda**
+               ((tgt (list visited gr))
+                (graphify tgt visited (graph-add-edge gr src tgt))))
+             (list (set-add visited src) (graph-add-src gr src))
+             (set->list (root-roots clg src)))))
+  (cadr (foldl (match-lambda**
+                 ((src (list visited gr))
+                  (graphify src visited gr)))
+               (list (set) graph-empty)
+               (set->list roots))))
+
+(define (roots-all-sccs clg roots)
+  (let ((gr (roots->graph clg roots))) (graph-topsort gr)))
+(define (roots-relevant-sccs clg roots relevant)
+  (let* ((gr (roots->graph clg roots))
+         (sccs (graph-topsort gr))
+         (relevant (sccs-relevant gr sccs relevant roots)))
+    (sccs-filter sccs relevant)))
+(define (root-bounds sccs)
+  (define/match (add-bound root bmidx)
+    ((root (list bm idx)) (list (hash-set bm root idx) (+ idx 1))))
+  (foldr (lambda (scc bmidx) (foldr add-bound bmidx scc))
+         (list (hash) 0) sccs))
+
+(define (sccs->lets sccs body)
+  (define (make-let scc body)
+    (match scc
+      ((list tc)
+       (term-context (app '() '()) '()
+                     (list (val-c-context (lam body env-empty))
+                           (term-context-rewind tc))))
+      (_
+        (let ((defs (map (match-lambda
+                           ((term-context (val-c (lam body _)) '() '()) body))
+                         scc)))
+          (term-context (let-rec defs body) '() '())))))
+  (foldr make-let body sccs))
+
+(define (term-context-rebind root->bound depth tc)
+  (define (new-bound root) (bound (+ (hash-ref root->bound root) depth)))
+  (define (recurse depth tc) (term-context-rebind root->bound depth tc))
+  (match tc
+    ((term-context base finished pending)
+     (let ((base
+             (match base
+               ((val-a root)
+                (match root
+                  ((indirect _) (new-bound root))
+                  ((promise _) (new-bound root))
+                  (_ base)))
+               ((val-c (lam body _))
+                (val-c (lam (recurse (+ depth 1) body) env-empty)))
+               ((if-eq s0 s1 true false)
+                (apply (curry if-eq s0 s1)
+                       (map (curry recurse depth) (list true false))))
+               ((let-rec defs body)
+                (let ((depth (+ depth (length defs))))
+                  (let-rec (map (curry recurse (+ depth 1)) defs)
+                           (recurse depth body))))
+               (_ base)))
+           (pending (map (curry recurse depth) pending)))
+       (term-context base finished pending)))))
+
+(define (state-rebuild st)
+  (match st
+    ((state focus cont env clg cur-uid)
+     (match-let* (((list focus cont) (focus+cont-collapse focus cont env))
+                  (roots ((term-context-roots env) focus))
+                  ((list sccs env cont has-skolem)
+                   (match cont
+                     ((return-skolem puid env cont)
+                      (list (roots-relevant-sccs clg roots
+                                                 (set (promise puid)))
+                            env cont #t))
+                     ((halt)
+                      (list (roots-all-sccs clg roots) env-empty cont #f))))
+                  ((list root->bound max-idx) (root-bounds sccs))
+                  (sccs (if has-skolem (cdr sccs) sccs))
+                  (sccs (map (curry map (curry root-inline clg)) sccs))
+                  (focus (sccs->lets sccs focus))
+                  (focus (term-context-rebind root->bound (- max-idx) focus))
+                  (focus (if has-skolem
+                           (val-c-context (lam focus env-empty)) focus)))
+       (state focus cont env clg cur-uid)))))
+
+; TODO
+;(define (state->term st)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; visualization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -405,7 +620,7 @@
     (match cont
       ((ohc oh cont)
        (let ((tc (format "~a" (term-context-show
-                                (term-context-add oh (void))))))
+                                (term-context-finish oh (void))))))
          (group cont (cons tc tcs))))
       ((return-caller env cont)
        (cons
@@ -602,7 +817,7 @@
     _ <- (check-arity 3 form)
     `(,_ ,name ,body) = form
     body <- (parse-under pe name body)
-    (pure (val-c (lam body '())))))
+    (pure (val-c (lam body env-empty)))))
 (define (parse-let-rec pe form)
   (define-struct lrdef (name param body))
   (define (lr-def form)
@@ -715,12 +930,15 @@ tinfloop
 (define (state-interact st)
   (let loop ((st st))
     (printf "\n~a\n\n" (state-show st))
-    (display "[s]tep,[d]elay,[f]orce,[c]omplete,[q]uit> ")
+    (display "[s]tep,[d]elay,[f]orce,s[k]olemize,re[b]uild,[c]omplete,[q]uit> ")
     (do either-monad
       st <- (match (read-line)
               ("s" (state-step st))
               ("d" (state-delay st))
               ("f" (state-force st))
+              ; TODO: transition to rebuilt state
+              ("b" (begin (printf "rebuilt:\n~a\n***\n"
+                                  (state-show (state-rebuild st))) (pure st)))
               ("c" (step-n st -1))
               ("q" (left "quitting"))
               (_ (displayln "invalid choice") (right st)))
