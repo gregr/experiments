@@ -167,7 +167,7 @@
 (define (scc-hash scc hm)
   (foldl (lambda (src hm) (hash-set hm src scc)) hm scc))
 (define (sccs-hash sccs) (foldl scc-hash (hash) sccs))
-(define (sccs-relevant gr sccs relevant)
+(define (sccs-relevant gr sccs relevant start)
   (define scch (sccs-hash sccs))
   (define relevant-init
     (foldl (lambda (src rel)
@@ -189,7 +189,10 @@
           (list visited (set-union relevant sscc))))))
   (cadr (foldl (lambda (src result)
                  (apply (curry src-relevant src) result))
-               (list set-empty relevant-init) (set->list relevant))))
+               (list set-empty relevant-init) (set->list start))))
+(define (sccs-filter sccs relevant)
+  (filter (lambda (scc)
+            (not (set-empty? (set-intersect relevant (list->set scc))))) sccs))
 
 ; TODO:
 ; lenses?
@@ -201,20 +204,34 @@
   ;(alist->graph '((a . b) (b . c) (b . d) (c . e) (d . e) (e . f))))
 ;(define test-graph2
   ;(alist->graph '((a . b) (b . c) (b . d) (c . e) (d . e) (e . f) (e . b))))
-;(graph-topsort test-graph)
+;(define test-tops (graph-topsort test-graph))
+;(define test-tops2 (graph-topsort test-graph2))
+;test-tops
 ;'((f) (e) (c) (d) (b) (a))
-;(graph-topsort test-graph2)
+;test-tops2
 ;'((f) (c b e d) (a))
-;(sccs-relevant test-graph (graph-topsort test-graph) (set 'b))
-;(set 'b)
-;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'a))
+;(sccs-relevant test-graph test-tops (set 'a) (set 'b))
 ;(set 'a)
-;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'b))
+;(sccs-relevant test-graph test-tops (set 'b) (set 'a))
+;(set 'a 'b)
+;(sccs-relevant test-graph2 test-tops2 (set 'b) (set 'b))
 ;(set 'b 'c 'd 'e)
-;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'a 'b))
+;(sccs-relevant test-graph2 test-tops2 (set 'a) (set 'b))
+;(set 'a)
+;(sccs-relevant test-graph2 test-tops2 (set 'b) (set 'a))
 ;(set 'b 'c 'd 'a 'e)
-;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'a 'f))
+;(sccs-relevant test-graph2 test-tops2 (set 'f) (set 'a))
 ;(set 'b 'c 'd 'a 'f 'e)
+;(sccs-filter test-tops2 (set 'a))
+;'((a))
+;(sccs-filter test-tops2 (set 'b))
+;'((d b e c))
+;(sccs-filter test-tops2 (set 'a 'b))
+;'((d b e c) (a))
+;(sccs-filter test-tops2 (set 'c 'f))
+;'((f) (d b e c))
+;(sccs-filter test-tops2 (set 'a 'd 'f))
+;'((f) (d b e c) (a))
 
 ;(display
   ;(do-with (lambda (prev next) (+ 1 (next prev)))
