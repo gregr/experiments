@@ -117,7 +117,7 @@
 
 (define graph-empty (hash))
 (define (graph-add-edge gr src tgt) (hash-update gr src (curry cons tgt) '()))
-(define (graph-edges gr src) (hash-ref gr src '()))
+(define (graph-tgts gr src) (hash-ref gr src '()))
 (define graph->alist hash->list)
 (define (alist->graph as)
   (foldr (match-lambda** (((cons src tgt) gr) (graph-add-edge gr src tgt)))
@@ -134,7 +134,7 @@
       (match-lambda**
         ((src (list visited finished))
           (if (set-member? visited src) (list visited finished)
-            (match-let* ((targets (graph-edges gr src))
+            (match-let* ((targets (graph-tgts gr src))
                         ((list visited finished)
                           (search targets (set-add visited src) finished)))
               (list visited (cons src finished))))))
@@ -155,6 +155,37 @@
                         (if (null? finished) sccs (cons finished sccs))))))
              (list (set) '()) finished)))
     sccs))
+(define (scc-tgts gr scc)
+  (set->list
+    (set-subtract (foldl (lambda (src total)
+                           (set-union (list->set (graph-tgts gr src)) total))
+                         (set) scc) (list->set scc))))
+(define (scc-hash scc hm)
+  (foldl (lambda (src hm) (hash-set hm src scc)) hm scc))
+(define (sccs-hash sccs) (foldl scc-hash (hash) sccs))
+(define (sccs-relevant gr sccs relevant)
+  (define scch (sccs-hash sccs))
+  (define relevant-init
+    (foldl (lambda (src rel)
+             (set-union rel (list->set (hash-ref scch src))))
+           (set) (set->list relevant)))
+  (define (src-relevant src visited relevant)
+    (if (set-member? visited src) (list visited relevant)
+      (match-let* ((scc (hash-ref scch src))
+                   (sscc (list->set scc))
+                   (tgts (scc-tgts gr scc))
+                   (visited (set-union visited sscc))
+                   ((list visited relevant)
+                    (foldl (match-lambda**
+                             ((src (list visited relevant))
+                              (src-relevant src visited relevant)))
+                           (list visited relevant) tgts)))
+        (if (set-empty? (set-intersect (list->set tgts) relevant))
+          (list visited relevant)
+          (list visited (set-union relevant sscc))))))
+  (cadr (foldl (lambda (src result)
+                 (apply (curry src-relevant src) result))
+               (list (set) relevant-init) (set->list relevant))))
 
 ; TODO:
 ; lenses?
@@ -170,6 +201,16 @@
 ;'((f) (e) (c) (d) (b) (a))
 ;(graph-topsort test-graph2)
 ;'((f) (c b e d) (a))
+;(sccs-relevant test-graph (graph-topsort test-graph) (set 'b))
+;(set 'b)
+;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'a))
+;(set 'a)
+;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'b))
+;(set 'b 'c 'd 'e)
+;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'a 'b))
+;(set 'b 'c 'd 'a 'e)
+;(sccs-relevant test-graph2 (graph-topsort test-graph2) (set 'a 'f))
+;(set 'b 'c 'd 'a 'f 'e)
 
 ;(display
   ;(do-with (lambda (prev next) (+ 1 (next prev)))
