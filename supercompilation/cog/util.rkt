@@ -115,6 +115,10 @@
 (define (assoc-cmp kcmp)
   (match-lambda** (((cons k0 v0) (cons k1 v1)) (kcmp k0 k1))))
 
+(define set-empty (set))
+(define (set-unions ss)
+  (match ss ('() set-empty) (_ (apply set-union ss))))
+
 (define graph-empty (hash))
 (define (graph-add-edge gr src tgt) (hash-update gr src (curry cons tgt) '()))
 (define (graph-tgts gr src) (hash-ref gr src '()))
@@ -143,7 +147,7 @@
 (define (graph-topsort gr)
   (match-let*
     (((list _ finished)
-      (graph-dfs gr (graph-srcs gr) (set)))
+      (graph-dfs gr (graph-srcs gr) set-empty))
      (rgr (graph-reverse gr))
      ((list _ sccs)
       (foldl (match-lambda**
@@ -153,13 +157,13 @@
                     (graph-dfs rgr (list src) visited)))
                   (list visited
                         (if (null? finished) sccs (cons finished sccs))))))
-             (list (set) '()) finished)))
+             (list set-empty '()) finished)))
     sccs))
 (define (scc-tgts gr scc)
   (set->list
     (set-subtract (foldl (lambda (src total)
                            (set-union (list->set (graph-tgts gr src)) total))
-                         (set) scc) (list->set scc))))
+                         set-empty scc) (list->set scc))))
 (define (scc-hash scc hm)
   (foldl (lambda (src hm) (hash-set hm src scc)) hm scc))
 (define (sccs-hash sccs) (foldl scc-hash (hash) sccs))
@@ -168,7 +172,7 @@
   (define relevant-init
     (foldl (lambda (src rel)
              (set-union rel (list->set (hash-ref scch src))))
-           (set) (set->list relevant)))
+           set-empty (set->list relevant)))
   (define (src-relevant src visited relevant)
     (if (set-member? visited src) (list visited relevant)
       (match-let* ((scc (hash-ref scch src))
@@ -185,7 +189,7 @@
           (list visited (set-union relevant sscc))))))
   (cadr (foldl (lambda (src result)
                  (apply (curry src-relevant src) result))
-               (list (set) relevant-init) (set->list relevant))))
+               (list set-empty relevant-init) (set->list relevant))))
 
 ; TODO:
 ; lenses?
