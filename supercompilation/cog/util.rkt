@@ -1,7 +1,5 @@
 #lang racket
-
 (require racket/stxparam)
-
 (provide (all-defined-out))
 
 (define-syntax variant
