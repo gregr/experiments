@@ -834,4 +834,4 @@
 
 (define denote-eval-port
   (curry interpret-port denote-eval
-         (lambda (x) (displayln (format "halted on: ~a" x)))))
+         (lambda (x) (displayln (format "~s" x)))))
