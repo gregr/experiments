@@ -1,19 +1,56 @@
-(((lam x (lam y (pair-left (pair x y))))
-  (sym left)) (sym right))
+; map once
+((lam nil ((lam cons
 
-(((lam x (lam y (pair-right (pair x y))))
-  (sym left)) (sym right))
+  (let-rec
+    ((map f (lam xs
+      ((lam tag ((lam payload
+        (if-eq (sym nil) tag
+          nil
+          (if-eq (sym cons) tag
+            (cons (f (pair-left payload)) (map f (pair-right payload)))
+            ((sym expected-nil-or-cons) ())))
+      ) (pair-right xs))) (pair-left xs)))))
 
-(if-eq (sym abc) (sym def)
-  ()
-  ())
+    (map (lam x (cons x nil)) (cons (sym 1) (cons (sym 2) (cons (sym 3) nil)))))
 
-(let-rec
-  ((x arg (y arg))
-   (y arg arg))
-  (x ()))
+) (lam head (lam tail (pair (sym cons) (pair head tail)))))) (pair (sym nil) ()))
 
-(let-rec
-  ((x arg (y arg))
-   (y arg (x arg)))
-  (x ()))
+
+; map twice
+((lam nil ((lam cons
+
+  (let-rec
+    ((map f (lam xs
+      ((lam tag ((lam payload
+        (if-eq (sym nil) tag
+          nil
+          (if-eq (sym cons) tag
+            (cons (f (pair-left payload)) (map f (pair-right payload)))
+            ((sym expected-nil-or-cons) ())))
+      ) (pair-right xs))) (pair-left xs)))))
+
+    (map (lam x (pair (sym thing) x)) (map (lam x (cons x nil)) (cons (sym 1) (cons (sym 2) (cons (sym 3) nil))))))
+
+) (lam head (lam tail (pair (sym cons) (pair head tail)))))) (pair (sym nil) ()))
+
+
+;(((lam x (lam y (pair-left (pair x y))))
+  ;(sym left)) (sym right))
+
+;(((lam x (lam y (pair-right (pair x y))))
+  ;(sym left)) (sym right))
+
+;(if-eq (sym abc) (sym def)
+  ;(sym true)
+  ;(sym false))
+
+;(let-rec
+  ;((x arg (y arg))
+   ;(y arg arg))
+  ;(x ()))
+
+; infinite loop
+;(let-rec
+  ;((x arg (y arg))
+   ;(y arg (x arg)))
+  ;(x ()))
