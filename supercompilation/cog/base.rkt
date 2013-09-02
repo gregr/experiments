@@ -789,17 +789,57 @@
            (let-rec ,parse-let-rec))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; interact
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (state-interact st)
+  (let loop ((st st))
+    (printf "\n~a\n\n" (state-show st))
+    (display "[s]tep,[d]elay,[f]orce,s[k]olemize,re[b]uild,[c]omplete,[q]uit> ")
+    (do either-monad
+      st <- (match (read-line)
+              ("s" (state-step st))
+              ("d" (state-delay st))
+              ("f" (state-force st))
+              ; TODO: transition to rebuilt state
+              ("b" (begin (printf "rebuilt:\n~a\n***\n"
+                                  (state-show (state-rebuild st))) (pure st)))
+              ("c" (step-n st -1))
+              ("q" (left "quitting"))
+              (_ (displayln "invalid choice") (right st)))
+      (loop st))))
+
+(define (parse-default form) (parse penv-init form))
+
+(define (interpret-port interpret return inp)
+  (let loop ()
+    (let ((form (read inp)))
+      (if (eq? form eof) (right (void))
+        (do either-monad
+          term <- (parse-default form)
+          (begin
+            (return (interpret term))
+            (loop)))))))
+
+(define step-eval-port
+  (curry interpret-port (compose1 state-interact term->state)
+         (lambda (x) (displayln (left-x x)))))
+
+(define denote-eval-port
+  (curry interpret-port denote-eval
+         (lambda (x) (displayln (format "halted on: ~a" x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; testing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (parse-form form) (parse penv-init form))
 (define (denote-form form)
   (do either-monad
-    term <- (parse-form form)
+    term <- (parse-default form)
     (pure (denote term))))
 (define (denote-eval-form form)
   (do either-monad
-    term <- (parse-form form)
+    term <- (parse-default form)
     (pure (denote-eval term))))
 
 ; TODO: use racket's test facilities
@@ -856,27 +896,14 @@ tstart
 (define tinfloop (term->state (right-x (list-ref parsed-tests 7))))
 tinfloop
 
-(define (state-interact st)
-  (let loop ((st st))
-    (printf "\n~a\n\n" (state-show st))
-    (display "[s]tep,[d]elay,[f]orce,s[k]olemize,re[b]uild,[c]omplete,[q]uit> ")
-    (do either-monad
-      st <- (match (read-line)
-              ("s" (state-step st))
-              ("d" (state-delay st))
-              ("f" (state-force st))
-              ; TODO: transition to rebuilt state
-              ("b" (begin (printf "rebuilt:\n~a\n***\n"
-                                  (state-show (state-rebuild st))) (pure st)))
-              ("c" (step-n st -1))
-              ("q" (left "quitting"))
-              (_ (displayln "invalid choice") (right st)))
-      (loop st))))
+(displayln "\n\ninterpreting examples from file:")
+(step-eval-port (open-input-file "examples.cog"))
+;(denote-eval-port (open-input-file "examples.cog"))
 
-(displayln "")
-(state-interact tstart)
-(displayln "")
-(state-interact tinfloop)
+;(displayln "")
+;(state-interact tstart)
+;(displayln "")
+;(state-interact tinfloop)
 
 ;(left "halted on: #(struct:sym right)")
 

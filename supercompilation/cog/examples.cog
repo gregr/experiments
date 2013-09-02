@@ -1,0 +1,19 @@
+(((lam x (lam y (pair-left (pair x y))))
+  (sym left)) (sym right))
+
+(((lam x (lam y (pair-right (pair x y))))
+  (sym left)) (sym right))
+
+(if-eq (sym abc) (sym def)
+  ()
+  ())
+
+(let-rec
+  ((x arg (y arg))
+   (y arg arg))
+  (x ()))
+
+(let-rec
+  ((x arg (y arg))
+   (y arg (x arg)))
+  (x ()))
