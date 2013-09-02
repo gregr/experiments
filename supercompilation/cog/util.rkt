@@ -120,7 +120,9 @@
   (match ss ('() set-empty) (_ (apply set-union ss))))
 
 (define graph-empty (hash))
-(define (graph-add-edge gr src tgt) (hash-update gr src (curry cons tgt) '()))
+(define (graph-add-src gr src) (hash-update gr src (lambda (x) x) '()))
+(define (graph-add-edge gr src tgt)
+  (graph-add-src (hash-update gr src (curry cons tgt) '()) tgt))
 (define (graph-tgts gr src) (hash-ref gr src '()))
 (define graph->alist hash->list)
 (define (alist->graph as)
