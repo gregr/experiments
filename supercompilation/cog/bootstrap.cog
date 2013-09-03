@@ -1,0 +1,175 @@
+; TODO:
+; Syntactic sugar to reduce unreadable nesting (and increase sanity):
+; Use ___ as a special symbol to represent a hole in which to stick the next
+; term listed in the file.  There should only be one such hole in any term.
+; This rule is cumulative, filling the current hole with (possibly-holed) the
+; next term until there is no longer a hole to fill.  At that point, the next
+; term is considered the next independent program to interpret.
+
+; nat
+((lam Z ___) (pair (sym Z) ()))
+((lam S ___) (lam n (pair (sym S) n)))
+; list
+((lam cons ___) (lam head (lam tail (pair (sym cons) (pair head tail)))))
+((lam nil ___) (pair (sym nil) ()))
+; either
+((lam left ___) (lam x (pair (sym left) x)))
+((lam right ___) (lam x (pair (sym right) x)))
+
+; assoc-list
+((lam alist-empty ___) nil)
+((lam alist-add ___)
+ (lam alist (lam key (lam val (cons (pair key val) alist)))))
+(let-rec
+ ((alist-get alist (lam key (lam default
+   (if-eq (sym nil) (pair-left alist) default
+     (if-eq (sym cons) (pair-left alist)
+       ((lam hdtl
+          ((lam entry
+             (if-eq key (pair-left entry) (pair-right entry)
+               (alist-get (pair-right hdtl) key default)))
+           (pair-left hdtl)))
+        (pair-right alist))
+       ((sym type-error-list) alist)))))))
+ ___)
+((lam alist-cons ___)
+ (lam key (lam val (lam alist (alist-add alist key val)))))
+
+((lam case-raw ___)
+ (lam scrut (lam default (lam alterns
+   ((lam tag (lam payload
+       ((alist-get alterns tag default) payload)))
+    (pair-left scrut) (pair-right scrut))))))
+((lam case-raw-nat ___)
+ (lam scrut (lam Z-altern (lam S-altern
+   (case-raw scrut (lam x ((sym type-error-nat) scrut))
+     (alist-cons (sym Z) Z-altern
+     (alist-cons (sym S) S-altern
+      alist-empty))))))
+((lam case-raw-list ___)
+ (lam scrut (lam nil-altern (lam cons-altern
+   (case-raw scrut (lam x ((sym type-error-list) scrut))
+     (alist-cons (sym nil) nil-altern
+     (alist-cons (sym cons)
+                 (lam cp (cons-altern (pair-left cp) (pair-right cp)))
+      alist-empty)))))))
+((lam case-raw-either ___)
+ (lam scrut (lam left-altern (lam right-altern
+   (case-raw scrut (lam x ((sym type-error-either) scrut))
+     (alist-cons (sym left) left-altern
+     (alist-cons (sym right) right-altern
+      alist-empty)))))))
+
+(let-rec
+  ((foldr f (lam init (lam xs
+     (case-raw-list xs
+      (lam np init)
+      (lam hd (lam tl (foldr f (f hd init) tl))))))))
+  ___)
+
+((lam env-empty ___) alist-empty)
+((lam env-extend-keyword ___)
+  (lam env (lam key (lam name (alist-add env key (right (left name)))))))
+((lam env-extend ___)
+  (lam env (lam key (lam val (alist-add env key (right (right val)))))))
+((lam env-lookup ___)
+  (lam env (lam key (alist-get env key (left key)))))
+
+((lam test-keywords ___)
+ (cons (sym sym) (cons (sym lam) (cons (sym pair)
+  (cons (sym pair-left) (cons (sym pair-right)
+   (cons (sym if-eq) (cons (sym let-rec) nil))))))))
+((lam test-env-init ___)
+ (foldr (lam kw (lam env (env-extend-keyword env kw kw)))
+        env-empty test-keywords))
+
+((lam syntax-sym ___) (lam name (pair (sym syntax-sym) name)))
+((lam syntax-list ___) (lam ss (pair (sym syntax-list) ss)))
+
+((lam case-raw-syntax ___)
+ (lam scrut (lam sym-altern (lam list-altern
+  (case-raw scrut (lam x ((sym type-error-syntax) scrut))
+    (alist-cons (sym syntax-sym) sym-altern
+    (alist-cons (sym syntax-list) list-altern
+     alist-empty)))))))
+
+((lam eval-lookup ___)
+ (lam env (lam name (lam cont
+  (case-raw-either (env-lookup env name)
+    (lam lp ((sym eval-error-unbound-var) name)))
+    cont))))
+(let-rec
+  ((apply-arity arity (lam cont (lam args
+     (case-raw-list args
+       (lam np
+         (case-raw-nat arity
+           (lam zp cont)
+           (lam sp ((sym arity-error-too-few-args) (pair arity cont)))))
+       (lam hd (lam tl
+         (case-raw-nat arity
+           (lam zp ((sym arity-error-too-many-args)
+                    (pair arity (pair cont args))))
+           (lam sn (apply-arity sn (cont hd) tl))))))))))
+  ___)
+(let-rec
+  ((eval-syntax env (lam kw
+     (case-raw (pair kw env) (lam pp ((sym eval-error-unknown-keyword) kw))
+       (alist-cons (sym sym) eval-syntax-sym
+       (alist-cons (sym lam) eval-syntax-lam
+       (alist-cons (sym pair) eval-syntax-pair
+       (alist-cons (sym pair-left) eval-syntax-pair-left
+       (alist-cons (sym pair-right) eval-syntax-pair-right
+       (alist-cons (sym if-eq) eval-syntax-if-eq
+       (alist-cons (sym let-rec) eval-syntax-let-rec
+        alist-empty))))))))))
+   (eval-syntax-sym env (apply-arity (S Z) (lam x x)))
+   (eval-syntax-lam env
+     (apply-arity (S (S Z))
+       (lam binder (lam body
+         (lam arg (eval (env-extend env binder arg) body))))))
+   (eval-syntax-pair env
+     (apply-arity (S (S Z)) (lam l (lam r (pair (eval env l) (eval env r))))))
+   (eval-syntax-pair-left env
+     (apply-arity (S Z) (lam p (pair-left (eval env p)))))
+   (eval-syntax-pair-right env
+     (apply-arity (S Z) (lam p (pair-right (eval env p)))))
+   (eval-syntax-if-eq env
+     (apply-arity (S (S (S (S Z))))
+       (lam s0 (lam s1 (lam true (lam false
+         (if-eq (eval env s0) (eval env s1)
+                (eval env true) (eval env false))))))))
+   ;(eval-syntax-let-rec env ; TODO: eventually...
+
+   (eval-app env (lam proc (lam args
+     (let-rec
+       ((loop proc (lam args
+          (case-raw-list rest
+            (lam np proc)
+            (lam hd (lam tl (loop (proc hd) tl)))))))
+       (loop (eval env proc) (eval-list env args))))))
+   (eval-list env (lam ss
+     (case-raw-list ss
+       (lam np nil)
+       (lam hd (lam tl
+         (cons (eval env hd) (eval-list env tl)))))))
+   (eval env (lam form (case-raw-syntax form
+     (lam name
+     (eval-lookup env name
+       (lam result
+         (case-raw-either result
+           (lam kw ((sym eval-error-unexpected-keyword) (pair name form)))
+           (lam val val)))))
+     (lam ss
+     (case-raw-list ss
+       (lam np ())
+       (lam first (lam rest
+         (case-raw-syntax first
+           (lam name
+             (eval-lookup env name
+               (lam result
+               (case-raw-either result
+                 (lam kw (eval-syntax env kw rest))
+                 (lam val (eval-app env first rest))))))
+           (lam rhd (lam rtl (eval-app env first rest))))))))))))
+  ___)
+
