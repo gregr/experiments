@@ -1,11 +1,3 @@
-; TODO:
-; Syntactic sugar to reduce unreadable nesting (and increase sanity):
-; Use ___ as a special symbol to represent a hole in which to stick the next
-; term listed in the file.  There should only be one such hole in any term.
-; This rule is cumulative, filling the current hole with (possibly-holed) the
-; next term until there is no longer a hole to fill.  At that point, the next
-; term is considered the next independent program to interpret.
-
 ; nat
 ((lam Z ___) (pair (sym Z) ()))
 ((lam S ___) (lam n (pair (sym S) n)))

@@ -18,4 +18,4 @@
 
 (match ((eval-port) (program-source))
   ((left err) (displayln err))
-  ((right _) (void)))
+  ((right result) result))

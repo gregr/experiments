@@ -818,15 +818,28 @@
 
 (define (parse-default form) (parse penv-init form))
 
+(define (has-big-hole? form)
+  (if (list? form) (ormap has-big-hole? form) (eq? '___ form)))
+(define ((fill-big-hole form) hole-form)
+  (if (list? hole-form) (map (fill-big-hole form) hole-form)
+    (if (eq? '___ hole-form) form hole-form)))
+
 (define (interpret-port interpret return inp)
-  (let loop ()
+  (let loop ((hole-form (nothing)))
     (let ((form (read inp)))
-      (if (eq? form eof) (right (void))
-        (do either-monad
-          term <- (parse-default form)
-          (begin
-            (return (interpret term))
-            (loop)))))))
+      (if (eq? form eof)
+        (right (match hole-form
+                 ((nothing) (void))
+                 ((just hf) (format "unfilled hole-form: ~s" hf))))
+        (let ((form (match hole-form
+                      ((nothing) form)
+                      ((just hf) ((fill-big-hole form) hf)))))
+          (if (has-big-hole? form) (loop (just form))
+            (do either-monad
+              term <- (parse-default form)
+              (begin
+                (return (interpret term))
+                (loop (nothing))))))))))
 
 (define step-eval-port
   (curry interpret-port (compose1 state-interact term->state)
