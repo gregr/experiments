@@ -1,3 +1,90 @@
+reformulate terms to reduce redundancy and increase flexibility of reasoning
+  symbols and conditionals will become derived concepts
+  bits (zero and one) and pair-access will be introduced
+    these can express pair-left/right and conditional branching
+
+scrap the current promise framework
+  replace with skolems plus a new propositional framework
+  'skolem' renamed 'promise' in this system
+    promise will then reflect an unknown atomic value
+    propositions on promises will replace constraints of the current framework
+
+
+; note: propositions really describe properties of full computational states,
+;       not just thunks: catalog is implicit in the following
+
+prop = thunk ==> thunk  ; step relation (==>* for reflexive transitive closure)
+     | converges thunk atom  ; thunk terminates with atom as result
+     | diverges thunk  ; thunk fails to terminate or produces an error
+     | thunk === thunk  ; is this necessary? should it subsume atom equality?
+     | atom == atom  ; judgmentally equal (commutative)
+     | atom != atom  ; judgementally unequal (commutative)
+     | type value-type atom  ; type constraint on atom
+
+thunk = (term, env)
+
+atom = unit | bit-0 | bit-1 | indirect UID | promise UID
+
+value-type = Unit | Bit | Pair | Lam
+
+
+derived props such as:
+  thunk ===> atom, equivalent to something like:
+  thunk ==> ((val-a atom), ENV)
+
+contradictions produced by
+  converges and diverges props for the same thunk
+  == and != for the same pair of atoms
+  multiple type constraints for the same atom
+
+implications in the prop framework defined as meta-level lambdas
+props are then data processed and produced by meta-level programs
+
+
+new machinery
+  catalogs now include propositions, describing hypotheses and/or inferences
+    hypotheses are introduced at the meta-level by implications
+  prop contradiction eliminates the current state from set of possibilities
+  separate forcing/updating of delayed thunks from parent computation state
+    you evaluate the thunk against the halt continuation
+      but with the parent catalog
+  lambda skolemization introduces new catalog frame: parent frame is read-only
+  case splitting duplicates catalog frame for each new state case
+  case splitting allows conjectures of the following forms:
+    value-type cases
+      the type of a promise is speculated before type-dependent evaluation
+        (in the case of pair-access for bits/pairs or application for lams)
+      each value-type conjecture starts a new hypothetical world/state
+      as far as i can see, this will finally result in three situations:
+        all cases converge, type splitting was unnecessary
+        all cases diverge, type splitting did not save us
+        only one case converges, type splitting made a difference
+      no special term rebuilding necessary for this type of split
+    bit-0 vs. bit-1
+      this corresponds to exploring conditional branches
+      each hypothetical world is rebuilt as a branch of a new conditional
+    converge vs. diverge
+      this corresponds to obligations for evaluating potentially-unused thunks
+      if convergence cannot be proven for a thunk, a program is obligated
+        to evaluate it even if its result is never used
+      this obligation is reflected during term rebuilding
+      proving divergence for a program thunk implies full program divergence
+  observations about evolving converge/diverge hypotheses during evaluation
+    corresponds to generating an obligation and promise
+    as the thunk unwinds, the potentially-diverging part contracts
+    contraction results in a new case split
+      new diverging case obviates the original case split entirely
+      new converging case contradicts original diverging case, eliminating it
+      so, only the new child split/obligation remains
+  for term rebuilding
+    may need to keep a mapping of representative thunks for promises:
+      promise UID -> (thunk OR skolem)
+      the thunk introducing a promise is its representative
+
+===============================================================================
+= older ideas
+===============================================================================
+
  eager and lazy CBV operational semantics
    CBV describes observable semantics while lazy/eager describes operational strategy
  eager CBV
