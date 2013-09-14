@@ -12,11 +12,14 @@ scrap the current promise framework
 
 ; note: propositions really describe properties of full computational states,
 ;       not just thunks: catalog is implicit in the following
+; TODO: [how] should we represent quantifiers?
+; TODO: can negation instead be nicely generalized as 'False' implication?
+;       then generalize [con/di]vergence using negation, ===>, and quantifiers
 
 prop = thunk ==> thunk  ; step relation (==>* for reflexive transitive closure)
      | converges thunk atom  ; thunk terminates with atom as result
      | diverges thunk  ; thunk fails to terminate or produces an error
-     | thunk === thunk  ; is this necessary? should it subsume atom equality?
+     | thunk === thunk  ; judgmentally equal thunks (commutative)
      | atom == atom  ; judgmentally equal (commutative)
      | atom != atom  ; judgementally unequal (commutative)
      | type value-type atom  ; type constraint on atom
@@ -29,8 +32,12 @@ value-type = Unit | Bit | Pair | Lam
 
 
 derived props such as:
+  thunk0 ==>* thunk1, where
+    thunk0 === thunk1 OR
+    thunk0 ==> thunk1 OR
+    thunk0 ==>* thunkX AND thunkX ==>* thunk1
   thunk ===> atom, equivalent to something like:
-  thunk ==> ((val-a atom), ENV)
+    thunk ==>* ((val-a atom ; halt), ENV)
 
 contradictions produced by
   converges and diverges props for the same thunk
