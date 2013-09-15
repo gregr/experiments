@@ -27,7 +27,6 @@
   (bound (idx))
   (app (proc arg))
   (pair-access (bit pair))
-  (if-eq (sym0 sym1 true false))
   (let-rec (defs body)))
 
 (variant (term-context (base finished pending)))
@@ -43,10 +42,6 @@
       ((bound idx)                  (cons term '()))
       ((app proc arg)               (cons (app '() '()) (list proc arg)))
       ((pair-access bt pr)          (cons (pair-access '() '()) (list bt pr)))
-      ((if-eq sym0 sym1 true false) (cons (if-eq '() '()
-                                                 (term->context true)
-                                                 (term->context false))
-                                          (list sym0 sym1)))
       ((let-rec defs body)          (cons (let-rec (map term->context defs)
                                                    (term->context body))
                                           '())))))
@@ -63,9 +58,6 @@
          ((bound idx)            base)
          ((app proc arg)         (apply app finished))
          ((pair-access bt pr)    (apply pair-access finished))
-         ((if-eq _ _ true false) (apply
-                                   (lambda (s0 s1) (if-eq s0 s1 true false))
-                                   finished))
          ((let-rec _ _)          base))))))
 
 (define (term-context-finish ohc val)
@@ -225,12 +217,6 @@
     bt <- (atom->bit bt)
     pr <- (atom->pair (state-clg st) pr)
     (pure (state-focus! st (val-a-context ((bit->pair-selector bt) pr))))))
-(define (state-activate-if-eq st sym0 sym1 true false)
-  (do either-monad
-    n0 <- (atom->sym sym0)
-    n1 <- (atom->sym sym1)
-    focus = (if (equal? n0 n1) true false)
-    (pure (state-focus! st focus))))
 (define (state-activate-let-rec st defs body)
   (match-let* (((cons st uids) (state-alloc-uids st (length defs)))
                (renv (env-extends (state-env st) (map indirect uids)))
@@ -245,8 +231,6 @@
     ((bound idx) (state-activate-bound st idx))
     ((app proc arg) (state-activate-app st proc arg))
     ((pair-access bt pr) (state-activate-pair-access st bt pr))
-    ((if-eq sym0 sym1 true false)
-     (state-activate-if-eq st sym0 sym1 true false))
     ((let-rec defs body) (state-activate-let-rec st defs body))))
 
 (define (state-step st)
@@ -331,9 +315,6 @@
             ((val-a x) (val-atomic-roots x))
             ((val-c x) (val-compound-roots env x))
             ((bound idx) (val-atomic-roots (just-x (env-lookup env idx))))
-            ((if-eq _ _ true false)
-             (set-unions
-               (map (term-context-roots env) (list true false))))
             ((let-rec defs body)
              (let* ((env0 (env-extends env (make-list (length defs) (uno))))
                     (env1 (env-extend env0 (uno))))
@@ -353,10 +334,6 @@
          ((bound idx)
           (if (< idx threshold) base
             (val-a (just-x (env-lookup env (- idx threshold))))))
-         ((if-eq s0 s1 true false)
-          (if-eq s0 s1
-                 (term-context-unbind env threshold true)
-                 (term-context-unbind env threshold false)))
          ((let-rec defs body)
           (let* ((threshold (+ threshold (length defs)))
                  (defs (map (curry term-context-unbind env (+ threshold 1))
@@ -463,9 +440,6 @@
                   (_ base)))
                ((val-c (lam body _))
                 (val-c (lam (recurse (+ depth 1) body) env-empty)))
-               ((if-eq s0 s1 true false)
-                (apply (curry if-eq s0 s1)
-                       (map (curry recurse depth) (list true false))))
                ((let-rec defs body)
                 (let ((depth (+ depth (length defs))))
                   (let-rec (map (curry recurse (+ depth 1)) defs)
@@ -546,9 +520,6 @@
          ((bound idx)              (format "$~a" idx))
          ((app proc arg)           (format "(~a ~a)" proc arg))
          ((pair-access bt pr)      (format "~a[~a]" pr bt))
-         ((if-eq s0 s1 true false) (format "(if (~a = ~a) ~a ~a)" s0 s1
-                                           (term-context-show true)
-                                           (term-context-show false)))
          ((let-rec defs body)
           (format "(let-rec ~a; ~a)"
                   (string-join
@@ -635,10 +606,6 @@
     ((pair-access bt pr)
      (let ((dbt (denote bt)) (dpr (denote pr)))
        (lambda (env) ((vector-ref (vector car cdr) (dbt env)) (dpr env)))))
-    ((if-eq sym0 sym1 true false)
-      (let ((ds0 (denote sym0)) (ds1 (denote sym1))
-            (dt (denote true)) (df (denote false)))
-        (lambda (env) (if (eq? (ds0 env) (ds1 env)) (dt env) (df env)))))
     ((let-rec defs body)
       (let ((dbody (denote body)) (ddefs (map denote-lam defs)))
         (lambda (env)
@@ -792,7 +759,6 @@
     body <- (parse pe body)
     (pure (let-rec defs body))))
 (define parse-pair-access (parse-apply pair-access 3))
-(define parse-if-eq (parse-apply if-eq 5))
 (define parse-pair (parse-apply (compose1 val-c pair) 3))
 
 (define (parse-as-thunk pe form) (parse pe `(lam _ ,form)))
@@ -829,7 +795,6 @@
            (pair ,parse-pair)
            (pair-access ,parse-pair-access)
            (if-0 ,parse-if-0)
-           (if-eq ,parse-if-eq)
            (pair-left ,parse-pair-left)
            (pair-right ,parse-pair-right)
            (let-rec ,parse-let-rec))))
