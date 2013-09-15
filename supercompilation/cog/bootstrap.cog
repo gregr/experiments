@@ -1,12 +1,18 @@
 ; nat
-((lam Z ___) (pair (sym Z) ()))
-((lam S ___) (lam n (pair (sym S) n)))
+((lam Z-tag ___) (sym Z))
+((lam S-tag ___) (sym S))
+((lam Z ___) (pair Z-tag ()))
+((lam S ___) (lam n (pair S-tag n)))
 ; list
-((lam cons ___) (lam head (lam tail (pair (sym cons) (pair head tail)))))
-((lam nil ___) (pair (sym nil) ()))
+((lam nil-tag ___) (sym nil))
+((lam cons-tag ___) (sym cons))
+((lam nil ___) (pair nil-tag ()))
+((lam cons ___) (lam head (lam tail (pair cons-tag (pair head tail)))))
 ; either
-((lam left ___) (lam x (pair (sym left) x)))
-((lam right ___) (lam x (pair (sym right) x)))
+((lam left-tag ___) (sym left))
+((lam right-tag ___) (sym right))
+((lam left ___) (lam x (pair left-tag x)))
+((lam right ___) (lam x (pair right-tag x)))
 
 ; assoc-list
 ((lam alist-empty ___) nil)
@@ -68,15 +74,17 @@
   (lam env (lam key (alist-get env key (left key)))))
 
 ((lam test-keywords ___)
- (cons (sym sym) (cons (sym lam) (cons (sym pair)
-  (cons (sym pair-left) (cons (sym pair-right)
-   (cons (sym if-eq) (cons (sym let-rec) nil))))))))
+ (cons (sym sym) (cons (sym lam) (cons (sym pair) (cons (sym pair-access)
+  (cons (sym pair-left) (cons (sym pair-right) (cons (sym if-0)
+   (cons (sym let-rec) nil))))))))
 ((lam test-env-init ___)
  (foldr (lam kw (lam env (env-extend-keyword env kw kw)))
         env-empty test-keywords))
 
-((lam syntax-sym ___) (lam name (pair (sym syntax-sym) name)))
-((lam syntax-list ___) (lam ss (pair (sym syntax-list) ss)))
+((lam syntax-sym-tag ___) (sym syntax-sym))
+((lam syntax-list-tag ___) (sym syntax-list))
+((lam syntax-sym ___) (lam name (pair syntax-sym-tag name)))
+((lam syntax-list ___) (lam ss (pair syntax-list-tag ss)))
 
 ((lam case-raw-syntax ___)
  (lam scrut (lam sym-altern (lam list-altern
@@ -109,9 +117,10 @@
        (alist-cons (sym sym) eval-syntax-sym
        (alist-cons (sym lam) eval-syntax-lam
        (alist-cons (sym pair) eval-syntax-pair
+       (alist-cons (sym pair-access) eval-syntax-pair-access
        (alist-cons (sym pair-left) eval-syntax-pair-left
        (alist-cons (sym pair-right) eval-syntax-pair-right
-       (alist-cons (sym if-eq) eval-syntax-if-eq
+       (alist-cons (sym if-0) eval-syntax-if-0
        (alist-cons (sym let-rec) eval-syntax-let-rec
         alist-empty))))))))))
    (eval-syntax-sym env (apply-arity (S Z) (lam x x)))
@@ -121,15 +130,17 @@
          (lam arg (eval (env-extend env binder arg) body))))))
    (eval-syntax-pair env
      (apply-arity (S (S Z)) (lam l (lam r (pair (eval env l) (eval env r))))))
+   (eval-syntax-pair-access env
+     (apply-arity (S (S Z))
+     (lam bt (lam pr (pair-access (eval env bt) (eval env pr))))))
    (eval-syntax-pair-left env
      (apply-arity (S Z) (lam p (pair-left (eval env p)))))
    (eval-syntax-pair-right env
      (apply-arity (S Z) (lam p (pair-right (eval env p)))))
-   (eval-syntax-if-eq env
-     (apply-arity (S (S (S (S Z))))
-       (lam s0 (lam s1 (lam true (lam false
-         (if-eq (eval env s0) (eval env s1)
-                (eval env true) (eval env false))))))))
+   (eval-syntax-if-0 env
+     (apply-arity (S (S (S Z)))
+       (lam bt (lam true (lam false
+         (if-0 (eval env bt) (eval env true) (eval env false)))))))
    ;(eval-syntax-let-rec env ; TODO: eventually...
 
    (eval-app env (lam proc (lam args
