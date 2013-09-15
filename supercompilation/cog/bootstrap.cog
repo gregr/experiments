@@ -1,16 +1,34 @@
+((lam tag-first ___) (pair 0 ()))
+((lam tag-next ___) (lam tag-cur (pair 1 tag-cur)))
+(let-rec
+ ((tag-eq? t0 (lam t1
+   ((lam t0-l (lam t0-r (lam t1-l (lam t1-r
+      (if-0 t0-l
+        (if-0 t1-l 0 1)
+        (if-0 t1-l 1 (tag-eq? t0-r t1-r)))))))
+    (pair-left t0) (pair-right t0) (pair-left t0) (pair-right t1)))))
+ ___)
+((lam Tag ___) (lam ty-tag (lam datum-tag (pair ty-tag datum-tag))))
+((lam Tag-eq? ___) (lam t0 (lam t1
+ (if-0 (tag-eq? (pair-left t0) (pair-left t1))
+  (tag-eq? (pair-right t0) (pair-right t1)) 1))))
+((lam Tag-next-type ___) (lam Tag-cur
+  (Tag (tag-next (pair-left Tag-cur)) tag-first)))
+((lam Tag-next-datum ___) (lam Tag-cur
+  (Tag (pair-left Tag-cur) (tag-next (pair-right Tag-cur)))))
 ; nat
-((lam Z-tag ___) (sym Z))
-((lam S-tag ___) (sym S))
+((lam Z-tag ___) (Tag tag-first tag-first))
+((lam S-tag ___) (Tag-next-datum Z-tag))
 ((lam Z ___) (pair Z-tag ()))
 ((lam S ___) (lam n (pair S-tag n)))
 ; list
-((lam nil-tag ___) (sym nil))
-((lam cons-tag ___) (sym cons))
+((lam nil-tag ___) (Tag-next-type S-tag))
+((lam cons-tag ___) (Tag-next-datum nil-tag))
 ((lam nil ___) (pair nil-tag ()))
 ((lam cons ___) (lam head (lam tail (pair cons-tag (pair head tail)))))
 ; either
-((lam left-tag ___) (sym left))
-((lam right-tag ___) (sym right))
+((lam left-tag ___) (Tag-next-type cons-tag))
+((lam right-tag ___) (Tag-next-datum left-tag))
 ((lam left ___) (lam x (pair left-tag x)))
 ((lam right ___) (lam x (pair right-tag x)))
 
@@ -20,11 +38,11 @@
  (lam alist (lam key (lam val (cons (pair key val) alist)))))
 (let-rec
  ((alist-get alist (lam key (lam default
-   (if-eq (sym nil) (pair-left alist) default
-     (if-eq (sym cons) (pair-left alist)
+   (if-0 (Tag-eq? nil-tag (pair-left alist)) default
+     (if-0 (Tag-eq? cons-tag (pair-left alist))
        ((lam hdtl
           ((lam entry
-             (if-eq key (pair-left entry) (pair-right entry)
+             (if-0 (Tag-eq? key (pair-left entry)) (pair-right entry)
                (alist-get (pair-right hdtl) key default)))
            (pair-left hdtl)))
         (pair-right alist))
@@ -41,21 +59,21 @@
 ((lam case-raw-nat ___)
  (lam scrut (lam Z-altern (lam S-altern
    (case-raw scrut (lam x ((sym type-error-nat) scrut))
-     (alist-cons (sym Z) Z-altern
-     (alist-cons (sym S) S-altern
+     (alist-cons Z-tag Z-altern
+     (alist-cons S-tag S-altern
       alist-empty))))))
 ((lam case-raw-list ___)
  (lam scrut (lam nil-altern (lam cons-altern
    (case-raw scrut (lam x ((sym type-error-list) scrut))
-     (alist-cons (sym nil) nil-altern
-     (alist-cons (sym cons)
+     (alist-cons nil-tag nil-altern
+     (alist-cons cons-tag
                  (lam cp (cons-altern (pair-left cp) (pair-right cp)))
       alist-empty)))))))
 ((lam case-raw-either ___)
  (lam scrut (lam left-altern (lam right-altern
    (case-raw scrut (lam x ((sym type-error-either) scrut))
-     (alist-cons (sym left) left-altern
-     (alist-cons (sym right) right-altern
+     (alist-cons left-tag left-altern
+     (alist-cons right-tag right-altern
       alist-empty)))))))
 
 (let-rec
@@ -81,16 +99,17 @@
  (foldr (lam kw (lam env (env-extend-keyword env kw kw)))
         env-empty test-keywords))
 
-((lam syntax-sym-tag ___) (sym syntax-sym))
-((lam syntax-list-tag ___) (sym syntax-list))
+; syntax
+((lam syntax-sym-tag ___) (Tag-next-type right-tag))
+((lam syntax-list-tag ___) (Tag-next-datum syntax-sym-tag))
 ((lam syntax-sym ___) (lam name (pair syntax-sym-tag name)))
 ((lam syntax-list ___) (lam ss (pair syntax-list-tag ss)))
 
 ((lam case-raw-syntax ___)
  (lam scrut (lam sym-altern (lam list-altern
   (case-raw scrut (lam x ((sym type-error-syntax) scrut))
-    (alist-cons (sym syntax-sym) sym-altern
-    (alist-cons (sym syntax-list) list-altern
+    (alist-cons syntax-sym-tag sym-altern
+    (alist-cons syntax-list-tag list-altern
      alist-empty)))))))
 
 ((lam eval-lookup ___)
