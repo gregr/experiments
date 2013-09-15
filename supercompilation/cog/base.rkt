@@ -28,8 +28,6 @@
   (app (proc arg))
   (pair-access (bit pair))
   (if-eq (sym0 sym1 true false))
-  (pair-left (x))
-  (pair-right (x))
   (let-rec (defs body)))
 
 (variant (term-context (base finished pending)))
@@ -49,8 +47,6 @@
                                                  (term->context true)
                                                  (term->context false))
                                           (list sym0 sym1)))
-      ((pair-left x)                (cons (pair-left '()) (list x)))
-      ((pair-right x)               (cons (pair-right '()) (list x)))
       ((let-rec defs body)          (cons (let-rec (map term->context defs)
                                                    (term->context body))
                                           '())))))
@@ -70,8 +66,6 @@
          ((if-eq _ _ true false) (apply
                                    (lambda (s0 s1) (if-eq s0 s1 true false))
                                    finished))
-         ((pair-left _)          (apply pair-left finished))
-         ((pair-right _)         (apply pair-right finished))
          ((let-rec _ _)          base))))))
 
 (define (term-context-finish ohc val)
@@ -237,10 +231,6 @@
     n1 <- (atom->sym sym1)
     focus = (if (equal? n0 n1) true false)
     (pure (state-focus! st focus))))
-(define (state-activate-pair-select select st atom)
-  (do either-monad
-    pair <- (atom->pair (state-clg st) atom)
-    (pure (state-focus! st (val-a-context (select pair))))))
 (define (state-activate-let-rec st defs body)
   (match-let* (((cons st uids) (state-alloc-uids st (length defs)))
                (renv (env-extends (state-env st) (map indirect uids)))
@@ -257,8 +247,6 @@
     ((pair-access bt pr) (state-activate-pair-access st bt pr))
     ((if-eq sym0 sym1 true false)
      (state-activate-if-eq st sym0 sym1 true false))
-    ((pair-left x) (state-activate-pair-select pair-l st x))
-    ((pair-right x) (state-activate-pair-select pair-r st x))
     ((let-rec defs body) (state-activate-let-rec st defs body))))
 
 (define (state-step st)
@@ -561,8 +549,6 @@
          ((if-eq s0 s1 true false) (format "(if (~a = ~a) ~a ~a)" s0 s1
                                            (term-context-show true)
                                            (term-context-show false)))
-         ((pair-left p)            (format "(pair-left ~a)" p))
-         ((pair-right p)           (format "(pair-right ~a)" p))
          ((let-rec defs body)
           (format "(let-rec ~a; ~a)"
                   (string-join
@@ -653,8 +639,6 @@
       (let ((ds0 (denote sym0)) (ds1 (denote sym1))
             (dt (denote true)) (df (denote false)))
         (lambda (env) (if (eq? (ds0 env) (ds1 env)) (dt env) (df env)))))
-    ((pair-left x) (let ((dx (denote x))) (lambda (env) (car (dx env)))))
-    ((pair-right x) (let ((dx (denote x))) (lambda (env) (cdr (dx env)))))
     ((let-rec defs body)
       (let ((dbody (denote body)) (ddefs (map denote-lam defs)))
         (lambda (env)
@@ -810,8 +794,6 @@
 (define parse-pair-access (parse-apply pair-access 3))
 (define parse-if-eq (parse-apply if-eq 5))
 (define parse-pair (parse-apply (compose1 val-c pair) 3))
-(define parse-pair-left (parse-apply pair-left 2))
-(define parse-pair-right (parse-apply pair-right 2))
 
 (define (parse-as-thunk pe form) (parse pe `(lam _ ,form)))
 
@@ -824,6 +806,8 @@
     zero <- (parse-as-thunk pe fzero)
     one <- (parse-as-thunk pe fone)
     (pure (app (pair-access cnd (val-c (pair zero one))) v-uno))))
+(define parse-pair-left (parse-apply (curry pair-access v-0) 2))
+(define parse-pair-right (parse-apply (curry pair-access v-1) 2))
 
 ; TODO: encode human-friendly numerals and symbols
 (define (parse-integer pe form)
