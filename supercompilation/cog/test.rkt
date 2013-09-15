@@ -25,6 +25,8 @@
     (let-rec ((x arg (y arg)) (y arg arg)) (x ()))
     (let-rec ((x y (y x))) (x x))
     (let-rec ((x arg (y arg)) (y arg (x arg))) (x ()))
+    (pair-access 0 (pair 1 0))
+    (pair-access 1 (pair 1 0))
     (lam x x)
     (lam x (lam y x))
     ()
@@ -50,6 +52,8 @@ parsed-tests
 (denote-eval (right-x (list-ref parsed-tests 5))) ; '()
 ;(denote-eval (right-x (list-ref parsed-tests 6))) ; infinite loop
 ;(denote-eval (right-x (list-ref parsed-tests 7))) ; another infinite loop
+(denote-eval (right-x (list-ref parsed-tests 8))) ; 1
+(denote-eval (right-x (list-ref parsed-tests 9))) ; 0
 
 (define tstart (term->state (right-x (list-ref parsed-tests 4))))
 tstart

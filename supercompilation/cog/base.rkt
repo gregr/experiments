@@ -6,9 +6,14 @@
 ;;; abstract syntax
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(data value-bit
+  (b-0 ())
+  (b-1 ()))
+
 (data value-atomic
   (promise (uid))
   (indirect (uid))
+  (bit (b))
   (uno ())
   (sym (name)))
 
@@ -21,6 +26,7 @@
   (val-c (x))
   (bound (idx))
   (app (proc arg))
+  (pair-access (bit pair))
   (if-eq (sym0 sym1 true false))
   (pair-left (x))
   (pair-right (x))
@@ -38,6 +44,7 @@
       ((val-c (pair l r))           (cons (val-c (pair '() '())) (list l r)))
       ((bound idx)                  (cons term '()))
       ((app proc arg)               (cons (app '() '()) (list proc arg)))
+      ((pair-access bt pr)          (cons (pair-access '() '()) (list bt pr)))
       ((if-eq sym0 sym1 true false) (cons (if-eq '() '()
                                                  (term->context true)
                                                  (term->context false))
@@ -59,6 +66,7 @@
          ((val-c (pair _ _))     (val-c (apply pair finished)))
          ((bound idx)            base)
          ((app proc arg)         (apply app finished))
+         ((pair-access bt pr)    (apply pair-access finished))
          ((if-eq _ _ true false) (apply
                                    (lambda (s0 s1) (if-eq s0 s1 true false))
                                    finished))
@@ -130,10 +138,18 @@
     (_ (left (format "expected indirection but found: ~s" atom)))))
 (define (atom->lam clg atom) (atom->compound lam? "lambda" clg atom))
 (define (atom->pair clg atom) (atom->compound pair? "pair" clg atom))
+(define (atom->bit atom)
+  (match atom
+    ((bit bt) (right bt))
+    (_ (left (format "expected bit but found: ~s" atom)))))
 (define (atom->sym atom)
   (match atom
     ((sym name) (right name))
     (_ (left (format "expected symbol but found: ~s" atom)))))
+(define (bit->pair-selector bt)
+  (match bt
+    ((b-0) pair-l)
+    ((b-1) pair-r)))
 
 (define env-empty '())
 (define (env-extend env v) (cons v env))
@@ -210,6 +226,11 @@
     (lam body env) <- (atom->lam (state-clg st) proc)
     env = (env-extend env arg)
     (pure (state-call! st body env))))
+(define (state-activate-pair-access st bt pr)
+  (do either-monad
+    bt <- (atom->bit bt)
+    pr <- (atom->pair (state-clg st) pr)
+    (pure (state-focus! st (val-a-context ((bit->pair-selector bt) pr))))))
 (define (state-activate-if-eq st sym0 sym1 true false)
   (do either-monad
     n0 <- (atom->sym sym0)
@@ -233,6 +254,7 @@
     ((val-c x) (state-activate-val-c st x))
     ((bound idx) (state-activate-bound st idx))
     ((app proc arg) (state-activate-app st proc arg))
+    ((pair-access bt pr) (state-activate-pair-access st bt pr))
     ((if-eq sym0 sym1 true false)
      (state-activate-if-eq st sym0 sym1 true false))
     ((pair-left x) (state-activate-pair-select pair-l st x))
@@ -289,6 +311,7 @@
   (match va
     ((promise uid) (set va))
     ((indirect uid) (set va))
+    ((bit _) set-empty)
     ((uno) set-empty)
     ((sym name) set-empty)))
 
@@ -497,6 +520,8 @@
     ((? void?)      "_")
     ((promise uid)  (format "?~a" uid))
     ((indirect uid) (format "@~a" uid))
+    ((bit (b-0))    "0")
+    ((bit (b-1))    "1")
     ((uno)          "{}")
     ((sym name)     (format "'~a'" name))
     (_ val)))
@@ -532,6 +557,7 @@
          ((val-c x)                (val-c-show x))
          ((bound idx)              (format "$~a" idx))
          ((app proc arg)           (format "(~a ~a)" proc arg))
+         ((pair-access bt pr)      (format "~a[~a]" pr bt))
          ((if-eq s0 s1 true false) (format "(if (~a = ~a) ~a ~a)" s0 s1
                                            (term-context-show true)
                                            (term-context-show false)))
@@ -620,6 +646,9 @@
         (lambda (env)
           (let ((vproc (dproc env)) (varg (darg env)))
             (vproc varg)))))
+    ((pair-access bt pr)
+     (let ((dbt (denote bt)) (dpr (denote pr)))
+       (lambda (env) ((vector-ref (vector car cdr) (dbt env)) (dpr env)))))
     ((if-eq sym0 sym1 true false)
       (let ((ds0 (denote sym0)) (ds1 (denote sym1))
             (dt (denote true)) (df (denote false)))
@@ -648,8 +677,13 @@
   (let ((dbody (denote body)))
     (lambda (env) (lambda (arg) (dbody (denote-env-extend env arg))))))
 
+(define (denote-bit bt)
+  (match bt
+    ((b-0) (lambda (env) 0))
+    ((b-1) (lambda (env) 1))))
 (define (denote-atom v)
   (match v
+    ((bit bt) (denote-bit bt))
     ((sym name) (lambda (env) name))
     ((uno) (lambda (env) '()))))
 (define (denote-compound v)
@@ -701,6 +735,7 @@
 (define (parse pe form)
   (match form
     ('() (right (val-a (uno))))
+    ((? integer?) (parse-integer pe form))
     ((? symbol?) (parse-bound pe form))
     ((cons op rest) (parse-combination pe op form))
     (_ (left (format "cannot parse: ~s" form)))))
@@ -767,15 +802,23 @@
                 (parse-under pe (lrdef-param def) (lrdef-body def))))
     body <- (parse pe body)
     (pure (let-rec defs body))))
+(define parse-pair-access (parse-apply pair-access 3))
+(define parse-if-eq (parse-apply if-eq 5))
+(define parse-pair (parse-apply (compose1 val-c pair) 3))
+(define parse-pair-left (parse-apply pair-left 2))
+(define parse-pair-right (parse-apply pair-right 2))
+
+; TODO: encode human-friendly numerals and symbols
+(define (parse-integer pe form)
+  (match form
+    (0 (right (val-a (bit (b-0)))))
+    (1 (right (val-a (bit (b-1)))))
+    (_ (left (format "expected 0 or 1 but found: ~s" form)))))
 (define (parse-sym pe form)
   (do either-monad
     _ <- (check-arity 2 form)
     `(,_ ,name) = form
     (pure (val-a (sym name)))))
-(define parse-if-eq (parse-apply if-eq 5))
-(define parse-pair (parse-apply (compose1 val-c pair) 3))
-(define parse-pair-left (parse-apply pair-left 2))
-(define parse-pair-right (parse-apply pair-right 2))
 
 (define penv-init
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
@@ -783,6 +826,7 @@
          `((lam ,parse-lam)
            (sym ,parse-sym)
            (pair ,parse-pair)
+           (pair-access ,parse-pair-access)
            (if-eq ,parse-if-eq)
            (pair-left ,parse-pair-left)
            (pair-right ,parse-pair-right)
