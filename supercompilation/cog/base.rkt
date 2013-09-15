@@ -732,9 +732,13 @@
     (right '())
     (left (format "expected symbol but found: ~s" form))))
 
+(define v-uno (val-a (uno)))
+(define v-0 (val-a (bit (b-0))))
+(define v-1 (val-a (bit (b-1))))
+
 (define (parse pe form)
   (match form
-    ('() (right (val-a (uno))))
+    ('() (right v-uno))
     ((? integer?) (parse-integer pe form))
     ((? symbol?) (parse-bound pe form))
     ((cons op rest) (parse-combination pe op form))
@@ -760,6 +764,7 @@
 (define (parse-bound-index pe name)
   (do either-monad
     _ <- (check-symbol name)
+    _ <- (if (equal? name '_) (left "unexpected reference of _") (right name))
     idx <- (maybe->either (format "unbound variable '~a'" name)
                           (penv-vars-get pe name))
     (pure idx)))
@@ -808,11 +813,23 @@
 (define parse-pair-left (parse-apply pair-left 2))
 (define parse-pair-right (parse-apply pair-right 2))
 
+(define (parse-as-thunk pe form) (parse pe `(lam _ ,form)))
+
+; derived syntax
+(define (parse-if-0 pe form)
+  (do either-monad
+    _ <- (check-arity 4 form)
+    `(,_ ,fcnd ,fzero ,fone) = form
+    cnd <- (parse pe fcnd)
+    zero <- (parse-as-thunk pe fzero)
+    one <- (parse-as-thunk pe fone)
+    (pure (app (pair-access cnd (val-c (pair zero one))) v-uno))))
+
 ; TODO: encode human-friendly numerals and symbols
 (define (parse-integer pe form)
   (match form
-    (0 (right (val-a (bit (b-0)))))
-    (1 (right (val-a (bit (b-1)))))
+    (0 (right v-0))
+    (1 (right v-1))
     (_ (left (format "expected 0 or 1 but found: ~s" form)))))
 (define (parse-sym pe form)
   (do either-monad
@@ -827,6 +844,7 @@
            (sym ,parse-sym)
            (pair ,parse-pair)
            (pair-access ,parse-pair-access)
+           (if-0 ,parse-if-0)
            (if-eq ,parse-if-eq)
            (pair-left ,parse-pair-left)
            (pair-right ,parse-pair-right)
