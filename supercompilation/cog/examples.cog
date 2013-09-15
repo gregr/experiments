@@ -1,37 +1,37 @@
 ; map once
-((lam nil ((lam cons
+((lam nil-tag (lam cons-tag
+  ((lam nil ((lam cons
 
-  (let-rec
-    ((map f (lam xs
-      ((lam tag ((lam payload
-        (if-eq (sym nil) tag
-          nil
-          (if-eq (sym cons) tag
-            (cons (f (pair-left payload)) (map f (pair-right payload)))
-            ((sym expected-nil-or-cons) ())))
-      ) (pair-right xs))) (pair-left xs)))))
+    (let-rec
+      ((map f (lam xs
+        ((lam tag ((lam payload
+          (if-0 tag
+            nil
+            (cons (f (pair-left payload)) (map f (pair-right payload))))
+        ) (pair-right xs))) (pair-left xs)))))
 
-    (map (lam x (cons x nil)) (cons (sym 1) (cons (sym 2) (cons (sym 3) nil)))))
+      (map (lam x (cons x nil)) (cons (sym 1) (cons (sym 2) (cons (sym 3) nil)))))
 
-) (lam head (lam tail (pair (sym cons) (pair head tail)))))) (pair (sym nil) ()))
+  ) (lam head (lam tail (pair cons-tag (pair head tail)))))) (pair nil-tag ()))
+ )) 0 1)
 
 
 ; map twice
-((lam nil ((lam cons
+((lam nil-tag (lam cons-tag
+  ((lam nil ((lam cons
 
-  (let-rec
-    ((map f (lam xs
-      ((lam tag ((lam payload
-        (if-eq (sym nil) tag
-          nil
-          (if-eq (sym cons) tag
-            (cons (f (pair-left payload)) (map f (pair-right payload)))
-            ((sym expected-nil-or-cons) ())))
-      ) (pair-right xs))) (pair-left xs)))))
+    (let-rec
+      ((map f (lam xs
+        ((lam tag ((lam payload
+          (if-0 tag
+            nil
+              (cons (f (pair-left payload)) (map f (pair-right payload))))
+        ) (pair-right xs))) (pair-left xs)))))
 
-    (map (lam x (pair (sym thing) x)) (map (lam x (cons x nil)) (cons (sym 1) (cons (sym 2) (cons (sym 3) nil))))))
+      (map (lam x (pair (sym thing) x)) (map (lam x (cons x nil)) (cons (sym 1) (cons (sym 2) (cons (sym 3) nil))))))
 
-) (lam head (lam tail (pair (sym cons) (pair head tail)))))) (pair (sym nil) ()))
+  ) (lam head (lam tail (pair cons-tag (pair head tail)))))) (pair nil-tag ()))
+ )) 0 1)
 
 
 ;(((lam x (lam y (pair-left (pair x y))))
@@ -39,10 +39,6 @@
 
 ;(((lam x (lam y (pair-right (pair x y))))
   ;(sym left)) (sym right))
-
-;(if-eq (sym abc) (sym def)
-  ;(sym true)
-  ;(sym false))
 
 ;(let-rec
   ;((x arg (y arg))

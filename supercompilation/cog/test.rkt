@@ -32,7 +32,6 @@
     ()
     (lam x (pair x x))
     (sym abc)
-    (if-eq (sym abc) (sym def) () ())
     (x y)
     (pair () ())
     (pair () () ())))
