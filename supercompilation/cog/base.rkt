@@ -93,9 +93,7 @@
   (broken (x)))
 
 (data promise-entry-broken
-  (skolem (uid))
-  (abandoned (tc env))
-  (sym-ineq (names promises)))
+  (skolem (uid)))
 
 (variant (catalog (data promises)))
 (define clg-empty (catalog dict-empty dict-empty))
@@ -301,9 +299,7 @@
     ((kept atom) (val-atomic-roots atom))
     ((broken x)
      (match x
-       ((skolem suid) set-empty)
-       ((abandoned tc env) ((term-context-roots env) tc))
-       (_ set-empty)))))
+       ((skolem suid) set-empty)))))
 
 (define ((term-context-roots env) tc)
   (let ((common-roots
@@ -360,9 +356,7 @@
     ((kept atom) (val-a-context atom))
     ((broken x)
      (match x
-       ((skolem _) (val-a-context (uno)))  ; should not happen
-       ((abandoned tc env) (term-context-unbind env 0 tc))
-       ((sym-ineq _ _) (val-a-context (uno)))))))  ; also should not happen
+       ((skolem _) (val-a-context (uno)))))))  ; should not happen
 
 (define (focus+cont-collapse focus cont env)
   (define (cont-collapse focus cont env)
@@ -499,11 +493,7 @@
     ((kept atom)      (format "(kept ~a)" (val-a-show atom)))
     ((broken x)
      (match x
-       ((skolem uid)              (format "*~a*" uid))
-       ((abandoned tc env)        (format "(abandoned ~a ~a)"
-                                          (term-context-show tc)
-                                          (env-show env)))
-       ((sym-ineq names promises) (format "(sym-!= ~s ~s)" names promises))))))
+       ((skolem uid)              (format "*~a*" uid))))))
 
 (define (term-context-show tc)
   (match tc
