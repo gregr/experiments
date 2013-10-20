@@ -47,3 +47,52 @@
 ;'((bvar 0) 0)
 ;> (dt (denote-env-extend denote-env-empty 'v0))
 ;'(v0 0)
+
+
+(define test-term-0
+  (action-2 (lam-apply)
+            (value (lam (value (pair (bvar 0) (bvar 1)))))
+            (value (bvar 0))))
+
+(pretty-print
+  (substitute 0 (bit (b-1)) test-term-0))
+;(action-2
+; (lam-apply)
+; (value (lam (value (pair (bvar 0) (bit (b-1))))))
+; (value (bit (b-1))))
+
+(define test-term-1
+  (action-2 (lam-apply) (value (lam test-term-0)) (value (bit (b-1)))))
+
+(pretty-print (step test-term-1))
+;(right
+; (action-2
+;  (lam-apply)
+;  (value (lam (value (pair (bvar 0) (bit (b-1))))))
+;  (value (bit (b-1)))))
+
+(pretty-print (step (right-x (step test-term-1))))
+;(right (value (pair (bit (b-1)) (bit (b-1)))))
+
+(define test-term-3
+  (action-2
+    (lam-apply)
+    (value (lam (value (pair (pair (bvar 1)
+                                   (bvar 0))
+                             (lam (value (pair (pair (bvar 0)
+                                                     (bvar 1))
+                                               (bvar 2))))))))
+    (value (pair (bvar 0)
+                 (lam (value (pair (bvar 1)
+                                   (bvar 0))))))))
+
+(pretty-print (step test-term-3))
+;(right
+; (value
+;  (pair
+;   (pair (bvar 0) (pair (bvar 0) (lam (value (pair (bvar 1) (bvar 0))))))
+;   (lam
+;    (value
+;     (pair
+;      (pair (bvar 0) (pair (bvar 1) (lam (value (pair (bvar 2) (bvar 0))))))
+;      (bvar 1)))))))
