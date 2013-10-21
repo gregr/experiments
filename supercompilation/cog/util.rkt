@@ -2,6 +2,8 @@
 (require racket/stxparam)
 (provide (all-defined-out))
 
+(define (pretty-string x) (call-with-output-string (curry pretty-print x)))
+
 (define-syntax variant
   (syntax-rules ()
     ((_) (void))

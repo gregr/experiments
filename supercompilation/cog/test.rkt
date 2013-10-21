@@ -96,3 +96,5 @@
 ;     (pair
 ;      (pair (bvar 0) (pair (bvar 1) (lam (value (pair (bvar 2) (bvar 0))))))
 ;      (bvar 1)))))))
+
+(interact-with test-term-3)

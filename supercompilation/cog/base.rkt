@@ -114,3 +114,110 @@
      (do either-monad
        t0-1 <- (step t0-0)
        (pure (action-2 act t0-1 t1))))))
+
+(define (step-safe term)
+  (if (or (value? term) (action-2? term)) (step term)
+    (left (format "cannot step non-term: ~v" term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; interaction
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(data hole-term-value
+  (hole-pair-l (r))
+  (hole-pair-r (l))
+  (hole-lam    ()))
+
+(data hole-term
+  (hole-value      ())
+  (hole-action-2-0 (act t1))
+  (hole-action-2-1 (act t0)))
+
+(variant (interact-state (holes focus)))
+
+(define (interact-state-init term) (interact-state '() term))
+
+(define (hole-fill hole subterm)
+  (match hole
+    ((hole-pair-l r)          (list 0 (pair subterm r)))
+    ((hole-pair-r l)          (list 1 (pair l subterm)))
+    ((hole-lam)               (list 0 (lam subterm)))
+    ((hole-value)             (list 0 (value subterm)))
+    ((hole-action-2-0 act t1) (list 0 (action-2 act subterm t1)))
+    ((hole-action-2-1 act t0) (list 1 (action-2 act t0 subterm)))))
+
+(define/match (hole-make idx focus)
+  ((0 (pair l r))           (right (list (hole-pair-l r)          l)))
+  ((1 (pair l r))           (right (list (hole-pair-r l)          r)))
+  ((0 (lam body))           (right (list (hole-lam)               body)))
+  ((0 (value val))          (right (list (hole-value)             val)))
+  ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
+  ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
+  ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
+
+(define (interact-ascend-index state)
+  (match state
+    ((interact-state holes focus)
+     (match holes
+       ((cons hole holes)
+        (match-let (((list idx new-focus) (hole-fill hole focus)))
+          (right (list idx (interact-state holes new-focus)))))
+       (_ (left "no hole to fill"))))))
+(define (interact-ascend state)
+  (do either-monad
+    (list _ state) <- (interact-ascend-index state)
+    (pure state)))
+
+(define (interact-descend-index idx state)
+  (match state
+    ((interact-state holes focus)
+     (do either-monad
+       (list hole new-focus) <- (hole-make idx focus)
+       (pure (interact-state (cons hole holes) new-focus))))))
+(define interact-descend (curry interact-descend-index 0))
+
+(define ((interact-shift offset) state)
+  (do either-monad
+    (list idx state1) <- (interact-ascend-index state)
+    (interact-descend-index (+ idx offset) state1)))
+(define interact-shift-left (interact-shift -1))
+(define interact-shift-right (interact-shift 1))
+
+(define (interact-step state)
+  (match state
+    ((interact-state holes focus)
+     (do either-monad
+       new-focus <- (step-safe focus)
+       (pure (interact-state holes new-focus))))))
+
+(define (interact-state-show state)
+  (define (hole-show hole)
+    (pretty-string (list-ref (hole-fill hole (void)) 1)))
+  (define (holes-show holes)
+    (string-join (map hole-show (reverse holes)) "\n----------------\n\n"))
+  (match state
+    ((interact-state holes focus)
+     (string-join (list "" (holes-show holes) (pretty-string focus) "")
+                  "\n================================\n\n"))))
+
+(define (interact-safe f state)
+  (match (f state)
+    ((left msg) (displayln msg) (right state))
+    ((right state) (right state))))
+
+(define (interact-loop state)
+  (let loop ((st state))
+    (printf "~a\n" (interact-state-show st))
+    (display "[hjkl](movement),[s]tep,[q]uit> ")
+    (do either-monad
+      st <- (match (read-line)
+              ("h" (interact-safe interact-shift-left st))
+              ("l" (interact-safe interact-shift-right st))
+              ("j" (interact-safe interact-descend st))
+              ("k" (interact-safe interact-ascend st))
+              ("s" (interact-safe interact-step st))
+              ("q" (left "quitting"))
+              (_ (displayln "invalid choice") (right st)))
+      (loop st))))
+
+(define (interact-with term) (interact-loop (interact-state-init term)))
