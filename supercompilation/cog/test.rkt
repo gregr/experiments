@@ -97,4 +97,34 @@
 ;      (pair (bvar 0) (pair (bvar 1) (lam (value (pair (bvar 2) (bvar 0))))))
 ;      (bvar 1)))))))
 
+
+(pretty-print (tuple-encode (list 'a 'b 'c)))
+;(pair 'a (pair 'b (pair 'c (uno))))
+(pretty-print (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c))))
+;(pair 0 (pair 0 (pair 0 (pair 0 (pair 'a (pair 'b (pair 'c (uno))))))))
+
+(pretty-print (tuple-get 3 (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
+;0
+(pretty-print (tuple-get 5 (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
+;'b
+(pretty-print (tuple-set 5 'd (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
+;(pair 0 (pair 0 (pair 0 (pair 0 (pair 'a (pair 'd (pair 'c (uno))))))))
+(pretty-print (tuple-set 2 'd (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
+;(pair 0 (pair 0 (pair 'd (pair 0 (pair 'a (pair 'b (pair 'c (uno))))))))
+(pretty-print (tuple-get 4 (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c)))))
+;(pair 'l (pair 'r (uno)))
+
+(define l0 (tuple-lens-compose (tuple-lens 4) (tuple-lens 1)))
+(pretty-print (car (l0 (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))))))
+;'r
+(pretty-print ((cdr (l0 (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))))) 'rrr))
+;(pair
+; 0
+; (pair
+;  0
+;  (pair
+;   0
+;   (pair 0 (pair (pair 'l (pair 'rrr (uno))) (pair 'b (pair 'c (uno))))))))
+
+
 (interact-with test-term-3)
