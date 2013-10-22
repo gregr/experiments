@@ -221,3 +221,95 @@
       (loop st))))
 
 (define (interact-with term) (interact-loop (interact-state-init term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; data representation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; tuple
+(define tuple-nil         (uno))
+(define (tuple-cons x xs) (pair x xs))
+(define (tuple-first tup) (pair-l tup))
+(define (tuple-rest tup)  (pair-r tup))
+(define tuple-nil? uno?)
+(define (tuple? val)
+  (match val
+    ((pair _ xs) (tuple? xs))
+    ((uno)       #t)
+    (_           #f)))
+(define (tuple-foldr f acc tup)
+  (match tup
+    ((uno)       acc)
+    ((pair x xs) (f x (tuple-foldr f acc xs)))))
+(define (tuple-foldl f acc tup)
+  (match tup
+    ((uno)       acc)
+    ((pair x xs) (tuple-foldr f (f x acc) xs))))
+
+(define (tuple-length tup) (tuple-foldl (lambda (_ len) (+ len 1)) 0 tup))
+
+(define (tuple-encode-revappend xs tup)
+  (match xs
+    ('()         tup)
+    ((cons y ys) (tuple-encode-revappend ys (tuple-cons y tup)))))
+(define (tuple-encode xs) (tuple-encode-revappend (reverse xs) tuple-nil))
+(define (tuple-decode tup) (tuple-foldr cons '() tup))
+(define (tuple-pad len val tup)
+  (tuple-encode-revappend (make-list (- len (tuple-length tup)) val) tup))
+
+(define ((tuple-lens idx) tup)
+  (define ((fill-hole acc tup) filler)
+    (tuple-encode-revappend acc (tuple-cons filler tup)))
+  (let loop ((acc '()) (idx idx) (tup tup))
+    (if (equal 0 idx)
+      (cons (tuple-first tup) (fill-hole acc (tuple-rest tup)))
+      (loop (cons (tuple-first tup) acc) (- idx 1) (tuple-rest tup)))))
+(define ((tuple-lens-compose l0 l1) tup)
+  (match-let (((cons elem0 rebuild0) (l0 tup))
+              ((cons elem1 rebuild1) (l1 element)))
+    (cons elem1 (compose1 rebuild0 rebuild1))))
+
+(define (tuple-get idx tup)     (car ((tuple-lens idx) tup)))
+(define (tuple-set idx tup val) ((cdr ((tuple-lens idx) tup)) val))
+
+;; bit
+(define (bit-encode bool)
+  (if bool (bit (b-1)) (bit (b-0))))
+(define (bit-decode b)
+  (match b
+    ((bit (b-0)) #f)
+    ((bit (b-1)) #t)))
+
+;; bits
+(define (bits-encode n)
+  (let loop ((acc '()) (n n))
+    (let ((next (cons (bit-encode (odd? n)) acc)))
+      (if (equal 0 n)
+        (tuple-encode next)
+        (loop next (floor (/ n 2)))))))
+(define (bits-decode bits)
+  (tuple-foldl
+    (lambda (b total)
+      (+ (* 2 total) (if (bit-decode b) 1 0)))
+    0 bits))
+(define (bits-pad n bits)
+  (tuple-pad n (bit (b-0)) bits))
+
+(define (bits-select choice default alternatives)
+  (define (narrow b alts)
+    (filter (compose1 not tuple-nil? car)
+            (map (lambda (alt)
+                   (cons
+                     (if (equal b (tuple-first (car alt)))
+                       (tuple-rest (car alt))
+                       tuple-nil)
+                     (cdr alt)))
+                 alts)))
+  (let* ((alts (tuple-foldl narrow alternatives choice))
+         (alts (map cdr (filter (compose1 tuple-nil? car) alts)))
+         (alts (append alts (list default))))
+    (car alts)))
+
+; TODO: build terms representing selectors for fixed-size tags?
+
+;; build/recognize/deconstruct tagged data?
