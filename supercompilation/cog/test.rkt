@@ -127,4 +127,48 @@
 ;   (pair 0 (pair (pair 'l (pair 'rrr (uno))) (pair 'b (pair 'c (uno))))))))
 
 
+(pretty-print (bits-encode 15))
+;(pair
+; (bit (b-1))
+; (pair (bit (b-1)) (pair (bit (b-1)) (pair (bit (b-1)) (uno)))))
+(pretty-print (bits-decode (bits-encode 15)))
+;15
+(pretty-print (bits-pad 8 (bits-encode 15)))
+;(pair
+; (bit (b-0))
+; (pair
+;  (bit (b-0))
+;  (pair
+;   (bit (b-0))
+;   (pair
+;    (bit (b-0))
+;    (pair
+;     (bit (b-1))
+;     (pair (bit (b-1)) (pair (bit (b-1)) (pair (bit (b-1)) (uno)))))))))
+(pretty-print (bits-decode (bits-pad 8 (bits-encode 15))))
+;15
+(pretty-print (bits-encode 16))
+;(pair
+; (bit (b-1))
+; (pair
+;  (bit (b-0))
+;  (pair (bit (b-0)) (pair (bit (b-0)) (pair (bit (b-0)) (uno))))))
+(pretty-print (bits-decode (bits-encode 16)))
+;16
+(pretty-print (bits-pad 8 (bits-encode 16)))
+;(pair
+; (bit (b-0))
+; (pair
+;  (bit (b-0))
+;  (pair
+;   (bit (b-0))
+;   (pair
+;    (bit (b-1))
+;    (pair
+;     (bit (b-0))
+;     (pair (bit (b-0)) (pair (bit (b-0)) (pair (bit (b-0)) (uno)))))))))
+(pretty-print (bits-decode (bits-pad 8 (bits-encode 16))))
+;16
+
+
 (interact-with test-term-3)

@@ -244,7 +244,7 @@
 (define (tuple-foldl f acc tup)
   (match tup
     ((uno)       acc)
-    ((pair x xs) (tuple-foldr f (f x acc) xs))))
+    ((pair x xs) (tuple-foldl f (f x acc) xs))))
 
 (define (tuple-length tup) (tuple-foldl (lambda (_ len) (+ len 1)) 0 tup))
 
@@ -283,10 +283,10 @@
 ;; bits
 (define (bits-encode n)
   (let loop ((acc '()) (n n))
-    (let ((next (cons (bit-encode (odd? n)) acc)))
-      (if (equal? 0 n)
-        (tuple-encode next)
-        (loop next (floor (/ n 2)))))))
+    (if (equal? 0 n)
+      (tuple-encode acc)
+      (loop (cons (bit-encode (odd? n)) acc)
+            (floor (/ n 2))))))
 (define (bits-decode bits)
   (tuple-foldl
     (lambda (b total)
