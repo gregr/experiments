@@ -180,4 +180,13 @@
                    (cons (bits-pad 4 (bits-encode 4)) 'four))))
 ;'three
 
+
+(define test-ns (tag-namespace-new))
+(define test-tag-keys (map (curry cons test-ns) '(ta tb tc)))
+(pretty-print (map tag-add test-tag-keys))
+(pretty-print (map tag-encode test-tag-keys))
+(pretty-print (map tag-decode (map tag-encode test-tag-keys)))
+;'((0 . ta) (0 . tb) (0 . tc))
+
+
 (interact-with test-term-3)

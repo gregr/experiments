@@ -301,3 +301,27 @@
 ; TODO: build terms representing selectors for fixed-size tags?
 
 ;; build/recognize/deconstruct tagged data?
+
+(variant (tag-table (mapping rev-mapping next-tag next-namespace)))
+(define *tag-table* (box (tag-table dict-empty dict-empty 0 0)))
+(define tag-bitwidth 8)  ; TODO: arbitrary-precision tag encoding?
+
+(define (tag-encode key)
+  (just-x (dict-get (tag-table-mapping (unbox *tag-table*)) key)))
+(define (tag-decode tag)
+  (just-x (dict-get (tag-table-rev-mapping (unbox *tag-table*)) (bits-decode tag))))
+(define (tag-namespace-new)
+  (match (unbox *tag-table*)
+    ((tag-table mapping rev-mapping next-tag next-namespace)
+     (set-box! *tag-table*
+               (tag-table mapping rev-mapping next-tag (+ 1 next-namespace)))
+     next-namespace)))
+(define (tag-add key)
+  (match (unbox *tag-table*)
+    ((tag-table mapping rev-mapping next-tag next-namespace)
+     (let ((tag (bits-pad tag-bitwidth (bits-encode next-tag))))
+       (set-box! *tag-table*
+                 (tag-table (dict-add mapping key tag)
+                            (dict-add rev-mapping next-tag key)
+                            (+ 1 next-tag) next-namespace))
+       tag))))
