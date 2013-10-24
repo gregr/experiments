@@ -170,5 +170,14 @@
 (pretty-print (bits-decode (bits-pad 8 (bits-encode 16))))
 ;16
 
+(pretty-print (bits-select (bits-pad 4 (bits-encode 3)) 'default
+             (list (cons (bits-pad 4 (bits-encode 7)) 'seven)
+                   (cons (bits-pad 4 (bits-encode 4)) 'four))))
+;'default
+(pretty-print (bits-select (bits-pad 4 (bits-encode 3)) 'default
+             (list (cons (bits-pad 4 (bits-encode 7)) 'seven)
+                   (cons (bits-pad 4 (bits-encode 3)) 'three)
+                   (cons (bits-pad 4 (bits-encode 4)) 'four))))
+;'three
 
 (interact-with test-term-3)

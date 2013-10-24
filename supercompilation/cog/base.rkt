@@ -296,19 +296,7 @@
   (tuple-pad n (bit (b-0)) bits))
 
 (define (bits-select choice default alternatives)
-  (define (narrow b alts)
-    (filter (compose1 not tuple-nil? car)
-            (map (lambda (alt)
-                   (cons
-                     (if (equal? b (tuple-first (car alt)))
-                       (tuple-rest (car alt))
-                       tuple-nil)
-                     (cdr alt)))
-                 alts)))
-  (let* ((alts (tuple-foldl narrow alternatives choice))
-         (alts (map cdr (filter (compose1 tuple-nil? car) alts)))
-         (alts (append alts (list default))))
-    (car alts)))
+  (alist-get-default alternatives choice default))
 
 ; TODO: build terms representing selectors for fixed-size tags?
 
