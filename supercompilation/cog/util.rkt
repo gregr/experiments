@@ -87,6 +87,7 @@
       ('() (nothing))
       ((cons key0 lst)
         (if (equal? key0 key) (just index) (loop lst key (+ index 1)))))))
+(define (list-init lst) (reverse (cdr (reverse lst))))
 
 (define alist-empty '())
 (define (alist-build keys vals) (map cons keys vals))
