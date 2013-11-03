@@ -294,6 +294,8 @@
     0 bits))
 (define (bits-pad n bits)
   (tuple-pad n (bit (b-0)) bits))
+(define (bits-count bits) (tuple-length bits))
+(define (bits-required n) (bits-count (bits-encode (- n 1))))
 
 (define (bits-select choice default alternatives)
   (alist-get-default alternatives choice default))
