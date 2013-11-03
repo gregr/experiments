@@ -181,11 +181,11 @@
 ;'three
 
 
-(define test-ns (tag-namespace-new))
-(define test-tag-keys (map (curry cons test-ns) '(ta tb tc)))
-(pretty-print (map tag-add test-tag-keys))
-(pretty-print (map tag-encode test-tag-keys))
-(pretty-print (map tag-decode (map tag-encode test-tag-keys)))
+(define test-ns 0)
+(define test-symbol-keys (map (curry cons test-ns) '(ta tb tc)))
+(pretty-print (map symbol-add test-symbol-keys))
+(pretty-print (map symbol-encode test-symbol-keys))
+(pretty-print (map symbol-decode (map symbol-encode test-symbol-keys)))
 ;'((0 . ta) (0 . tb) (0 . tc))
 
 

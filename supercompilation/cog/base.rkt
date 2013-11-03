@@ -298,30 +298,36 @@
 (define (bits-select choice default alternatives)
   (alist-get-default alternatives choice default))
 
-; TODO: build terms representing selectors for fixed-size tags?
+;; symbol
+(variant (symbol-table (mapping rev-mapping next-uid)))
+(define *symbol-table* (box (symbol-table dict-empty dict-empty 0)))
+(define symbol-bitwidth 8)  ; TODO: arbitrary-precision encoding?
 
-;; build/recognize/deconstruct tagged data?
+(define (symbol-encode key)
+  (just-x (dict-get (symbol-table-mapping (unbox *symbol-table*)) key)))
+(define (symbol-decode symbol)
+  (just-x (dict-get (symbol-table-rev-mapping (unbox *symbol-table*))
+                    (bits-decode symbol))))
+(define (symbol-add key)
+  (match (unbox *symbol-table*)
+    ((symbol-table mapping rev-mapping next-uid)
+     (let ((symbol (bits-pad symbol-bitwidth (bits-encode next-uid))))
+       (match (dict-get mapping key)
+         ((nothing)
+          (set-box! *symbol-table*
+                    (symbol-table (dict-add mapping key symbol)
+                                  (dict-add rev-mapping next-uid key)
+                                  (+ 1 next-uid))))
+         (_ (error (format "symbol already added for key: ~v" key))))
+       symbol))))
 
-(variant (tag-table (mapping rev-mapping next-tag next-namespace)))
-(define *tag-table* (box (tag-table dict-empty dict-empty 0 0)))
-(define tag-bitwidth 8)  ; TODO: arbitrary-precision tag encoding?
 
-(define (tag-encode key)
-  (just-x (dict-get (tag-table-mapping (unbox *tag-table*)) key)))
-(define (tag-decode tag)
-  (just-x (dict-get (tag-table-rev-mapping (unbox *tag-table*)) (bits-decode tag))))
-(define (tag-namespace-new)
-  (match (unbox *tag-table*)
-    ((tag-table mapping rev-mapping next-tag next-namespace)
-     (set-box! *tag-table*
-               (tag-table mapping rev-mapping next-tag (+ 1 next-namespace)))
-     next-namespace)))
-(define (tag-add key)
-  (match (unbox *tag-table*)
-    ((tag-table mapping rev-mapping next-tag next-namespace)
-     (let ((tag (bits-pad tag-bitwidth (bits-encode next-tag))))
-       (set-box! *tag-table*
-                 (tag-table (dict-add mapping key tag)
-                            (dict-add rev-mapping next-tag key)
-                            (+ 1 next-tag) next-namespace))
-       tag))))
+;; TODO:
+; construct terms that build/recognize/deconstruct tagged data
+;   construct symbol-selector terms (more generally, bits-selector terms)
+
+; generalize outermost payload tags to data-schemas: (schema-tag, ... optional polymorphic type info ...)
+
+; non-schematic local tags (for inner payloads) correspond to constructors
+;   for example: inner payload tagged with Cons or Nil; outer payload tagged with appropriate List schema
+;   hierarchical symbol namespacing
