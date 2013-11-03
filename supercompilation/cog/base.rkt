@@ -377,8 +377,8 @@
                ((symbol-table-lens (list-init keys)) table)))
     (rebuild (symbol-table-add table (last keys) max-children))))
 
-(define symbol-bitwidth-default 8)  ; TODO: arbitrary-precision encoding?
-(define *symbol-table* (box (symbol-table-empty symbol-bitwidth-default)))
+(define symbol-capacity-default 256)  ; TODO: arbitrary-precision encoding?
+(define *symbol-table* (box (symbol-table-empty symbol-capacity-default)))
 
 (define (symbol-get table key)
   (symbol-table-get (unbox *symbol-table*) key))
