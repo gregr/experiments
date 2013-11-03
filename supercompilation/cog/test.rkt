@@ -188,5 +188,17 @@
 (pretty-print (map symbol-decode (map symbol-encode test-symbol-keys)))
 ;'((0 . ta) (0 . tb) (0 . tc))
 
+(symbol-add-chain '(one) 2)
+(symbol-add-chain '(one two))
+(symbol-add-chain '(one three))
+(pretty-print (map symbol-encode-chain '((one) (one two) (one three))))
+(pretty-print
+  (map (lambda (keys)
+         (append (list-init keys)
+                 (list (symbol-decode-chain (list-init keys)
+                                            (symbol-encode-chain keys)))))
+       '((one) (one two) (one three))))
+;'((one) (one two) (one three))
+
 
 (interact-with test-term-3)
