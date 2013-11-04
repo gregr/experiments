@@ -331,53 +331,39 @@
                         (+ 1 next-uid)))
          (_ (error (format "symbol already added for key: ~v" key))))))))
 
-(define ((symbol-table-lens keys) table)
-  (define ((rebuild chain) new-table)
-    (foldl (match-lambda**
-             (((list (symbol-table capacity mapping rev-mapping next-uid)
-                     key entry) new-table)
-              (match entry
-                ((symbol-entry repr sub-table)
-                 (symbol-table
-                   capacity
-                   (dict-add mapping key (symbol-entry repr new-table))
-                   rev-mapping
-                   next-uid)))))
-           new-table chain))
-  (match-let (((list chain table)
-               (let loop ((chain '()) (table table) (keys keys))
-                 (match keys
-                   ('() (list chain table))
-                   ((cons key keys)
-                    (let* ((entry (symbol-table-get table key))
-                           (next-table (symbol-entry-sub-table entry)))
-                      (loop (cons (list table key entry) chain)
-                            next-table keys)))))))
-    (cons table (rebuild chain))))
-
-(define (symbol-table-get-chain table keys)
-  (car ((symbol-table-lens keys) table)))
-(define (symbol-table-set-chain table keys sub-table)
-  ((cdr ((symbol-table-lens keys) table)) sub-table))
+(define ((symbol-table-lens key) table)
+  (match table
+    ((symbol-table capacity mapping rev-mapping next-uid)
+     (let* ((entry (symbol-table-get table key))
+            (next-table (symbol-entry-sub-table entry)))
+       (match entry
+         ((symbol-entry repr sub-table)
+          (define (rebuild new-table)
+            (symbol-table
+              capacity
+              (dict-add mapping key (symbol-entry repr new-table))
+              rev-mapping
+              next-uid))
+          (lens-result next-table rebuild)))))))
+(define (symbol-table-lens* keys) (:o (map symbol-table-lens keys)))
 
 (define (symbol-table-encode-chain table keys)
   (symbol-table-encode
-    (symbol-table-get-chain table (list-init keys))
+    (:. table (symbol-table-lens* (list-init keys)))
     (last keys)))
 (define (symbol-table-decode-chain table keys symbol)
   (symbol-table-decode
-    (symbol-table-get-chain table keys)
+    (:. table (symbol-table-lens* keys))
     symbol))
 (define (symbol-table-add-chain table keys max-children)
-  (match-let (((cons table rebuild)
-               ((symbol-table-lens (list-init keys)) table)))
-    (rebuild (symbol-table-add table (last keys) max-children))))
+  (:~ table
+      (lambda (tgt-table)
+        (symbol-table-add tgt-table (last keys) max-children))
+      (symbol-table-lens* (list-init keys))))
 
 (define symbol-capacity-default 256)  ; TODO: arbitrary-precision encoding?
 (define *symbol-table* (box (symbol-table-empty symbol-capacity-default)))
 
-(define (symbol-get table key)
-  (symbol-table-get (unbox *symbol-table*) key))
 (define (symbol-encode key)
   (symbol-table-encode (unbox *symbol-table*) key))
 (define (symbol-decode symbol)
@@ -386,8 +372,6 @@
   (set-box! *symbol-table*
             (symbol-table-add (unbox *symbol-table*) key max-children)))
 
-(define (symbol-get-chain keys)
-  (symbol-table-get-chain (unbox *symbol-table*) keys))
 (define (symbol-encode-chain keys)
   (symbol-table-encode-chain (unbox *symbol-table*) keys))
 (define (symbol-decode-chain keys symbol)
