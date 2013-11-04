@@ -97,6 +97,10 @@
 
 (define ((flip proc) x y) (proc y x))
 
+(define (iterate proc seed count)
+  (if (<= count 0) (list seed)
+    (cons seed (iterate proc (proc seed) (- count 1)))))
+
 (define (list-index lst key)
   (let loop ((lst lst) (key key) (index 0))
     (match lst
@@ -104,6 +108,7 @@
       ((cons key0 lst)
         (if (equal? key0 key) (just index) (loop lst key (+ index 1)))))))
 (define (list-init lst) (reverse (cdr (reverse lst))))
+(define (list-inits lst) (reverse (iterate list-init lst (length lst))))
 
 (define alist-empty '())
 (define (alist-build keys vals) (map cons keys vals))

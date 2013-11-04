@@ -2,6 +2,10 @@
 (require "util.rkt")
 (require "base.rkt")
 
+(pretty-print (list-inits '(a b c d)))
+;'(() (a) (a b) (a b c) (a b c d))
+
+
 (pretty-print (:.* 'src))
 (pretty-print (:=* 'src 'tgt))
 
