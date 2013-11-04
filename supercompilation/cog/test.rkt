@@ -2,8 +2,8 @@
 (require "util.rkt")
 (require "base.rkt")
 
-(pretty-print (:. 'src))
-(pretty-print (:= 'src 'tgt))
+(pretty-print (:.* 'src))
+(pretty-print (:=* 'src 'tgt))
 
 
 (let ((_
@@ -118,8 +118,8 @@
 (pretty-print (tuple-get 4 (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c)))))
 ;(pair 'l (pair 'r (uno)))
 
-(define l0 (:* lens-identity (tuple-lens 4) (tuple-lens 1)))
-(pretty-print (:. (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))) (tuple-lens 4) (tuple-lens 1)))
+(define l0 (:o* lens-identity (tuple-lens 4) (tuple-lens 1)))
+(pretty-print (:.* (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))) (tuple-lens 4) (tuple-lens 1)))
 ;'r
 (pretty-print (:. (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))) l0))
 ;'r

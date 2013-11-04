@@ -11,9 +11,14 @@
                ((lens-result focus1 rebuild1) (l1 focus0)))
     (lens-result focus1 (compose1 rebuild0 rebuild1))))
 (define (lens-compose* ls) (foldr lens-compose lens-identity ls))
-(define (:* . ls) (lens-compose* ls))
-(define (:. src . ls) (lens-result-focus ((apply :* ls) src)))
-(define (:= src val . ls) ((lens-result-rebuild ((apply :* ls) src)) val))
+(define :o                  lens-compose*)
+(define (:. src lens)       (lens-result-focus (lens src)))
+(define (:= src val lens)   ((lens-result-rebuild (lens src)) val))
+(define (:~ src trans lens) (:= src (trans (:. src lens)) lens))
+(define (:o* . ls)           (:o ls))
+(define (:.* src . ls)       (:. src (:o ls)))
+(define (:=* src val . ls)   (:= src val (:o ls)))
+(define (:~* src trans . ls) (:~ src trans (:o ls)))
 
 (define-syntax variant
   (syntax-rules ()
