@@ -347,19 +347,34 @@
           (lens-result next-table rebuild)))))))
 (define (symbol-table-lens* keys) (:o (map symbol-table-lens keys)))
 
-(define (symbol-table-encode-chain table keys)
+(define ((symbol-table-decode-lens symbol) table)
+  ((symbol-table-lens (symbol-table-decode table symbol)) table))
+
+(define (symbol-table-encode* table keys)
   (symbol-table-encode
     (:. table (symbol-table-lens* (list-init keys)))
     (last keys)))
-(define (symbol-table-decode-chain table keys symbol)
+(define (symbol-table-decode* table keys symbol)
   (symbol-table-decode
     (:. table (symbol-table-lens* keys))
     symbol))
-(define (symbol-table-add-chain table keys max-children)
+(define (symbol-table-add* table keys max-children)
   (:~ table
       (lambda (tgt-table)
         (symbol-table-add tgt-table (last keys) max-children))
       (symbol-table-lens* (list-init keys))))
+
+(define (symbol-table-encode** table keys tgt-keys)
+  (map (curry symbol-table-encode* table)
+       (map (curry append keys) (cdr (list-inits tgt-keys)))))
+(define (symbol-table-decode** table keys symbols)
+  (match symbols
+    ('() '())
+    ((cons symbol symbols)
+     (let ((next-key (symbol-table-decode* table keys symbol)))
+       (cons next-key
+             (symbol-table-decode** table (append keys (list next-key))
+                                    symbols))))))
 
 (define symbol-capacity-default 256)  ; TODO: arbitrary-precision encoding?
 (define *symbol-table* (box (symbol-table-empty symbol-capacity-default)))
@@ -372,13 +387,18 @@
   (set-box! *symbol-table*
             (symbol-table-add (unbox *symbol-table*) key max-children)))
 
-(define (symbol-encode-chain keys)
-  (symbol-table-encode-chain (unbox *symbol-table*) keys))
-(define (symbol-decode-chain keys symbol)
-  (symbol-table-decode-chain (unbox *symbol-table*) keys symbol))
-(define (symbol-add-chain keys (max-children 0))
+(define (symbol-encode* keys)
+  (symbol-table-encode* (unbox *symbol-table*) keys))
+(define (symbol-decode* keys symbol)
+  (symbol-table-decode* (unbox *symbol-table*) keys symbol))
+(define (symbol-add* keys (max-children 0))
   (set-box! *symbol-table*
-            (symbol-table-add-chain (unbox *symbol-table*) keys max-children)))
+            (symbol-table-add* (unbox *symbol-table*) keys max-children)))
+
+(define (symbol-encode** keys tgt-keys)
+  (symbol-table-encode** (unbox *symbol-table*) keys tgt-keys))
+(define (symbol-decode** keys symbols)
+  (symbol-table-decode** (unbox *symbol-table*) keys symbols))
 
 ;; TODO:
 ; construct terms that build/recognize/deconstruct tagged data
