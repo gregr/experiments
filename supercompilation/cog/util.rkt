@@ -4,6 +4,17 @@
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
+(define-struct lens-result (focus rebuild) #:transparent)
+(define (lens-identity src) (lens-result src (lambda (x) x)))
+(define ((lens-compose l0 l1) src)
+  (match-let* (((lens-result focus0 rebuild0) (l0 src))
+               ((lens-result focus1 rebuild1) (l1 focus0)))
+    (lens-result focus1 (compose1 rebuild0 rebuild1))))
+(define (lens-compose* ls) (foldr lens-compose lens-identity ls))
+(define (:* . ls) (lens-compose* ls))
+(define (:. src . ls) (lens-result-focus ((apply :* ls) src)))
+(define (:= src val . ls) ((lens-result-rebuild ((apply :* ls) src)) val))
+
 (define-syntax variant
   (syntax-rules ()
     ((_) (void))
@@ -198,7 +209,6 @@
             (not (set-empty? (set-intersect relevant (list->set scc))))) sccs))
 
 ; TODO:
-; lenses?
 ; for1[-monad]: flip last two params of map[-monad]
 
 ; testing

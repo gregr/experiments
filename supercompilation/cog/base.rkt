@@ -262,15 +262,11 @@
     (tuple-encode-revappend acc (tuple-cons filler tup)))
   (let loop ((acc '()) (idx idx) (tup tup))
     (if (equal? 0 idx)
-      (cons (tuple-first tup) (fill-hole acc (tuple-rest tup)))
+      (lens-result (tuple-first tup) (fill-hole acc (tuple-rest tup)))
       (loop (cons (tuple-first tup) acc) (- idx 1) (tuple-rest tup)))))
-(define ((tuple-lens-compose l0 l1) tup)
-  (match-let* (((cons elem0 rebuild0) (l0 tup))
-               ((cons elem1 rebuild1) (l1 elem0)))
-    (cons elem1 (compose1 rebuild0 rebuild1))))
 
-(define (tuple-get idx tup)     (car ((tuple-lens idx) tup)))
-(define (tuple-set idx val tup) ((cdr ((tuple-lens idx) tup)) val))
+(define (tuple-get idx tup)     (:. tup (tuple-lens idx)))
+(define (tuple-set idx val tup) (:= tup val (tuple-lens idx)))
 
 ;; bit
 (define (bit-encode bool)
