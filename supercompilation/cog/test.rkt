@@ -10,30 +10,28 @@
 (pretty-print (:=* 'src 'tgt))
 
 
-(let ((_
-  (map (lambda (el) (print (denote-eval el)) (display "\n")) (list
-    (value (uno))                                           ; '()
-    (value (pair (uno) (bit (b-0))))                        ; '(() . 0)
-    (value (pair (bit (b-1)) (bit (b-0))))                  ; '(1 . 0)
-    (value (pair (bit (b-1)) (pair (bit (b-0)) (uno))))     ; '(1 0)
-    (action-2 (lam-apply)
-      (action-2 (lam-apply)
-        (value (lam (value (lam (value (bvar 1))))))
-        (value (bit (b-0)))) (value (bit (b-1))))           ; 0
-    (action-2 (lam-apply)
-      (action-2 (lam-apply)
-        (value (lam (value (lam (value (bvar 1))))))
-        (value (bit (b-1)))) (value (bit (b-1))))           ; 1
-    (action-2 (lam-apply)
-      (action-2 (lam-apply)
-        (value (lam (value (lam (value (bvar 1))))))
-        (value (bit (b-1)))) (value (bit (b-0))))           ; 1
-    (action-2 (pair-access)
-      (value (bit (b-0))) (value (pair (uno) (bit (b-0))))) ; '()
-    (action-2 (pair-access)
-      (value (bit (b-1))) (value (pair (uno) (bit (b-0))))) ; 0
-    ))))
-  (void))
+(define tests `(
+  ()                          ; '()
+  (pair () 0)                 ; '(() . 0)
+  (pair 1 0)                  ; '(1 . 0)
+  (pair 1 (pair 0 ()))        ; '(1 0)
+  ((lam x (lam y x)) 0 1)     ; 0
+  ((lam x (lam y x)) 1 1)     ; 1
+  ((lam x (lam y y)) 1 0)     ; 0
+  (pair-access 0 (pair () 0)) ; '()
+  (pair-access 1 (pair () 0)) ; 0
+  (if-0 0 1 0)                ; 1
+  (if-0 1 1 0)                ; 0
+  (pair-l (pair 0 1))         ; 0
+  (pair-r (pair 0 1))         ; 1
+  ))
+
+(define parsed-tests (right-x (map-parse penv-init tests)))
+
+(define (eval-print el)
+  (print (denote-eval el)) (display "\n"))
+(let ((_ (map eval-print parsed-tests))) (void))
+
 
 ;> (define dt (denote (value (pair (bvar 0) (pair (bit (b-0)) (uno))))))
 ;> (dt denote-env-empty)

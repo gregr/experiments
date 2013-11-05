@@ -223,6 +223,150 @@
 (define (interact-with term) (interact-loop (interact-state-init term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; parsing (syntax-0)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(variant (penv (syntax vars)))
+(define penv-empty (penv dict-empty '()))
+(define (penv-syntax-add pe name op)
+  (match pe
+    ((penv syntax vars) (penv (dict-add syntax name op) vars))))
+(define (penv-syntax-del pe name)
+  (match pe
+    ((penv syntax vars) (penv (dict-del syntax name) vars))))
+(define (penv-syntax-get pe name) (dict-get (penv-syntax pe) name))
+(define (penv-syntax-rename pe old new)
+  (define (check-vars name msg)
+    (match (penv-vars-get pe name)
+      ((nothing) (right '()))
+      ((just _) (left msg))))
+  (do either-monad
+    _ <- (check-vars old "cannot rename non-keyword")
+    _ <- (check-vars new "rename-target already bound as a non-keyword")
+    syn-old <- (maybe->either "cannot rename non-existent keyword"
+                              (penv-syntax-get pe old))
+    pe0 = (penv-syntax-del pe old)
+    (pure (penv-syntax-add pe0 new syn-old))))
+(define penv-syntax-op-empty '||)
+(define (penv-syntax-op-get pe op)
+  (match (penv-syntax-get pe op)
+    ((just result) (right result))
+    ((nothing) (maybe->either (format "invalid operator: ~s" op)
+                              (penv-syntax-get pe penv-syntax-op-empty)))))
+(define (penv-vars-add pe name)
+  (match pe
+    ((penv syntax vars) (penv syntax (cons name vars)))))
+(define (penv-vars-get pe name) (list-index (penv-vars pe) name))
+
+(define (check-arity arity form)
+  (if (equal? (length form) arity)
+    (right '())
+    (left (format "expected arity-~a form but found arity-~a form: ~s"
+                  arity (length form) form))))
+(define (check-symbol form)
+  (if (symbol? form)
+    (right '())
+    (left (format "expected symbol but found: ~s" form))))
+
+(define v-uno (value (uno)))
+(define v-0 (value (bit (b-0))))
+(define v-1 (value (bit (b-1))))
+
+(define (parse pe form)
+  (match form
+    ('() (right v-uno))
+    ((? integer?) (parse-integer pe form))
+    ((? symbol?) (parse-bvar pe form))
+    ((cons op rest) (parse-combination pe op form))
+    (_ (left (format "cannot parse: ~s" form)))))
+
+(define (parse-combination pe op form)
+  (do either-monad
+    proc <- (penv-syntax-op-get pe op)
+    (proc pe form)))
+
+(define (map-parse pe form) (map-monad either-monad (curry parse pe) form))
+(define ((parse-apply proc arity) pe form)
+  (do either-monad
+    _ <- (check-arity arity form)
+    args <- (map-parse pe (cdr form))
+    (pure (apply proc args))))
+(define (parse-under pe param body)
+  (do either-monad
+    _ <- (check-symbol param)
+    pe = (penv-vars-add pe param)
+    (parse pe body)))
+
+(define (parse-bvar pe name)
+  (do either-monad
+    _ <- (check-symbol name)
+    _ <- (if (equal? name '_) (left "unexpected reference to _") (right name))
+    idx <- (maybe->either (format "unbound variable '~a'" name)
+                          (penv-vars-get pe name))
+    (pure (value (bvar idx)))))
+(define new-lam-apply (curry action-2 (lam-apply)))
+(define (parse-lam-apply pe form)
+  (do either-monad
+    form <- (map-parse pe form)
+    (cons proc args) = form
+    (pure
+      (let loop ((proc proc) (args args))
+        (match args
+          ('() proc)
+          ((cons arg args) (loop (new-lam-apply proc arg) args)))))))
+(define (parse-lam pe form)
+  (do either-monad
+    _ <- (check-arity 3 form)
+    `(,_ ,name ,body) = form
+    body <- (parse-under pe name body)
+    (pure (value (lam body)))))
+(define new-pair-access (curry action-2 (pair-access)))
+(define parse-pair-access (parse-apply new-pair-access 3))
+(define (new-pair l r)
+  (new-lam-apply (new-lam-apply
+    (value (lam (value (lam (value (pair (bvar 1) (bvar 0))))))) l) r))
+(define parse-pair (parse-apply new-pair 3))
+
+(define (parse-as-thunk pe form) (parse pe `(lam _ ,form)))
+
+; derived syntax
+(define (parse-if-0 pe form)
+  (do either-monad
+    _ <- (check-arity 4 form)
+    `(,_ ,fcnd ,fzero ,fone) = form
+    cnd <- (parse pe fcnd)
+    zero <- (parse-as-thunk pe fzero)
+    one <- (parse-as-thunk pe fone)
+    (pure (new-lam-apply (new-pair-access cnd (new-pair zero one)) v-uno))))
+(define parse-pair-l (parse-apply (curry new-pair-access v-0) 2))
+(define parse-pair-r (parse-apply (curry new-pair-access v-1) 2))
+
+; TODO: encode human-friendly numerals and symbols
+(define (parse-integer pe form)
+  (match form
+    (0 (right v-0))
+    (1 (right v-1))
+    (_ (left (format "expected 0 or 1 but found: ~s" form)))))
+;(define (parse-sym pe form)
+  ;(do either-monad
+    ;_ <- (check-arity 2 form)
+    ;`(,_ ,name) = form
+    ;(pure (value (sym name)))))
+
+(define penv-init
+  (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
+         penv-empty
+         `((,penv-syntax-op-empty ,parse-lam-apply)
+           (lam ,parse-lam)
+;           (sym ,parse-sym)
+           (pair ,parse-pair)
+           (pair-access ,parse-pair-access)
+           (if-0 ,parse-if-0)
+           (pair-l ,parse-pair-l)
+           (pair-r ,parse-pair-r)
+           )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; data representation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
