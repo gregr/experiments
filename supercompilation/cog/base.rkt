@@ -268,6 +268,11 @@
 (define (tuple-get idx tup)     (:. tup (tuple-lens idx)))
 (define (tuple-set idx val tup) (:= tup val (tuple-lens idx)))
 
+;; nat
+(define (nat-encode n)
+  (tuple-pad (+ n 1) (bit (b-1)) (tuple-encode (list (bit (b-0))))))
+(define (nat-decode nat) (- (tuple-length nat) 1))
+
 ;; bit
 (define (bit-encode bool)
   (if bool (bit (b-1)) (bit (b-0))))

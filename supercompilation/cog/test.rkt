@@ -191,6 +191,22 @@
 ;'three
 
 
+(pretty-print (nat-encode 7))
+;(pair
+; (bit (b-1))
+; (pair
+;  (bit (b-1))
+;  (pair
+;   (bit (b-1))
+;   (pair
+;    (bit (b-1))
+;    (pair
+;     (bit (b-1))
+;     (pair (bit (b-1)) (pair (bit (b-1)) (pair (bit (b-0)) (uno)))))))))
+(pretty-print (nat-decode (nat-encode 7)))
+;7
+
+
 (define test-ns 0)
 (define test-symbol-keys (map (curry cons test-ns) '(ta tb tc)))
 (pretty-print (map symbol-add test-symbol-keys))
