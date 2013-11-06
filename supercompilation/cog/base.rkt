@@ -190,15 +190,17 @@
        new-focus <- (step-safe focus)
        (pure (interact-state holes new-focus))))))
 
-(define (interact-state-show state)
-  (define (hole-show hole)
-    (pretty-string (list-ref (hole-fill hole (void)) 1)))
-  (define (holes-show holes)
-    (string-join (map hole-show (reverse holes)) "\n----------------\n\n"))
+(define (interact-state-present state)
+  (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
   (match state
     ((interact-state holes focus)
-     (string-join (list "" (holes-show holes) (pretty-string focus) "")
-                  "\n================================\n\n"))))
+     (reverse (cons focus (map hole-present holes))))))
+(define (interact-state-show state)
+  (string-join
+    (list "" (string-join
+               (map pretty-string (interact-state-present state))
+               "\n----------------\n\n")
+          "") "\n================================\n\n"))
 
 (define (interact-safe f state)
   (match (f state)
@@ -207,7 +209,7 @@
 
 (define (interact-loop state)
   (let loop ((st state))
-    (printf "~a\n" (interact-state-show st))
+    (printf "~a" (interact-state-show st))
     (display "[hjkl](movement),[s]tep,[q]uit> ")
     (do either-monad
       st <- (match (read-line)
