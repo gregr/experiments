@@ -377,12 +377,16 @@
 ; TODO: use more of the alphabet
 (define (upenv-next-name vars)
   (string->symbol (format "x~a" (length vars))))
+(define (upenv-free-name idx)
+  (string->symbol (format "free~a" idx)))
 (define (upenv-vars-add upe)
   (match upe
     ((upenv vars)
      (let ((next-name (upenv-next-name vars)))
        (cons next-name (upenv (cons next-name vars)))))))
-(define (upenv-vars-get upe idx) (list-ref (upenv-vars upe) idx))
+(define (upenv-vars-get upe idx)
+  (let ((vars (upenv-vars upe)))
+    (if (< idx (length vars)) (list-ref vars idx) (upenv-free-name idx))))
 
 ; TODO: match against if-0, pair-l, pair-r sugar
 ; TODO: flatten successive applications
