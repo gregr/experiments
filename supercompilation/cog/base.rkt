@@ -347,18 +347,12 @@
     (0 (right v-0))
     (1 (right v-1))
     (_ (left (format "expected 0 or 1 but found: ~s" form)))))
-;(define (parse-sym pe form)
-  ;(do either-monad
-    ;_ <- (check-arity 2 form)
-    ;`(,_ ,name) = form
-    ;(pure (value (sym name)))))
 
 (define penv-init
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
          penv-empty
          `((,penv-syntax-op-empty ,parse-lam-apply)
            (lam ,parse-lam)
-;           (sym ,parse-sym)
            (pair ,parse-pair)
            (pair-access ,parse-pair-access)
            (if-0 ,parse-if-0)
