@@ -322,11 +322,16 @@
     (pure (value (lam body)))))
 (define new-pair-access (curry action-2 (pair-access)))
 (define parse-pair-access (parse-apply new-pair-access 3))
-(define (new-pair l r)
-  (new-lam-apply (new-lam-apply
-    (value (lam (value (lam (value (pair (bvar 1) (bvar 0))))))) l) r))
-(define parse-pair (parse-apply new-pair 3))
-
+(define/match (new-pair l r)
+  (((value vl) (value vr)) (right (value (pair vl vr))))
+  ((_ _) (left (format "pair arguments must be values: ~v ~v" l r))))
+(define (parse-pair pe form)
+  (do either-monad
+    _ <- (check-arity 3 form)
+    `(,_ ,fl ,fr) = form
+    l <- (parse pe fl)
+    r <- (parse pe fr)
+    (new-pair l r)))
 (define (parse-as-thunk pe form) (parse pe `(lam _ ,form)))
 
 ; derived syntax
@@ -337,7 +342,8 @@
     cnd <- (parse pe fcnd)
     zero <- (parse-as-thunk pe fzero)
     one <- (parse-as-thunk pe fone)
-    (pure (new-lam-apply (new-pair-access cnd (new-pair zero one)) v-uno))))
+    alts <- (new-pair zero one)
+    (pure (new-lam-apply (new-pair-access cnd alts) v-uno))))
 (define parse-pair-l (parse-apply (curry new-pair-access v-0) 2))
 (define parse-pair-r (parse-apply (curry new-pair-access v-1) 2))
 
