@@ -195,8 +195,38 @@
   (match state
     ((interact-state holes focus)
      (reverse (cons focus (map hole-present holes))))))
-(define (interact-state-show state)
-  (chain-show (interact-state-present state)))
+
+(variant (void-closure (is-value upenv)))
+(define (unparse-void-closure upe term)
+  (if (void? term) (void-closure #f upe)
+    (unparse-orec unparse-void-closure unparse-value-void-closure upe term)))
+(define (unparse-value-void-closure upe val)
+  (if (void? val) (void-closure #t upe)
+    (unparse-value-orec unparse-void-closure unparse-value-void-closure
+                        upe val)))
+(define (void-closures term)
+  (match term
+    ((? void-closure?) (list term))
+    ((? list?)         (foldr append '() (map void-closures term)))
+    (_                 '())))
+(define (chain-unparse chain)
+  (define (unparse-vc-chain term-or-value parents)
+    (match (car (void-closures (car parents)))
+      ((void-closure is-value upe)
+       (cons (if is-value
+               (unparse-value-void-closure upe term-or-value)
+               (unparse-void-closure upe term-or-value))
+             parents))))
+  (cdr (reverse
+         (foldl unparse-vc-chain (list (void-closure #f upenv-empty)) chain))))
+(define (holed-substitute hole? replacement term)
+  (match term
+    ((? hole?) replacement)
+    ((? list?) (map (curry holed-substitute hole? replacement) term))
+    (_ term)))
+(define (chain-unparse-void chain)
+  (map (curry holed-substitute void-closure? (void)) (chain-unparse chain)))
+
 (define (chain-show chain)
   (string-join
     (list ""
@@ -211,18 +241,19 @@
 
 (define (interact-loop state)
   (let loop ((st state))
-    (printf "~a" (interact-state-show st))
-    (display "[hjkl](movement),[s]tep,[q]uit> ")
-    (do either-monad
-      st <- (match (read-line)
-              ("h" (interact-safe interact-shift-left st))
-              ("l" (interact-safe interact-shift-right st))
-              ("j" (interact-safe interact-descend st))
-              ("k" (interact-safe interact-ascend st))
-              ("s" (interact-safe interact-step st))
-              ("q" (left "quitting"))
-              (_ (displayln "invalid choice") (right st)))
-      (loop st))))
+    (let ((chain (interact-state-present st)))
+      (printf "~a" (chain-show (chain-unparse-void chain)))
+      (display "[hjkl](movement),[s]tep,[q]uit> ")
+      (do either-monad
+        st <- (match (read-line)
+                ("h" (interact-safe interact-shift-left st))
+                ("l" (interact-safe interact-shift-right st))
+                ("j" (interact-safe interact-descend st))
+                ("k" (interact-safe interact-ascend st))
+                ("s" (interact-safe interact-step st))
+                ("q" (left "quitting"))
+                (_ (displayln "invalid choice") (right st)))
+        (loop st)))))
 
 (define (interact-with term) (interact-loop (interact-state-init term)))
 
