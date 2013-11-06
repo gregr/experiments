@@ -388,6 +388,10 @@
 ; TODO: flatten successive applications
 ; TODO: merge adjacent lambdas (first introduce this in syntax-0 parsing)
 (define (unparse upe term)
+  (unparse-orec unparse unparse-value upe term))
+(define (unparse-value upe term)
+  (unparse-value-orec unparse unparse-value upe term))
+(define (unparse-orec unparse unparse-value upe term)
   (match term
     ((value v) (unparse-value upe v))
     ((action-2 act t0 t1)
@@ -396,7 +400,7 @@
   (match act
     ((pair-access) `(pair-access ,f0 ,f1))
     ((lam-apply)   `(,f0 ,f1))))
-(define (unparse-value upe val)
+(define (unparse-value-orec unparse unparse-value upe val)
   (match val
     ((bit b)    (unparse-value-bit b))
     ((uno)      '())
