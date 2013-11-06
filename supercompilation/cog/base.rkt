@@ -196,11 +196,13 @@
     ((interact-state holes focus)
      (reverse (cons focus (map hole-present holes))))))
 (define (interact-state-show state)
+  (chain-show (interact-state-present state)))
+(define (chain-show chain)
   (string-join
-    (list "" (string-join
-               (map pretty-string (interact-state-present state))
-               "\n----------------\n\n")
-          "") "\n================================\n\n"))
+    (list ""
+          (string-join (map pretty-string chain) "\n----------------\n\n")
+          "")
+    "\n================================\n\n"))
 
 (define (interact-safe f state)
   (match (f state)
