@@ -367,6 +367,48 @@
            )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; unparsing (syntax-0)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(variant (upenv (vars)))
+(define upenv-empty (upenv '()))
+; TODO: use more of the alphabet
+(define (upenv-next-name vars)
+  (string->symbol (format "x~a" (length vars))))
+(define (upenv-vars-add upe)
+  (match upe
+    ((upenv vars)
+     (let ((next-name (upenv-next-name vars)))
+       (cons next-name (upenv (cons next-name vars)))))))
+(define (upenv-vars-get upe idx) (list-ref (upenv-vars upe) idx))
+
+; TODO: match against if-0, pair-l, pair-r sugar
+; TODO: flatten successive applications
+; TODO: merge adjacent lambdas (first introduce this in syntax-0 parsing)
+(define (unparse upe term)
+  (match term
+    ((value v) (unparse-value upe v))
+    ((action-2 act t0 t1)
+     (unparse-action-2 act (unparse upe t0) (unparse upe t1)))))
+(define (unparse-action-2 act f0 f1)
+  (match act
+    ((pair-access) `(pair-access ,f0 ,f1))
+    ((lam-apply)   `(,f0 ,f1))))
+(define (unparse-value upe val)
+  (match val
+    ((bit b)    (unparse-value-bit b))
+    ((uno)      '())
+    ((pair l r) (list 'pair (unparse-value upe l) (unparse-value upe r)))
+    ((bvar idx) (upenv-vars-get upe idx))
+    ((lam body)
+     (match-let (((cons new-name new-upe) (upenv-vars-add upe)))
+       (list 'lam new-name (unparse new-upe body))))))
+(define (unparse-value-bit vb)
+  (match vb
+    ((b-0) 0)
+    ((b-1) 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; data representation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

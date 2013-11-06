@@ -27,6 +27,8 @@
   ))
 
 (define parsed-tests (right-x (map-parse penv-init tests)))
+(define unparsed-tests (map (curry unparse upenv-empty) parsed-tests))
+(pretty-print unparsed-tests)
 
 (define (eval-print el)
   (print (denote-eval el)) (display "\n"))
