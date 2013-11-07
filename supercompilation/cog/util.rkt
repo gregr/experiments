@@ -52,7 +52,7 @@
 
 (define (map-monad monad proc xs)
   (match xs
-    ('() (right '()))
+    ('() (do monad (pure '())))
     ((cons y ys)
       (do monad
         y0 <- (proc y)
