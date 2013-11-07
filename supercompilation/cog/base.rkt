@@ -326,10 +326,10 @@
     _ <- (check-arity arity form)
     args <- (map-parse pe (cdr form))
     (pure (apply proc args))))
-(define (parse-under pe param body)
+(define (parse-under pe params body)
   (do either-monad
-    _ <- (check-symbol param)
-    pe = (penv-vars-add pe param)
+    _ <- (map-monad either-monad check-symbol params)
+    pe = (foldl (flip penv-vars-add) pe params)
     (parse pe body)))
 
 (define (parse-bvar pe name)
@@ -352,9 +352,11 @@
 (define (parse-lam pe form)
   (do either-monad
     _ <- (check-arity 3 form)
-    `(,_ ,name ,body) = form
-    body <- (parse-under pe name body)
-    (pure (value (lam body)))))
+    `(,_ ,names ,body) = form
+    _ <- (if (>= (length names) 1) (right (void))
+           (left (format "lam must include at least one parameter: ~v" form)))
+    body <- (parse-under pe names body)
+    (pure (foldr (lambda (_ body) (value (lam body))) body names))))
 (define new-pair-access (curry action-2 (pair-access)))
 (define parse-pair-access (parse-apply new-pair-access 3))
 (define/match (new-pair l r)
@@ -367,7 +369,7 @@
     l <- (parse pe fl)
     r <- (parse pe fr)
     (new-pair l r)))
-(define (parse-as-thunk pe form) (parse pe `(lam _ ,form)))
+(define (parse-as-thunk pe form) (parse pe `(lam (_) ,form)))
 
 ; derived syntax
 (define (parse-if-0 pe form)
@@ -423,7 +425,7 @@
 
 ; TODO: match against if-0, pair-l, pair-r sugar
 ; TODO: flatten successive applications
-; TODO: merge adjacent lambdas (first introduce this in syntax-0 parsing)
+; TODO: merge adjacent lambdas
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
@@ -445,7 +447,7 @@
     ((bvar idx) (upenv-vars-get upe idx))
     ((lam body)
      (match-let (((cons new-name new-upe) (upenv-vars-add upe)))
-       (list 'lam new-name (unparse new-upe body))))))
+       (list 'lam (list new-name) (unparse new-upe body))))))
 (define (unparse-value-bit vb)
   (match vb
     ((b-0) 0)

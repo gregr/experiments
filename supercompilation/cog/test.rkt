@@ -15,9 +15,9 @@
   (pair () 0)                 ; '(() . 0)
   (pair 1 0)                  ; '(1 . 0)
   (pair 1 (pair 0 ()))        ; '(1 0)
-  ((lam x (lam y x)) 0 1)     ; 0
-  ((lam x (lam y x)) 1 1)     ; 1
-  ((lam x (lam y y)) 1 0)     ; 0
+  ((lam (x y) x) 0 1)         ; 0
+  ((lam (x y) x) 1 1)         ; 1
+  ((lam (x y) y) 1 0)         ; 0
   (pair-access 0 (pair () 0)) ; '()
   (pair-access 1 (pair () 0)) ; 0
   (if-0 0 1 0)                ; 1
