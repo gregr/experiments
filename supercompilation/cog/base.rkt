@@ -425,7 +425,6 @@
 
 ; TODO: match against if-0, pair-l, pair-r sugar
 ; TODO: flatten successive applications
-; TODO: merge adjacent lambdas
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
@@ -447,7 +446,9 @@
     ((bvar idx) (upenv-vars-get upe idx))
     ((lam body)
      (match-let (((cons new-name new-upe) (upenv-vars-add upe)))
-       (list 'lam (list new-name) (unparse new-upe body))))))
+       (match (unparse new-upe body)
+         (`(lam ,names ,body) (list 'lam (cons new-name names) body))
+         (body                (list 'lam (list new-name) body)))))))
 (define (unparse-value-bit vb)
   (match vb
     ((b-0) 0)

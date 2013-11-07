@@ -224,4 +224,16 @@
 ;'((one) (one two) (one three))
 
 
-(interact-with test-term-3)
+(define test-term-4 (right-x (parse (penv-vars-add penv-init 's0)
+  `((lam (x) (pair (pair s0 x) (lam (y) (pair (pair y x) s0))))
+    (pair s0 (lam (z) (pair s0 z))))
+  )))
+
+(define test-term-5 (right-x (parse (penv-vars-add penv-init 's0)
+  `((lam (w) (lam (x)
+      ((pair-access 1 (pair (pair s0 (pair x w))
+                            (lam (y) (pair (pair y x) s0)))) 0)))
+    () (pair s0 (lam (z) (pair s0 z))))
+  )))
+
+(interact-with test-term-5)
