@@ -423,14 +423,36 @@
   (let ((vars (upenv-vars upe)))
     (if (< idx (length vars)) (list-ref vars idx) (upenv-free-name upe idx))))
 
-; TODO: match against if-0, pair-l, pair-r sugar
+; TODO: match against pair-l, pair-r
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
   (unparse-value-orec unparse unparse-value upe term))
 (define (unparse-orec unparse unparse-value upe term)
+  (define (thunk-form? val)
+    (define (mentions-bvar-value? idx val)
+      (match val
+        ((bvar index) (equal? index idx))
+        ((pair v0 v1)
+         (or (mentions-bvar-value? idx v0) (mentions-bvar-value? idx v1)))
+        ((lam body) (mentions-bvar? (+ idx 1) body))
+        (_ #f)))
+    (define (mentions-bvar? idx term)
+      (match term
+        ((value val) (mentions-bvar-value? idx val))
+        ((action-2 _ t0 t1)
+         (or (mentions-bvar? idx t0) (mentions-bvar? idx t1)))))
+    (match val
+      ((lam body) (not (mentions-bvar? 0 body)))
+      (_ #f)))
   (match term
     ((value v) (unparse-value upe v))
+    ((action-2 (lam-apply)
+      (action-2 (pair-access) tcnd
+        (value (pair (? thunk-form? alt-0) (? thunk-form? alt-1))))
+      (value (uno)))
+     `(if-0 ,(unparse upe tcnd)
+            ,(unparse upe (lam-body alt-0)) ,(unparse upe (lam-body alt-1))))
     ((action-2 (lam-apply) tproc targ)
      (unparse-application unparse upe tproc (list targ)))
     ((action-2 act t0 t1)
