@@ -424,7 +424,6 @@
     (if (< idx (length vars)) (list-ref vars idx) (upenv-free-name upe idx))))
 
 ; TODO: match against if-0, pair-l, pair-r sugar
-; TODO: flatten successive applications
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
@@ -432,12 +431,18 @@
 (define (unparse-orec unparse unparse-value upe term)
   (match term
     ((value v) (unparse-value upe v))
+    ((action-2 (lam-apply) tproc targ)
+     (unparse-application unparse upe tproc (list targ)))
     ((action-2 act t0 t1)
      (unparse-action-2 act (unparse upe t0) (unparse upe t1)))))
+(define (unparse-application unparse upe tproc targs)
+  (match tproc
+    ((action-2 (lam-apply) tproc targ)
+     (unparse-application unparse upe tproc (cons targ targs)))
+    (_ (map (curry unparse upe) (cons tproc targs)))))
 (define (unparse-action-2 act f0 f1)
   (match act
-    ((pair-access) `(pair-access ,f0 ,f1))
-    ((lam-apply)   `(,f0 ,f1))))
+    ((pair-access) `(pair-access ,f0 ,f1))))
 (define (unparse-value-orec unparse unparse-value upe val)
   (match val
     ((bit b)    (unparse-value-bit b))
