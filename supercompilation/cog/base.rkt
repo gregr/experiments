@@ -370,6 +370,15 @@
     r <- (parse pe fr)
     (new-pair l r)))
 (define (parse-as-thunk pe form) (parse pe `(lam (_) ,form)))
+(define (parse-tuple pe form)
+  (define/match (tuple-value term)
+    (((value val)) (right val))
+    ((_)           (left (format "tuple elements must be values: ~v" form))))
+  (do either-monad
+    `(,_ . ,felems) = form
+    velems <- (map-parse pe felems)
+    elems <- (map-monad either-monad tuple-value velems)
+    (pure (value (tuple-encode elems)))))
 
 ; derived syntax
 (define (parse-if-0 pe form)
@@ -398,9 +407,10 @@
            (lam ,parse-lam)
            (pair ,parse-pair)
            (pair-access ,parse-pair-access)
-           (if-0 ,parse-if-0)
            (pair-l ,parse-pair-l)
            (pair-r ,parse-pair-r)
+           (tuple ,parse-tuple)
+           (if-0 ,parse-if-0)
            )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -423,6 +433,7 @@
   (let ((vars (upenv-vars upe)))
     (if (< idx (length vars)) (list-ref vars idx) (upenv-free-name upe idx))))
 
+; TODO: support a fixpoint operator?
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
@@ -470,7 +481,12 @@
   (match val
     ((bit b)    (unparse-value-bit b))
     ((uno)      '())
-    ((pair l r) (list 'pair (unparse-value upe l) (unparse-value upe r)))
+    ((pair l r)
+     (let ((fl (unparse-value upe l)))
+      (match (unparse-value upe r)
+        ('()               `(tuple ,fl))
+        (`(tuple . ,elems) `(tuple . ,(cons fl elems)))
+        (fr                `(pair ,fl ,fr)))))
     ((bvar idx) (upenv-vars-get upe idx))
     ((lam body)
      (match-let (((cons new-name new-upe) (upenv-vars-add upe)))

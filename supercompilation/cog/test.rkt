@@ -12,6 +12,8 @@
 
 (define tests `(
   ()                          ; '()
+  (pair 0 (pair 1 ()))        ; '(0 1)
+  (tuple 0 1 0 1)             ; '(0 1 0 1)
   (pair () 0)                 ; '(() . 0)
   (pair 1 0)                  ; '(1 . 0)
   (pair 1 (pair 0 ()))        ; '(1 0)
