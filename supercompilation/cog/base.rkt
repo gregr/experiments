@@ -423,7 +423,6 @@
   (let ((vars (upenv-vars upe)))
     (if (< idx (length vars)) (list-ref vars idx) (upenv-free-name upe idx))))
 
-; TODO: match against pair-l, pair-r
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
@@ -455,6 +454,8 @@
             ,(unparse upe (lam-body alt-0)) ,(unparse upe (lam-body alt-1))))
     ((action-2 (lam-apply) tproc targ)
      (unparse-application unparse upe tproc (list targ)))
+    ((action-2 (pair-access) (value (bit b)) tpair)
+     (list (match b ((b-0) 'pair-l) ((b-1) 'pair-r)) (unparse upe tpair)))
     ((action-2 act t0 t1)
      (unparse-action-2 act (unparse upe t0) (unparse upe t1)))))
 (define (unparse-application unparse upe tproc targs)
