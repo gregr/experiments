@@ -109,7 +109,7 @@
     ((action-2 act (value val) t1-0)
      (do either-monad
        t1-1 <- (step t1-0)
-       (pure (action-2 act val t1-1))))
+       (pure (action-2 act (value val) t1-1))))
     ((action-2 act t0-0 t1)
      (do either-monad
        t0-1 <- (step t0-0)
