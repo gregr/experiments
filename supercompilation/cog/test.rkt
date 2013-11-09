@@ -240,4 +240,13 @@
     () (pair s0 (lam (z) (pair s0 z))))
   )))
 
+(define test-term-6 (right-x (parse (penv-vars-add penv-init 's0)
+  `((fix (repeat count val)
+         (if-0 (pair-l count)
+               ()
+               ((lam (rest) (pair val rest)) (repeat (pair-r count) val))))
+    ,(unparse upenv-empty (value (nat-encode 5)))
+    s0))))
+
 (interact-with test-term-5)
+(interact-with test-term-6)

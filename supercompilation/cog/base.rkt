@@ -400,6 +400,16 @@
     (1 (right v-1))
     (_ (left (format "expected 0 or 1 but found: ~s" form)))))
 
+(define (parse-fixpoint pe form)
+  (do either-monad
+    _ <- (check-arity 3 form)
+    `(,_ ,names ,body) = form
+    _ <- (if (>= (length names) 2) (right (void))
+           (left (format "fix must include at least two parameters: ~v" form)))
+    body <- (parse-under pe names body)
+    proc = (foldr (lambda (_ body) (value (lam body))) body names)
+    (pure (new-lam-apply Y-combinator proc))))
+
 (define penv-init
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
          penv-empty
@@ -411,7 +421,13 @@
            (pair-r ,parse-pair-r)
            (tuple ,parse-tuple)
            (if-0 ,parse-if-0)
+           (fix ,parse-fixpoint)
            )))
+
+(define Y-combinator
+  (right-x (parse penv-init
+                  `(lam (f) ((lam (d) (d d))
+                             (lam (x a) (f (x x) a)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; unparsing (syntax-0)
