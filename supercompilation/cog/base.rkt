@@ -408,7 +408,7 @@
            (left (format "fix must include at least one parameter: ~v" form)))
     body <- (parse-under pe names body)
     proc = (foldr (lambda (_ body) (value (lam body))) body names)
-    (pure (new-lam-apply Y-combinator proc))))
+    (pure (new-lam-apply (value Y-combinator) proc))))
 
 (define penv-init
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
@@ -425,9 +425,9 @@
            )))
 
 (define Y-combinator
-  (right-x (parse penv-init
-                  `(lam (f) ((lam (d) (d d))
-                             (lam (x a) (f (x x) a)))))))
+  (value-v (right-x (parse penv-init
+                           `(lam (f) ((lam (d) (d d))
+                                      (lam (x a) (f (x x) a))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; unparsing (syntax-0)
