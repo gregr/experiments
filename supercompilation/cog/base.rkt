@@ -404,8 +404,8 @@
   (do either-monad
     _ <- (check-arity 3 form)
     `(,_ ,names ,body) = form
-    _ <- (if (>= (length names) 2) (right (void))
-           (left (format "fix must include at least two parameters: ~v" form)))
+    _ <- (if (>= (length names) 1) (right (void))
+           (left (format "fix must include at least one parameter: ~v" form)))
     body <- (parse-under pe names body)
     proc = (foldr (lambda (_ body) (value (lam body))) body names)
     (pure (new-lam-apply Y-combinator proc))))
