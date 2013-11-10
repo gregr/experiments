@@ -449,7 +449,6 @@
   (let ((vars (upenv-vars upe)))
     (if (< idx (length vars)) (list-ref vars idx) (upenv-free-name upe idx))))
 
-; TODO: support a fixpoint operator?
 (define (unparse upe term)
   (unparse-orec unparse unparse-value upe term))
 (define (unparse-value upe term)
@@ -479,6 +478,11 @@
       (value (uno)))
      `(if-0 ,(unparse upe tcnd)
             ,(unparse upe (lam-body alt-0)) ,(unparse upe (lam-body alt-1))))
+    ((action-2 (lam-apply)
+               (value (? (curry equal? Y-combinator)))
+               (value (lam body)))
+     (match (unparse-value upe (lam body))
+       (`(lam ,names ,body) `(fix ,names ,body))))
     ((action-2 (lam-apply) tproc targ)
      (unparse-application unparse upe tproc (list targ)))
     ((action-2 (pair-access) (value (bit b)) tpair)
@@ -487,7 +491,11 @@
      (unparse-action-2 act (unparse upe t0) (unparse upe t1)))))
 (define (unparse-application unparse upe tproc targs)
   (match tproc
-    ((action-2 (lam-apply) tproc targ)
+    ((and (action-2 (lam-apply) tproc targ)
+          ; having to do this is terrible
+          (not (action-2 (lam-apply)
+                         (value (? (curry equal? Y-combinator)))
+                         (value (lam body)))))
      (unparse-application unparse upe tproc (cons targ targs)))
     (_ (map (curry unparse upe) (cons tproc targs)))))
 (define (unparse-action-2 act f0 f1)
