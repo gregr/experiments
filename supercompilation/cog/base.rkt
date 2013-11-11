@@ -470,6 +470,10 @@
     (match val
       ((lam body) (not (mentions-bvar? 0 body)))
       (_ #f)))
+  (define (unparse-thunk upe thunk)
+    (match (unparse-value upe thunk)
+      (`(lam (,_)            ,body) body)
+      (`(lam ,(cons x names) ,body) `(lam ,names ,body))))
   (match term
     ((value v) (unparse-value upe v))
     ((action-2 (lam-apply)
@@ -477,7 +481,7 @@
         (value (pair (? thunk-form? alt-0) (? thunk-form? alt-1))))
       (value (uno)))
      `(if-0 ,(unparse upe tcnd)
-            ,(unparse upe (lam-body alt-0)) ,(unparse upe (lam-body alt-1))))
+            ,(unparse-thunk upe alt-0) ,(unparse-thunk upe alt-1)))
     ((action-2 (lam-apply)
                (value (? (curry equal? Y-combinator)))
                (value (lam body)))
