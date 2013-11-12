@@ -239,21 +239,25 @@
     ((left msg) (displayln msg) (right context))
     ((right context) (right context))))
 
+(define view-syntax-raw
+  (compose1 chain-show interact-context-present))
+(define view-syntax-0
+  (compose1 chain-show chain-unparse-void interact-context-present))
+
 (define (interact-loop context)
   (let loop ((st context))
-    (let ((chain (interact-context-present st)))
-      (printf "~a" (chain-show (chain-unparse-void chain)))
-      (display "[hjkl](movement),[s]tep,[q]uit> ")
-      (do either-monad
-        st <- (match (read-line)
-                ("h" (interact-safe interact-shift-left st))
-                ("l" (interact-safe interact-shift-right st))
-                ("j" (interact-safe interact-descend st))
-                ("k" (interact-safe interact-ascend st))
-                ("s" (interact-safe interact-step st))
-                ("q" (left "quitting"))
-                (_ (displayln "invalid choice") (right st)))
-        (loop st)))))
+    (printf "~a" (view-syntax-0 st))
+    (display "[hjkl](movement),[s]tep,[q]uit> ")
+    (do either-monad
+      st <- (match (read-line)
+              ("h" (interact-safe interact-shift-left st))
+              ("l" (interact-safe interact-shift-right st))
+              ("j" (interact-safe interact-descend st))
+              ("k" (interact-safe interact-ascend st))
+              ("s" (interact-safe interact-step st))
+              ("q" (left "quitting"))
+              (_ (displayln "invalid choice") (right st)))
+      (loop st))))
 
 (define (interact-with term) (interact-loop (interact-context-init term)))
 
