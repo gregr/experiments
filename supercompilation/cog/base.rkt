@@ -244,22 +244,25 @@
 (define view-syntax-0
   (compose1 chain-show chain-unparse-void interact-context-present))
 
-(define (interact-loop context)
-  (let loop ((st context))
-    (printf "~a" (view-syntax-0 st))
+(variant (interact-state (view context)))
+
+(define (interact-loop state)
+  (match-let loop (((interact-state view ctxt) state))
+    (printf "~a" (view ctxt))
     (display "[hjkl](movement),[s]tep,[q]uit> ")
     (do either-monad
-      st <- (match (read-line)
-              ("h" (interact-safe interact-shift-left st))
-              ("l" (interact-safe interact-shift-right st))
-              ("j" (interact-safe interact-descend st))
-              ("k" (interact-safe interact-ascend st))
-              ("s" (interact-safe interact-step st))
+      ctxt <- (match (read-line)
+              ("h" (interact-safe interact-shift-left ctxt))
+              ("l" (interact-safe interact-shift-right ctxt))
+              ("j" (interact-safe interact-descend ctxt))
+              ("k" (interact-safe interact-ascend ctxt))
+              ("s" (interact-safe interact-step ctxt))
               ("q" (left "quitting"))
-              (_ (displayln "invalid choice") (right st)))
-      (loop st))))
+              (_ (displayln "invalid choice") (right ctxt)))
+      (loop (interact-state view ctxt)))))
 
-(define (interact-with term) (interact-loop (interact-context-init term)))
+(define (interact-with term)
+  (interact-loop (interact-state view-syntax-0 (interact-context-init term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; parsing (syntax-0)
