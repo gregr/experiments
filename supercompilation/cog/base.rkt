@@ -234,32 +234,45 @@
           "")
     "\n================================\n\n"))
 
-(define (interact-safe f context)
-  (match (f context)
-    ((left msg) (displayln msg) (right context))
-    ((right context) (right context))))
-
 (define view-syntax-raw
   (compose1 chain-show interact-context-present))
 (define view-syntax-0
   (compose1 chain-show chain-unparse-void interact-context-present))
 
 (variant (interact-state (view context)))
+(define (interact-state-viewcontext st)
+  ((interact-state-view st) (interact-state-context st)))
+(define/match (interact-state-lens-context st)
+  (((interact-state view context))
+    (lens-result context (curry interact-state view))))
+(define/match (interact-state-lens-view st)
+  (((interact-state view context))
+    (lens-result view (curry (flip interact-state) context))))
+
+(define ((left-display-default default) result)
+  (either-fold (lambda (msg) (display msg) default) identity result))
+
+(define ((interact-safe lens) trans st)
+  (right (:~ st (compose1 (left-display-default (:. st lens)) trans) lens)))
+(define interact-safe-context
+  (interact-safe interact-state-lens-context))
+(define interact-safe-view
+  (interact-safe interact-state-lens-view))
 
 (define (interact-loop state)
-  (match-let loop (((interact-state view ctxt) state))
-    (printf "~a" (view ctxt))
+  (let loop ((st state))
+    (printf "~a" (interact-state-viewcontext st))
     (display "[hjkl](movement),[s]tep,[q]uit> ")
     (do either-monad
-      ctxt <- (match (read-line)
-              ("h" (interact-safe interact-shift-left ctxt))
-              ("l" (interact-safe interact-shift-right ctxt))
-              ("j" (interact-safe interact-descend ctxt))
-              ("k" (interact-safe interact-ascend ctxt))
-              ("s" (interact-safe interact-step ctxt))
+      st <- (match (read-line)
+              ("h" (interact-safe-context interact-shift-left st))
+              ("l" (interact-safe-context interact-shift-right st))
+              ("j" (interact-safe-context interact-descend st))
+              ("k" (interact-safe-context interact-ascend st))
+              ("s" (interact-safe-context interact-step st))
               ("q" (left "quitting"))
-              (_ (displayln "invalid choice") (right ctxt)))
-      (loop (interact-state view ctxt)))))
+              (_ (displayln "invalid choice") (right st)))
+      (loop st))))
 
 (define (interact-with term)
   (interact-loop (interact-state view-syntax-0 (interact-context-init term))))
