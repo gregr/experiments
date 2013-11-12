@@ -133,9 +133,9 @@
   (hole-action-2-0 (act t1))
   (hole-action-2-1 (act t0)))
 
-(variant (interact-state (holes focus)))
+(variant (interact-context (holes focus)))
 
-(define (interact-state-init term) (interact-state '() term))
+(define (interact-context-init term) (interact-context '() term))
 
 (define (hole-fill hole subterm)
   (match hole
@@ -155,45 +155,45 @@
   ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
   ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
 
-(define (interact-ascend-index state)
-  (match state
-    ((interact-state holes focus)
+(define (interact-ascend-index context)
+  (match context
+    ((interact-context holes focus)
      (match holes
        ((cons hole holes)
         (match-let (((list idx new-focus) (hole-fill hole focus)))
-          (right (list idx (interact-state holes new-focus)))))
+          (right (list idx (interact-context holes new-focus)))))
        (_ (left "no hole to fill"))))))
-(define (interact-ascend state)
+(define (interact-ascend context)
   (do either-monad
-    (list _ state) <- (interact-ascend-index state)
-    (pure state)))
+    (list _ context) <- (interact-ascend-index context)
+    (pure context)))
 
-(define (interact-descend-index idx state)
-  (match state
-    ((interact-state holes focus)
+(define (interact-descend-index idx context)
+  (match context
+    ((interact-context holes focus)
      (do either-monad
        (list hole new-focus) <- (hole-make idx focus)
-       (pure (interact-state (cons hole holes) new-focus))))))
+       (pure (interact-context (cons hole holes) new-focus))))))
 (define interact-descend (curry interact-descend-index 0))
 
-(define ((interact-shift offset) state)
+(define ((interact-shift offset) context)
   (do either-monad
-    (list idx state1) <- (interact-ascend-index state)
-    (interact-descend-index (+ idx offset) state1)))
+    (list idx context1) <- (interact-ascend-index context)
+    (interact-descend-index (+ idx offset) context1)))
 (define interact-shift-left (interact-shift -1))
 (define interact-shift-right (interact-shift 1))
 
-(define (interact-step state)
-  (match state
-    ((interact-state holes focus)
+(define (interact-step context)
+  (match context
+    ((interact-context holes focus)
      (do either-monad
        new-focus <- (step-safe focus)
-       (pure (interact-state holes new-focus))))))
+       (pure (interact-context holes new-focus))))))
 
-(define (interact-state-present state)
+(define (interact-context-present context)
   (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
-  (match state
-    ((interact-state holes focus)
+  (match context
+    ((interact-context holes focus)
      (reverse (cons focus (map hole-present holes))))))
 
 (variant (void-closure (is-value upenv)))
@@ -234,14 +234,14 @@
           "")
     "\n================================\n\n"))
 
-(define (interact-safe f state)
-  (match (f state)
-    ((left msg) (displayln msg) (right state))
-    ((right state) (right state))))
+(define (interact-safe f context)
+  (match (f context)
+    ((left msg) (displayln msg) (right context))
+    ((right context) (right context))))
 
-(define (interact-loop state)
-  (let loop ((st state))
-    (let ((chain (interact-state-present st)))
+(define (interact-loop context)
+  (let loop ((st context))
+    (let ((chain (interact-context-present st)))
       (printf "~a" (chain-show (chain-unparse-void chain)))
       (display "[hjkl](movement),[s]tep,[q]uit> ")
       (do either-monad
@@ -255,7 +255,7 @@
                 (_ (displayln "invalid choice") (right st)))
         (loop st)))))
 
-(define (interact-with term) (interact-loop (interact-state-init term)))
+(define (interact-with term) (interact-loop (interact-context-init term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; parsing (syntax-0)
