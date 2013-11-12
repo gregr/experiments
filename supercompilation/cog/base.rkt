@@ -238,6 +238,9 @@
   (compose1 chain-show interact-context-present))
 (define view-syntax-0
   (compose1 chain-show chain-unparse-void interact-context-present))
+(define (view-toggle current-view)
+  (right (if (eq? view-syntax-raw current-view)
+           view-syntax-0 view-syntax-raw)))
 
 (variant (interact-state (view context)))
 (define (interact-state-viewcontext st)
@@ -262,7 +265,7 @@
 (define (interact-loop state)
   (let loop ((st state))
     (printf "~a" (interact-state-viewcontext st))
-    (display "[hjkl](movement),[s]tep,[q]uit> ")
+    (display "[hjkl](movement),[s]tep,toggle-synta[x],[q]uit> ")
     (do either-monad
       st <- (match (read-line)
               ("h" (interact-safe-context interact-shift-left st))
@@ -270,6 +273,7 @@
               ("j" (interact-safe-context interact-descend st))
               ("k" (interact-safe-context interact-ascend st))
               ("s" (interact-safe-context interact-step st))
+              ("x" (interact-safe-view view-toggle st))
               ("q" (left "quitting"))
               (_ (displayln "invalid choice") (right st)))
       (loop st))))
