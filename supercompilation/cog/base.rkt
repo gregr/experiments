@@ -242,15 +242,18 @@
   (right (if (eq? view-syntax-raw current-view)
            view-syntax-0 view-syntax-raw)))
 
-(variant (interact-state (view context)))
+(variant (interact-state (view context history)))
 (define (interact-state-viewcontext st)
   ((interact-state-view st) (interact-state-context st)))
 (define/match (interact-state-lens-context st)
-  (((interact-state view context))
-    (lens-result context (curry interact-state view))))
+  (((interact-state view context history))
+    (lens-result context (lambda (ctxt) (interact-state view ctxt history)))))
 (define/match (interact-state-lens-view st)
-  (((interact-state view context))
-    (lens-result view (curry (flip interact-state) context))))
+  (((interact-state view context history))
+    (lens-result view (lambda (view) (interact-state view context history)))))
+(define/match (interact-state-lens-history st)
+  (((interact-state view context history))
+    (lens-result history (lambda (hist) (interact-state view context hist)))))
 
 (define ((left-display-default default) result)
   (either-fold (lambda (msg) (display msg) default) identity result))
@@ -284,7 +287,8 @@
       (loop st))))
 
 (define (interact-with term)
-  (interact-loop (interact-state view-syntax-0 (interact-context-init term))))
+  (interact-loop
+    (interact-state view-syntax-0 (interact-context-init term) '())))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; parsing (syntax-0)
