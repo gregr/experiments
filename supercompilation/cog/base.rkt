@@ -268,9 +268,11 @@
 (define (interact-loop state)
   (let loop ((st state))
     (printf "~a" (interact-state-viewcontext st))
-    (display "[hjkl](movement),[s]tep(count),toggle-synta[x],[q]uit> ")
+    (display "[hjkl](movement),[s]tep(count),toggle-synta[x],[u]ndo,[q]uit> ")
     (do either-monad
-      st <- (match (read-line)
+      prev-st = st
+      input = (read-line)
+      st <- (match input
               ("h" (interact-safe-context interact-shift-left st))
               ("l" (interact-safe-context interact-shift-right st))
               ("j" (interact-safe-context interact-descend st))
@@ -282,8 +284,13 @@
                                    right-x)
                          (right st) count))))
               ("x" (interact-safe-view view-toggle st))
+              ("u" (match (:. st interact-state-lens-history)
+                     ('() (displayln "nothing to undo!") (right st))
+                     ((cons prev-state hist) (right prev-state))))
               ("q" (left "quitting"))
               (_ (displayln "invalid choice") (right st)))
+      st = (if (equal? input "u") st
+             (:~ st (curry cons prev-st) interact-state-lens-history))
       (loop st))))
 
 (define (interact-with term)
