@@ -1,3 +1,27 @@
+Define effects as a consequence of a new term 'produce'.
+  Previously, terms would only terminate when stuck, or after converging to a
+  value.  The 'produce' term is a way of aborting a computation earlier, upon
+  fully evaluating its argument.  The argument may then be interpreted by the
+  meta-program (the program that is interpreting the program that has just
+  halted on (produce v)) as an invocation of an external capability.  If this
+  is intended, the invocation result should then be substituted for the
+  (produce v) term, and the program resumed from that point.
+
+  Depending on the meta-program capabilities and 'produce' communication
+  protocol, this may enable effects such as i/o, mutable state,
+  delimited control, concurrency... without complicating the fundamental
+  theory.  Side-effectful extensions were originally planned to be implemented
+  in entirely separate languages.  Now, effect handling becomes an orthogonal
+  concern of certain host/meta-programs.
+
+  It may seem as if this is punting on the hard work, but this approach is
+  really just relocating it to a more appropriate context.  Rather than dealing
+  with difficult theory for all programs, complications only need to be dealt
+  with for the specific interpretations of 'produce' for which they are
+  relevant.  A bonus of this approach is that we will also able to experiment
+  with several effect system variations without having to reinvent the
+  fundamental language each time.
+
 ===============================================================================
 = old ideas (if I bring these back, it will be in a different context)
 ===============================================================================
