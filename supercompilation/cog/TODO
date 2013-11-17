@@ -1,14 +1,6 @@
-reformulate terms to reduce redundancy and increase flexibility of reasoning
-  symbols and conditionals will become derived concepts
-  bits (zero and one) and pair-access will be introduced
-    these can express pair-left/right and conditional branching
-
-scrap the current promise framework
-  replace with skolems plus a new propositional framework
-  'skolem' renamed 'promise' in this system
-    promise will then reflect an unknown atomic value
-    propositions on promises will replace constraints of the current framework
-
+===============================================================================
+= old ideas (if I bring these back, it will be in a different context)
+===============================================================================
 
 ; note: propositions really describe properties of full computational states,
 ;       not just thunks: catalog is implicit in the following
