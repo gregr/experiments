@@ -526,6 +526,7 @@
       (`(lam ,(cons x names) ,body) `(lam ,names ,body))))
   (match term
     ((value v) (unparse-value upe v))
+    ((produce tm) `(produce ,(unparse upe tm)))
     ((action-2 (lam-apply)
       (action-2 (pair-access) tcnd
         (value (pair (? thunk-form? alt-0) (? thunk-form? alt-1))))

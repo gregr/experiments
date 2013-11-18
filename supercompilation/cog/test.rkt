@@ -28,6 +28,7 @@
   (pair-r (pair 0 1))         ; 1
   ((pair-access 0 (pair (lam (_) ()) (lam (x) 0))) ())  ; this should become an if-0
   ((pair-access 0 (pair (lam (_) ()) (lam (x) x))) ())  ; this should not become an if-0
+  ((lam (a b c) (produce ())) (produce 0) (produce 1) (produce (pair 0 1)))
   ))
 
 (define parsed-tests (right-x (map-parse penv-init tests)))
