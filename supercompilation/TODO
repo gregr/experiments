@@ -38,24 +38,6 @@ producing programs that require dynamic linking
       this is starting to look like region analysis
 
 ================================================================
-= termination analysis
-================================================================
-
-CBV supercompilation via strictness/linearity/purity analysis
-  possible without having done any termination analysis
-
-more expressive assertion of function termination properties via case analysis on algebraic parameters? (base cases for each constructor, plus one for delay/thunk)
-  this is probably overkill; instead, just use an approach similar to ACL2 with measures and well-founded orders
-  what approaches will work for Y/U-combinator-like non-termination detection?
-    simple typing: if simply typed, letrec/fix would be the only way to introduce non-termination
-    sub-tree relation for size comparison of closures
-  also, see how well supercompiler generalization can produce relevant info
-
-explicit delay
-  indicate a recursive function's tolerance for being interpreted as cofix
-  normally proof of full termination is attempted; in this case, also attempt to prove productivity in case full termination fails
-
-================================================================
 = supercompilation
 ================================================================
 
@@ -135,26 +117,8 @@ can proofs for high-level language be straightforwardly transformed into proofs 
 = implementation strategy
 ================================================================
 
-to attempt to satisfy the de bruijn criterion, start simple
-minimal pure functional language with let-rec and data structures:
-  value:
-    lambda
-    symbol
-    pair
-    unit
-  operation:
-    application
-    if-symbols-equal
-    pair-left, pair-right
-    let-rec (could do without, but seems to simplify supercompilation)
-evaluation state components:
-  focus: term
-  continuation: list of one-hole contexts
-  environment: binder -> address
-  catalog: address -> value ; this is just for sharing constant values, it is not a mutable store
-  next-address: address
-
-see how hard it is to extend this to include a pair of streams for input and output
+to attempt to satisfy the de bruijn criterion, start simple:
+  minimal pure functional language with basic data structures
 
 given this simple foundation, attempt to build a more fully-featured high-level language
   example extensions:
