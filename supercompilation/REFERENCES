@@ -1,0 +1,30 @@
+================================================================
+= theorem proving
+================================================================
+
+- mccarthy recursion induction
+- boyer/moore, ACL2
+- milawa
+- harrison metatheory and reflection
+- Functional programs:
+  conversions between deep and shallow embeddings
+    Magnus O. Myreen
+- http://yinwang0.wordpress.com/2012/04/26/propositions-as-programs/
+
+================================================================
+= supercompilation
+================================================================
+
+- turchin
+- positive and full supercomp
+- distillation
+- supercomp-by-eval (and part 2)
+- supercomp cbv (and part 2: strengthening)
+- HLSC
+- 2LSC (and part 2)
+
+================================================================
+= misc
+================================================================
+
+- Malkolm+J.B.Wells first-class mixin modules
