@@ -23,8 +23,20 @@ Define effects as a consequence of a new term 'produce'.
   fundamental language each time.
 
 ===============================================================================
+= reflection issues
+===============================================================================
+
+- how to load quoted code into meta environment?
+  - consider the L+1 (meta) environment to be fixed
+  - the L environment is being managed by L+1, and can have new code
+    incorporated into it at that level already
+  - should this be done by re-seating the entire process?
+  - is there some explainable way to do it iteratively?
+
+===============================================================================
 = pretty old effect system ideas
 ===============================================================================
+
 - analysis of concurrency with shared memory
   - track set of escaped minimal embeddings of mutable cells to prove
     properties in the presence of concurrency
