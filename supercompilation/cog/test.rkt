@@ -35,7 +35,7 @@
 (pretty-print unparsed-tests)
 
 (define (eval-print el)
-  (print (denote-eval el)) (display "\n"))
+  (print (denote-eval noisy-consume el)) (display "\n"))
 (let ((_ (map eval-print parsed-tests))) (void))
 
 

@@ -14,7 +14,8 @@
 
 (define (denote-eval-port parse inp)
   (interpret-port
-    parse denote-eval (lambda (x) (displayln (format "~v" x))) inp))
+    parse (curry denote-eval noisy-consume)
+    (lambda (x) (displayln (format "~v" x))) inp))
 
 (define (step-eval-port parse inp)
   (interpret-port

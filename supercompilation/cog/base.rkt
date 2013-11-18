@@ -24,33 +24,41 @@
 
 (data term
   (value     (v))
+  (produce   (t))
   (action-2  (act t0 t1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; denotational semantics
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (denote-eval term) ((denote term) denote-env-empty))
+(define (null-consume v) '())
+(define (noisy-consume val) (displayln (format "produced: ~v" val)) '())
 
-(define (denote term)
+(define (denote-eval consume term) ((denote consume term) denote-env-empty))
+
+(define (denote consume term)
   (match term
-    ((value val) (denote-value val))
+    ((value val)  (denote-value consume val))
+    ((produce tm) (compose1 consume (denote consume tm)))
     ((action-2 act t0 t1)
-     (let ((d0 (denote t0)) (d1 (denote t1)) (dact (denote-action-2 act)))
+     (let ((d0 (denote consume t0))
+           (d1 (denote consume t1))
+           (dact (denote-action-2 act)))
        (lambda (env) (dact (d0 env) (d1 env)))))))
 (define (denote-action-2 act)
   (match act
     ((pair-access) (lambda (vbit vpair)
                      ((vector-ref (vector car cdr) vbit) vpair)))
     ((lam-apply)   (lambda (vproc varg) (vproc varg)))))
-(define (denote-value val)
+(define (denote-value consume val)
   (match val
     ((bit vb)   (denote-value-bit vb))
     ((uno)      (lambda (env) '()))
-    ((pair l r) (let ((dl (denote-value l)) (dr (denote-value r)))
+    ((pair l r) (let ((dl (denote-value consume l))
+                      (dr (denote-value consume r)))
                   (lambda (env) (cons (dl env) (dr env)))))
     ((bvar idx) (lambda (env) (denote-env-lookup env idx)))
-    ((lam body) (let ((db (denote body)))
+    ((lam body) (let ((db (denote consume body)))
                   (lambda (env)
                     (lambda (arg) (db (denote-env-extend env arg))))))))
 (define (denote-value-bit vb)
@@ -372,6 +380,7 @@
     pe = (foldl (flip penv-vars-add) pe params)
     (parse pe body)))
 
+(define parse-produce (parse-apply produce 2))
 (define (parse-bvar pe name)
   (do either-monad
     _ <- (check-symbol name)
@@ -454,6 +463,7 @@
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
          penv-empty
          `((,penv-syntax-op-empty ,parse-lam-apply)
+           (produce ,parse-produce)
            (lam ,parse-lam)
            (pair ,parse-pair)
            (pair-access ,parse-pair-access)
