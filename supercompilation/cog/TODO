@@ -23,6 +23,18 @@ Define effects as a consequence of a new term 'produce'.
   fundamental language each time.
 
 ===============================================================================
+= more interaction ideas
+===============================================================================
+
+- module-building syntax/mode/file-processing
+
+- multi-hole/context editing and combining
+  - free-hand inputting of new terms
+    - 'transform': describe a function to be applied to current term
+  - similar factoring primitives to those described in:
+    http://worrydream.com/LearnableProgramming/
+
+===============================================================================
 = high-level encoding
 ===============================================================================
 
