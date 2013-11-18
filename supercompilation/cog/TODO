@@ -22,6 +22,16 @@ Define effects as a consequence of a new term 'produce'.
   with several effect system variations without having to reinvent the
   fundamental language each time.
 
+- produce for i/o interaction and other effects
+  - do we need unforgeable constants to securely represent capabilities when
+    allocating/new-ref-ing?
+    - or is it enough to check for absolute safety by verifying
+      convergence/productivity of ref-allocating computation for all possible
+      ref encodings that could be handed back to it?
+      - attempts to cheat should always be foiled by this measure, since such
+        programs have to guess a particular ref encoding, and shouldn't be able
+        to guarantee they choose the right one every time
+
 ===============================================================================
 = more interaction ideas
 ===============================================================================
