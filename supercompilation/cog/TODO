@@ -23,6 +23,37 @@ Define effects as a consequence of a new term 'produce'.
   fundamental language each time.
 
 ===============================================================================
+= pretty old effect system ideas
+===============================================================================
+- analysis of concurrency with shared memory
+  - track set of escaped minimal embeddings of mutable cells to prove
+    properties in the presence of concurrency
+  - example:
+    - thread T reads from cell M
+      - assume set of escaped minimal M embeddings contains only E[M]
+    - what can be written to cell M, forall S. S[E[M]] ? these are the only
+      things that need to be considered readable in thread T
+      - show that under the assumption of thread T making no progress (after
+        all, it's waiting to read and may be holding a "lock" that affects
+        other threads' behaviors with respect to M), S[E[M]] either:
+        - embeds (write M x) for a finite set of possible x; these are the only
+          x's that thread T may end up reading in
+        - does not embed (write M x); special case of the above
+        - diverges before any (write M x)
+      - without such proof, must assume: forall v. (write M v); this means
+        thread T could read anything in
+
+- shift/reset
+  - when encountered, reset marks the log, and pushes its one-hole-context
+  - when providing a value to the reset ohc, the result should be skeptical of
+    any obligations incurred since the log marking, as these obligations could
+    hide shifts
+    - if obligations can't be analyzed to tell if they contain shift, reset's
+      result should be an obligation that resumes this investigation when
+      evaluated
+  - btw, shift should not capture return-context
+
+===============================================================================
 = old ideas (if I bring these back, it will be in a different context)
 ===============================================================================
 
