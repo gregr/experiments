@@ -23,6 +23,26 @@ Define effects as a consequence of a new term 'produce'.
   fundamental language each time.
 
 ===============================================================================
+= logic issues
+===============================================================================
+
+- proof constructors
+  - forall-term, forall-value (and somehow these may be
+    mutually-recursive/inductive?
+    - think: forall-term T. (P T) -> (value (lam T)))
+  - forall-X and -> create new scopes, binding a meta-var or proof-reference
+    that may be used within the internal proof
+  - how to represent or? maybe full-blown sequents are valid
+    - classical logic for describing program transformations may not prevent
+      program terms themselves from encoding constructive logic
+
+- non-termination theory
+  - can function call termination analysis be accomplished without more special
+    machinery than an induction rule over terms/values?
+
+- reductio ad absurdum via hypothesis invalidation
+
+===============================================================================
 = reflection issues
 ===============================================================================
 
