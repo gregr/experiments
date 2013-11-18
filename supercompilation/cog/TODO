@@ -23,6 +23,36 @@ Define effects as a consequence of a new term 'produce'.
   fundamental language each time.
 
 ===============================================================================
+= high-level encoding
+===============================================================================
+
+- how to track function parameter names unintrusively?
+  - maybe it's ok to annotate functions; interference with equalities probably
+    won't occur in any meaningful way
+- modules and linking
+  - renaming imports/exports
+  - narrowing exports
+    - support both white and black listing of exported names
+  - symmetric link/mix/combine
+    - asymmetric linking of N + M can be implemented via: N + (M - N)
+  - how to resolve mutually-recursive deps?
+    - internally represent both cyclic and acyclic (over SCCs) dependency
+      graphs?
+  - should procedures also be packaged up with meta-data, like modules?
+    - yes, at least include a basic type tag
+    - juxtaposition as sugar for applying these packaged procs, rather than for
+      applying low-level lambdas
+      - for low-level application, introduce a 'lam-apply' syntax
+  - parsing, syntax transformers and metacircular eval
+    - partial fexprs
+    - syntax default (#%app)
+    - setting the default
+    - whitelist or blacklist names
+  - how to interact with the pre-desugared syntax directly?
+    - syntax-0 is basically in direct correspondence with underlying terms
+    - higher level syntaxes will be more challenging
+
+===============================================================================
 = logic issues
 ===============================================================================
 
