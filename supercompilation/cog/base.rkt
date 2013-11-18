@@ -144,6 +144,7 @@
 
 (data hole-term
   (hole-value      ())
+  (hole-produce    ())
   (hole-action-2-0 (act t1))
   (hole-action-2-1 (act t0)))
 
@@ -157,6 +158,7 @@
     ((hole-pair-r l)          (list 1 (pair l subterm)))
     ((hole-lam)               (list 0 (lam subterm)))
     ((hole-value)             (list 0 (value subterm)))
+    ((hole-produce)           (list 0 (produce subterm)))
     ((hole-action-2-0 act t1) (list 0 (action-2 act subterm t1)))
     ((hole-action-2-1 act t0) (list 1 (action-2 act t0 subterm)))))
 
@@ -165,6 +167,7 @@
   ((1 (pair l r))           (right (list (hole-pair-r l)          r)))
   ((0 (lam body))           (right (list (hole-lam)               body)))
   ((0 (value val))          (right (list (hole-value)             val)))
+  ((0 (produce tm))         (right (list (hole-produce)           tm)))
   ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
   ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
   ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
