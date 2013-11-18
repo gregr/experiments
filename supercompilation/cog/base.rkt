@@ -87,6 +87,7 @@
 (define (lift-bvars idx term)
   (match term
     ((value val)          (value (lift-bvars-value idx val)))
+    ((produce tm)         (produce (lift-bvars idx tm)))
     ((action-2 act t0 t1) (action-2-map (curry lift-bvars idx) act t0 t1))))
 
 (define (substitute-value idx val tv)
@@ -99,6 +100,7 @@
 (define (substitute idx val term)
   (match term
     ((value tv)           (value (substitute-value idx val tv)))
+    ((produce tm)         (produce (substitute idx val tm)))
     ((action-2 act t0 t1) (action-2-map
                             (curry substitute idx val) act t0 t1))))
 
@@ -111,6 +113,10 @@
 (define (step term)
   (match term
     ((value _) (left (format "cannot step irreducible term: ~v" term)))
+    ((produce tm-0)
+     (do either-monad
+       tm-1 <- (step tm-0)
+       (pure (produce tm-1))))
     ((action-2 act (value v0) (value v1))
      (maybe->either (format "cannot step stuck term: ~v" term)
                     (execute-action-2 act v0 v1)))
@@ -124,7 +130,7 @@
        (pure (action-2 act t0-1 t1))))))
 
 (define (step-safe term)
-  (if (or (value? term) (action-2? term)) (step term)
+  (if (or (value? term) (produce? term) (action-2? term)) (step term)
     (left (format "cannot step non-term: ~v" term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
