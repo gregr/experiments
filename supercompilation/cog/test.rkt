@@ -31,7 +31,7 @@
   ((lam (a b c) (produce ())) (produce 0) (produce 1) (produce (pair 0 1)))
   ))
 
-(define parsed-tests (right-x (map-parse penv-init tests)))
+(define parsed-tests (right-x (map-parse-0 penv-init tests)))
 (define unparsed-tests (map (curry unparse upenv-empty) parsed-tests))
 (pretty-print unparsed-tests)
 
@@ -229,19 +229,19 @@
 ;'((one) (one two) (one three))
 
 
-(define test-term-4 (right-x (parse (penv-vars-add penv-init 's0)
+(define test-term-4 (right-x (parse-0 (penv-vars-add penv-init 's0)
   `((lam (x) (pair (pair s0 x) (lam (y) (pair (pair y x) s0))))
     (pair s0 (lam (z) (pair s0 z))))
   )))
 
-(define test-term-5 (right-x (parse (penv-vars-add penv-init 's0)
+(define test-term-5 (right-x (parse-0 (penv-vars-add penv-init 's0)
   `((lam (w) (lam (x)
       ((pair-access 1 (pair (pair s0 (pair x w))
                             (lam (y) (pair (pair y x) s0)))) 0)))
     () (pair s0 (lam (z) (pair s0 z))))
   )))
 
-(define test-term-6 (right-x (parse (penv-vars-add penv-init 's0)
+(define test-term-6 (right-x (parse-0 (penv-vars-add penv-init 's0)
   `((fix (repeat count val)
          (if-0 (pair-l count)
                ()
