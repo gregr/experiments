@@ -777,3 +777,23 @@
 
 ; non-schematic local tags (for inner payloads) correspond to constructors
 ;   for example: inner payload tagged with Cons or Nil; outer payload tagged with appropriate List schema
+
+(define (let-module defs body)
+  (foldr (lambda (def body)
+           (match def
+             (`(,name ,expr) `((lam (,name) ,body) ,expr))))
+         body defs))
+
+(define (std prog)
+  (let-module `(
+    (bit-eq?  (lam (bta btb) (if-0 bta (if-0 btb 0 1) (if-0 btb 1 0))))
+    (bits-eq? (fix (bits-eq? sz ba bb)
+                (if-0 (pair-l sz)
+                  0
+                  (if-0 (bit-eq? (pair-l ba) (pair-l bb))
+                    (bits-eq? (pair-r sz) (pair-r ba) (pair-r bb))
+                    1)))))
+    prog))
+
+(define interact-with-0
+  (compose1 interact-with right-x (curry parse penv-init)))

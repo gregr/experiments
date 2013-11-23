@@ -251,3 +251,12 @@
 
 (interact-with test-term-5)
 (interact-with test-term-6)
+
+
+(interact-with-0 (std `(
+  (bits-eq? (tuple 1 1 1 1 1 0)
+    (tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))  ; s124
+
+(interact-with-0 (std `(
+  (bits-eq? (tuple 1 1 1 1 1 0)
+    (tuple 0 0 1 0 1) (tuple 0 0 1 0 0)))))  ; s112
