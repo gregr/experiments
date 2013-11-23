@@ -683,9 +683,12 @@
   (bits-required (symbol-table-capacity table)))
 
 (define (symbol-table-get table key)
-  (just-x (dict-get (symbol-table-mapping table) key)))
+  (dict-get (symbol-table-mapping table) key))
 (define (symbol-table-encode table key)
-  (symbol-entry-repr (symbol-table-get table key)))
+  (match (symbol-table-get table key)
+    ((just entry) (symbol-entry-repr entry))
+    ((nothing)    (error (format "cannot encode key '~v' with table: ~v"
+                                 key table)))))
 (define (symbol-table-decode table symbol)
   (just-x (dict-get (symbol-table-rev-mapping table) (bits-decode symbol))))
 (define (symbol-table-add table key max-children)
@@ -699,7 +702,7 @@
      (let ((entry (symbol-entry
                     (symbol-repr next-uid (symbol-table-bitwidth table))
                     (symbol-table-empty max-children))))
-       (match (dict-get mapping key)
+       (match (symbol-table-get table key)
          ((nothing)
           (symbol-table capacity
                         (dict-add mapping key entry)
@@ -710,7 +713,7 @@
 (define ((symbol-table-lens key) table)
   (match table
     ((symbol-table capacity mapping rev-mapping next-uid)
-     (let* ((entry (symbol-table-get table key))
+     (let* ((entry (just-x (symbol-table-get table key)))
             (next-table (symbol-entry-sub-table entry)))
        (match entry
          ((symbol-entry repr sub-table)
@@ -756,7 +759,11 @@
 (define *symbol-table* (box (symbol-table-empty symbol-capacity-default)))
 
 (define (symbol-encode key)
-  (symbol-table-encode (unbox *symbol-table*) key))
+  (let* ((table (unbox *symbol-table*))
+         (table (match (symbol-table-get table key)
+                  ((just _) table)
+                  ((nothing) (symbol-add key) (unbox *symbol-table*)))))
+    (symbol-table-encode table key)))
 (define (symbol-decode symbol)
   (symbol-table-decode (unbox *symbol-table*) symbol))
 (define (symbol-add key (max-children 0))
