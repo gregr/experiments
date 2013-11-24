@@ -601,9 +601,6 @@
 ;; tuple
 (define tuple-nil         (uno))
 (define (tuple-cons x xs) (pair x xs))
-(define (tuple-first tup) (pair-l tup))
-(define (tuple-rest tup)  (pair-r tup))
-(define tuple-nil? uno?)
 (define (tuple? val)
   (match val
     ((pair _ xs) (tuple? xs))
@@ -628,17 +625,6 @@
 (define (tuple-decode tup) (tuple-foldr cons '() tup))
 (define (tuple-pad len val tup)
   (tuple-encode-revappend (make-list (- len (tuple-length tup)) val) tup))
-
-(define ((tuple-lens idx) tup)
-  (define ((fill-hole acc tup) filler)
-    (tuple-encode-revappend acc (tuple-cons filler tup)))
-  (let loop ((acc '()) (idx idx) (tup tup))
-    (if (equal? 0 idx)
-      (lens-result (tuple-first tup) (fill-hole acc (tuple-rest tup)))
-      (loop (cons (tuple-first tup) acc) (- idx 1) (tuple-rest tup)))))
-
-(define (tuple-get idx tup)     (:. tup (tuple-lens idx)))
-(define (tuple-set idx val tup) (:= tup val (tuple-lens idx)))
 
 ;; nat
 (define (nat-encode n)

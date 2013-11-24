@@ -116,32 +116,6 @@
 (pretty-print (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c))))
 ;(pair 0 (pair 0 (pair 0 (pair 0 (pair 'a (pair 'b (pair 'c (uno))))))))
 
-(pretty-print (tuple-get 3 (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
-;0
-(pretty-print (tuple-get 5 (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
-;'b
-(pretty-print (tuple-set 5 'd (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
-;(pair 0 (pair 0 (pair 0 (pair 0 (pair 'a (pair 'd (pair 'c (uno))))))))
-(pretty-print (tuple-set 2 'd (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))))
-;(pair 0 (pair 0 (pair 'd (pair 0 (pair 'a (pair 'b (pair 'c (uno))))))))
-(pretty-print (tuple-get 4 (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c)))))
-;(pair 'l (pair 'r (uno)))
-
-(define l0 (:o* lens-identity (tuple-lens 4) (tuple-lens 1)))
-(pretty-print (:.* (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))) (tuple-lens 4) (tuple-lens 1)))
-;'r
-(pretty-print (:. (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))) l0))
-;'r
-(pretty-print (:= (tuple-pad 7 0 (tuple-encode (list (tuple-encode (list 'l 'r)) 'b 'c))) 'rrr l0))
-;(pair
-; 0
-; (pair
-;  0
-;  (pair
-;   0
-;   (pair 0 (pair (pair 'l (pair 'rrr (uno))) (pair 'b (pair 'c (uno))))))))
-
-
 (pretty-print (bits-encode 15))
 ;(pair
 ; (bit (b-1))
