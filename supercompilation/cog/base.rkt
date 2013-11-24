@@ -670,9 +670,6 @@
 (define (bits-count bits) (tuple-length bits))
 (define (bits-required n) (bits-count (bits-encode (- n 1))))
 
-(define (bits-select choice default alternatives)
-  (alist-get-default alternatives choice default))
-
 ;; length-encoding for tuple-like values
 (define (length-encoded tup) (pair (nat-encode (tuple-length tup)) tup))
 
@@ -806,15 +803,7 @@
 (define (sym name)
   `(tagged ,sym-tag ,(syntax-0-le (symbol-encode (list 0 name)))))
 
-;; TODO:
-; construct terms that build/recognize/deconstruct tagged data
-;   construct symbol-selector terms (more generally, bits-selector terms)
-
-; generalize outermost payload tags to data-schemas: (schema-tag, ... optional polymorphic type info ...)
-
-; non-schematic local tags (for inner payloads) correspond to constructors
-;   for example: inner payload tagged with Cons or Nil; outer payload tagged with appropriate List schema
-
+;; bootstrapping
 (define (let-module defs body)
   (foldr (lambda (def body)
            (match def
