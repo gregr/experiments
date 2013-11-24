@@ -531,6 +531,7 @@
     (define (mentions-bvar? idx term)
       (match term
         ((value val) (mentions-bvar-value? idx val))
+        ((produce tm) (mentions-bvar? idx tm))
         ((action-2 _ t0 t1)
          (or (mentions-bvar? idx t0) (mentions-bvar? idx t1)))))
     (match val
