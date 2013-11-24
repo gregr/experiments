@@ -673,6 +673,9 @@
 (define (bits-select choice default alternatives)
   (alist-get-default alternatives choice default))
 
+;; length-encoding for tuple-like values
+(define (length-encoded tup) (pair (nat-encode (tuple-length tup)) tup))
+
 ;; symbol
 (variant (symbol-entry (repr sub-table)))
 (define (symbol-repr uid bitwidth) (bits-pad bitwidth (bits-encode uid)))
@@ -784,6 +787,25 @@
 (define (symbol-decode** keys symbols)
   (symbol-table-decode** (unbox *symbol-table*) keys symbols))
 
+(define (syntax-0-le val)
+  (unparse upenv-empty (value (length-encoded val))))
+
+;; tagged data
+(define (basic-tag-def name)
+  (syntax-0-le (symbol-encode (list 0 name))))
+
+(define (sym name)
+  `(tagged sym-tag ,(syntax-0-le (symbol-encode (list 1 name)))))
+
+(define sym-tag     (basic-tag-def 'sym))
+(define lam-tag     (basic-tag-def 'lam))
+(define bit-tag     (basic-tag-def 'bit))
+(define uno-tag     (basic-tag-def 'uno))
+(define pair-tag    (basic-tag-def 'pair))
+(define tuple-tag   (basic-tag-def 'tuple))
+(define bits-tag    (basic-tag-def 'bits))
+(define error-tag   (basic-tag-def 'error))
+
 ;; TODO:
 ; construct terms that build/recognize/deconstruct tagged data
 ;   construct symbol-selector terms (more generally, bits-selector terms)
@@ -801,13 +823,72 @@
 
 (define (std prog)
   (let-module `(
-    (bit-eq?  (lam (bta btb) (if-0 bta (if-0 btb 0 1) (if-0 btb 1 0))))
-    (bits-eq? (fix (bits-eq? sz ba bb)
-                (if-0 (pair-l sz)
-                  0
-                  (if-0 (bit-eq? (pair-l ba) (pair-l bb))
-                    (bits-eq? (pair-r sz) (pair-r ba) (pair-r bb))
-                    1)))))
+    (sym-tag      ,sym-tag)
+    (lam-tag      ,lam-tag)
+    (bit-tag      ,bit-tag)
+    (uno-tag      ,uno-tag)
+    (pair-tag     ,pair-tag)
+    (tuple-tag    ,tuple-tag)
+    (bits-tag     ,bits-tag)
+    (error-tag    ,error-tag)
+
+    (pair-cons    (lam (l r) (pair l r)))
+
+    (tagged       (lam (tag datum) (pair tag datum)))
+    (tagged-tag   (lam (td) (pair-l td)))
+    (tagged-datum (lam (td) (pair-r td)))
+
+    (error        (lam (val) (produce (tagged error-tag val))))
+
+    (size-empty   (pair 0 ()))
+    (size-inc     (lam (sz) (pair 1 sz)))
+    (size-dec     (lam (sz) (pair-r sz)))
+    (tuple-size   (lam (tup) (pair-l tup)))
+    (tuple-data   (lam (tup) (pair-r tup)))
+    (tuple-empty  (pair size-empty ()))
+    (tuple-cons   (lam (val tup) (pair-cons (size-inc (tuple-size tup))
+                                            (pair-cons val (tuple-data tup)))))
+    (tuple-first  (lam (tup) (pair-l (tuple-data tup))))
+    (tuple-rest   (lam (tup) (pair-cons (size-dec (tuple-size tup))
+                                        (pair-r (tuple-data tup)))))
+
+    (bit-eq?              (lam (bta btb) (if-0 bta (if-0 btb 0 1) (if-0 btb 1 0))))
+    (size-eq?             (fix (size-eq? sa sb)
+                            (if-0 (bit-eq? (pair-l sa) (pair-l sb))
+                              (if-0 (pair-l sa) 0
+                                (size-eq? (pair-r sa) (pair-r sb)))
+                              1)))
+    (bits-unsized-eq?     (fix (bits-unsized-eq? sz ba bb)
+                            (if-0 (pair-l sz)
+                              0
+                              (if-0 (bit-eq? (pair-l ba) (pair-l bb))
+                                (bits-unsized-eq? (pair-r sz) (pair-r ba) (pair-r bb))
+                                1))))
+    (bits-eq?             (lam (ba bb)
+                            (if-0 (size-eq? (tuple-size ba) (tuple-size bb))
+                              (bits-unsized-eq? (tuple-size ba) (tuple-data ba) (tuple-data bb))
+                              (error ,(sym 'bitsize-mismatch)))))
+
+    (tagged-with? (lam (tag td) (bits-eq? tag (tagged-tag td))))
+
+    (bits-assoc   (fix (bits-assoc default assocs bits)
+                    (if-0 (size-eq? size-empty (tuple-size assocs)) default
+                      ((lam (assoc)
+                        (if-0 (bits-eq? bits (pair-l assoc)) (pair-r assoc)
+                          (bits-assoc default
+                                      (tuple-rest assocs)
+                                      bits)))
+                       (tuple-first assocs)))))
+
+    (sym?   (tagged-with? sym-tag))
+    (lam?   (tagged-with? lam-tag))
+    (bit?   (tagged-with? bit-tag))
+    (uno?   (tagged-with? uno-tag))
+    (pair?  (tagged-with? pair-tag))
+    (tuple? (tagged-with? tuple-tag))
+    (bits?  (tagged-with? bits-tag))
+
+    )
     prog))
 
 (define interact-with-0

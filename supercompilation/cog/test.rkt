@@ -250,5 +250,11 @@
 
 (interact-with test-term-6)
 (interact-with-0 (std `(
-  (bits-eq? (tuple 1 1 1 1 1 0)
-    (tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))  ; s124
+  (bits-assoc (tuple 1 0 1)
+    (pair (tuple 1 1 0)
+          (tuple (pair (pair (tuple 1 1 1 1 0) (tuple 0 1 0 1)) (tuple 1 0))
+                 (pair (pair (tuple 1 1 1 1 0) (tuple 0 1 0 0)) (tuple 0 1))))
+    (pair (tuple 1 1 1 1 0) (tuple 0 1 0 0))))))
+;(interact-with-0 (std `(
+  ;(bits-unsized-eq? (tuple 1 1 1 1 1 0)
+    ;(tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))
