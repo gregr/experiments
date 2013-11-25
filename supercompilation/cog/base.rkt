@@ -475,7 +475,7 @@
     proc = (foldr (lambda (_ body) (value (lam body))) body names)
     (pure (new-lam-apply (value Y-combinator) proc))))
 
-(define penv-init
+(define penv-init-0
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))
          penv-empty
          `((,penv-syntax-op-empty ,parse-lam-apply-0)
@@ -491,7 +491,7 @@
            )))
 
 (define Y-combinator
-  (value-v (right-x (parse-0 penv-init
+  (value-v (right-x (parse-0 penv-init-0
                            `(lam (f) ((lam (d) (d d))
                                       (lam (x a) (f (x x) a))))))))
 
@@ -894,4 +894,4 @@
     prog))
 
 (define interact-with-0
-  (compose1 interact-with right-x (curry parse-0 penv-init)))
+  (compose1 interact-with right-x (curry parse-0 penv-init-0)))
