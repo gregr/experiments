@@ -133,6 +133,8 @@
   (if (or (value? term) (produce? term) (action-2? term)) (step term)
     (left (format "cannot step non-term: ~v" term))))
 
+(define step-complete (curry either-iterate step-safe))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; interaction
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,12 +202,16 @@
 (define interact-shift-left (interact-shift -1))
 (define interact-shift-right (interact-shift 1))
 
-(define (interact-step context)
+(define (interact-with-focus f context)
   (match context
     ((interact-context holes focus)
      (do either-monad
-       new-focus <- (step-safe focus)
+       new-focus <- (f focus)
        (pure (interact-context holes new-focus))))))
+
+(define interact-step (curry interact-with-focus step-safe))
+(define interact-complete
+  (curry interact-with-focus (compose1 right step-complete)))
 
 (define (interact-context-present context)
   (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
@@ -285,7 +291,7 @@
 (define (interact-loop state)
   (let loop ((st state))
     (printf "~a" (interact-state-viewcontext st))
-    (display "[hjkl](movement),[s]tep(count),toggle-synta[x],[u]ndo,[q]uit> ")
+    (display "[hjkl](movement),[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
     (do either-monad
       prev-st = st
       input = (read-line)
@@ -300,6 +306,7 @@
                          (compose1 (curry interact-safe-context interact-step)
                                    right-x)
                          (right st) count))))
+              ("c" (interact-safe-context interact-complete st))
               ("x" (interact-safe-view view-toggle st))
               ("u" (match (:. st interact-state-lens-history)
                      ('() (displayln "nothing to undo!") (right st))
