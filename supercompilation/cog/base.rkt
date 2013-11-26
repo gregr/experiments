@@ -793,8 +793,8 @@
 (define error-effect-tag      (basic-tag-def 'error  2))
 (define gen-sym-effect-tag    (basic-tag-def 'gensym 2))
 
-(define (sym name)
-  `(tagged ,sym-tag ,(syntax-0-le (symbol-encode (list 0 name)))))
+(define (_sym name) (symbol-encode (list 0 name)))
+(define (sym name) `(tagged ,sym-tag ,(syntax-0-le (_sym name))))
 
 ;; bootstrapping
 (define (let-module defs body)
@@ -866,33 +866,36 @@
                      (error ,(sym 'expected-pair)))))
     (lam-wrap    (lam (arg-name lam) (tagged ,lam-tag (pair lam arg-name))))
     (_lam-unwrap (lam (wrapped-lam) (pair-l (tagged-datum wrapped-lam))))
-    ; this needs to be inserted at all syntax-1 application sites
     (lam-unwrap  (lam (lm)
                    (if-0 (lam? lm) (_lam-unwrap lm)
                      (error ,(sym 'expected-lam)))))
 
-    (1-sym?  (lam-wrap sym?))
-    (1-lam?  (lam-wrap lam?))
-    (1-bit?  (lam-wrap bit?))
-    (1-uno?  (lam-wrap uno?))
-    (1-pair? (lam-wrap pair?))
+    (pred-wrap (lam (pred) (lam-wrap () (lam (val) (tagged ,bit-tag (pred val))))))
+
+    (1-sym?  (pred-wrap sym?))
+    (1-lam?  (pred-wrap lam?))
+    (1-bit?  (pred-wrap bit?))
+    (1-uno?  (pred-wrap uno?))
+    (1-pair? (pred-wrap pair?))
 
     (1-sym-eq?      (lam-wrap () (lam (sa) (lam-wrap () (lam (sb)
                       (if-0 (sym? sa)
                         (if-0 (sym? sb)
-                          (bits-eq? (tagged-datum sa) (tagged-datum sb))
+                          (tagged ,bit-tag
+                            (bits-eq? (tagged-datum sa) (tagged-datum sb)))
                           (error ,(sym 'expected-sym-rhs)))
                         (error ,(sym 'expected-sym-lhs))))))))
+    (1-uno          (tagged ,uno-tag ()))
     (1-0b           (tagged ,bit-tag 0))
     (1-1b           (tagged ,bit-tag 1))
     (1-pair         (lam-wrap () (lam (l) (lam-wrap () (lam (r)
                       (tagged ,pair-tag (pair l r)))))))
-    (1-pair-l       (lam-wrap () (pair-x (lam (p) (pair-l p)))))
-    (1-pair-r       (lam-wrap () (pair-x (lam (p) (pair-r p)))))
     (1-pair-access  (lam-wrap () (lam (bt) (lam-wrap () (lam (pr)
                       (if-0 (bit? bt)
                         (pair-access (tagged-datum bt) (pair-x (lam (p) p)))
                         (error ,(sym 'expected-bit))))))))
+
+    (1-produce      (lam-wrap () (lam (val) (produce val))))
 
     (1-error        (lam-wrap () error))
     (1-gen-sym      (lam-wrap () (lam (sym-name) (lam-wrap () (lam (parent)
@@ -902,3 +905,18 @@
 
 (define interact-with-0
   (compose1 interact-with right-x (curry parse-0 penv-init-0)))
+
+(define std-0-output (tuple-decode (value-v
+  (step-complete (right-x (parse-0 penv-init-0 (std `(tuple
+    lam-wrap lam-unwrap 1-uno
+    1-sym? 1-lam? 1-bit? 1-uno? 1-pair?
+    1-sym-eq?
+    1-0b 1-1b
+    1-pair 1-pair-access
+    1-produce
+    1-error
+    1-gen-sym
+  ))))))))
+
+(match-define (cons lam-wrap (cons lam-unwrap (cons uno-1 std-1-input)))
+  (map value std-0-output))
