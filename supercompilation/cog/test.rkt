@@ -221,3 +221,12 @@
 ;(interact-with-0 (std `(
   ;(bits-unsized-eq? (tuple 1 1 1 1 1 0)
     ;(tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))
+
+
+(define prog (std-1 `(pair 0b (pair 1b (pair bit? ())))))
+(define prog2 (std-1 `(pair 0b (pair 1b (pair 0b ())))))
+(define prog3 (std-1 '0b))
+
+(denote-eval noisy-consume (std-1 `((lam (x) (pair x ())) (lam (a b) a))))
+(denote-eval noisy-consume (std-1 `(produce (sym? 0b))))
+(denote-eval noisy-consume (std-1 `(produce (uno? 0b))))
