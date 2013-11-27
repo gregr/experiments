@@ -34,6 +34,6 @@
  (("-s" "--small-step") "Choose small-step interpretation"
                         (eval-port step-eval-port)))
 
-(match ((eval-port) (curry parse penv-init) (program-source))
+(match ((eval-port) (curry parse-0 penv-init-0) (program-source))
   ((left err) (displayln err))
   ((right result) result))
