@@ -29,6 +29,7 @@
   ((pair-access 0 (pair (lam (_) ()) (lam (x) 0))) ())  ; this should become an if-0
   ((pair-access 0 (pair (lam (_) ()) (lam (x) x))) ())  ; this should not become an if-0
   ((lam (a b c) (produce ())) (produce 0) (produce 1) (produce (pair 0 1)))
+  ((lam (x) (pair x (lam (y) x))) (lam (a) ()))
   ))
 
 (define parsed-tests (right-x (map-parse-0 penv-init-0 tests)))
@@ -229,4 +230,5 @@
 
 (denote-eval noisy-consume (std-1 `((lam (x) (pair x ())) (lam (a b) a))))
 (denote-eval noisy-consume (std-1 `(produce (sym? 0b))))
+(denote-eval noisy-consume (std-1 `(produce (bit? 0b))))
 (denote-eval noisy-consume (std-1 `(produce (uno? 0b))))
