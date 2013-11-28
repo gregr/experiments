@@ -18,6 +18,10 @@
   (bvar (idx))
   (lam  (body)))
 
+(data term-substitution
+  (bvar-lift (k))
+  (bvar-use  (v s)))
+
 (data term-action-2
   (pair-access ())
   (lam-apply   ()))
@@ -25,6 +29,7 @@
 (data term
   (value     (v))
   (produce   (t))
+  (subst     (s t))
   (action-2  (act t0 t1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,8 +43,9 @@
 
 (define (denote consume term)
   (match term
-    ((value val)  (denote-value consume val))
-    ((produce tm) (compose1 consume (denote consume tm)))
+    ((value val)    (denote-value consume val))
+    ((produce tm)   (compose1 consume (denote consume tm)))
+    ((subst sub tm) (denote consume (substitute-explicit sub tm)))
     ((action-2 act t0 t1)
      (let ((d0 (denote consume t0))
            (d1 (denote consume t1))
@@ -77,6 +83,49 @@
 (define (pair-map f l r) (apply pair (map f (list l r))))
 (define (action-2-map f act t0 t1)
   (apply (curry action-2 act) (map f (list t0 t1))))
+
+(define (substitute-bvar idx substitution)
+  (match substitution
+    ((bvar-lift k)  (bvar (+ idx k)))
+    ((bvar-use v s) (if (equal? 0 idx) v
+                      (substitute-bvar (- idx 1) s)))))
+
+(define (substitution-pop substitution count)
+  (match substitution
+    ((bvar-lift k)    (bvar-lift (+ k count)))
+    ((bvar-use v sub) (if (equal? 0 count) substitution
+                        (substitution-pop sub (- count 1))))))
+
+(define (substitute-substitution outer inner)
+  (match inner
+    ((bvar-lift k)    (substitution-pop outer k))
+    ((bvar-use v sub) (bvar-use (substitute-explicit-value outer v)
+                                (substitute-substitution outer sub)))))
+
+(define (substitute-explicit-value sub tv)
+  (match tv
+    ((pair l r)   (pair-map (curry substitute-explicit-value sub) l r))
+    ((bvar index) (substitute-bvar index sub))
+    ((lam body)   (lam (subst (bvar-use (bvar 0) (substitute-substitution
+                                                  (bvar-lift 1) sub))
+                              body)))
+    (_            tv)))
+
+(define (substitute-explicit sub term)
+  (match term
+    ((value tv)           (value (substitute-explicit-value sub tv)))
+    ((produce tm)         (produce (subst sub tm)))
+    ((subst inner tm)     (subst (substitute-substitution sub inner) tm))
+    ((action-2 act t0 t1) (action-2-map (curry subst sub) act t0 t1))))
+
+(define/match (execute-action-2-explicit act v0 v1)
+  (((lam-apply)   (lam body)  _)
+   (just (subst (bvar-use v1 (bvar-lift 0)) body)))
+  (((pair-access) (bit (b-0)) (pair p0 p1)) (just (value p0)))
+  (((pair-access) (bit (b-1)) (pair p0 p1)) (just (value p1)))
+  ((_             _           _)            (nothing)))
+
+
 
 (define (lift-bvars-value idx val)
   (match val
@@ -117,9 +166,10 @@
      (do either-monad
        tm-1 <- (step tm-0)
        (pure (produce tm-1))))
+    ((subst sub tm) (right (substitute-explicit sub tm)))
     ((action-2 act (value v0) (value v1))
      (maybe->either (format "cannot step stuck term: ~v" term)
-                    (execute-action-2 act v0 v1)))
+                    (execute-action-2-explicit act v0 v1)))
     ((action-2 act (value val) t1-0)
      (do either-monad
        t1-1 <- (step t1-0)
@@ -130,7 +180,8 @@
        (pure (action-2 act t0-1 t1))))))
 
 (define (step-safe term)
-  (if (or (value? term) (produce? term) (action-2? term)) (step term)
+  (if (or (value? term) (produce? term) (subst? term) (action-2? term))
+    (step term)
     (left (format "cannot step non-term: ~v" term))))
 
 (define step-complete (curry either-iterate step-safe))
@@ -147,6 +198,7 @@
 (data hole-term
   (hole-value      ())
   (hole-produce    ())
+  (hole-subst      (s))
   (hole-action-2-0 (act t1))
   (hole-action-2-1 (act t0)))
 
@@ -161,6 +213,9 @@
     ((hole-lam)               (list 0 (lam subterm)))
     ((hole-value)             (list 0 (value subterm)))
     ((hole-produce)           (list 0 (produce subterm)))
+    ((hole-subst s)           (list 0 (subst s subterm)))
+    ;((hole-subst-s t)         (list 0 (subst subterm)))  ; TODO
+    ;((hole-subst-t s)         (list 1 (subst subterm)))
     ((hole-action-2-0 act t1) (list 0 (action-2 act subterm t1)))
     ((hole-action-2-1 act t0) (list 1 (action-2 act t0 subterm)))))
 
@@ -170,6 +225,7 @@
   ((0 (lam body))           (right (list (hole-lam)               body)))
   ((0 (value val))          (right (list (hole-value)             val)))
   ((0 (produce tm))         (right (list (hole-produce)           tm)))
+  ((0 (subst sub tm))       (right (list (hole-subst sub)         tm)))
   ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
   ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
   ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
