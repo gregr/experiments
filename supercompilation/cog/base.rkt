@@ -1012,17 +1012,19 @@
 (define interact-with-0
   (compose1 interact-with right-x (curry parse-0 penv-init-0)))
 
+(define std-0-output-prog (right-x (parse-0 penv-init-0 (std `(tuple
+  lam-wrap lam-unwrap 1-uno
+  1-sym? 1-lam? 1-bit? 1-uno? 1-pair?
+  1-sym-eq?
+  1-0b 1-1b
+  1-pair 1-pair-access
+  1-produce
+  1-error
+  1-gen-sym
+  )))))
+
 (define std-0-output (tuple-decode (value-v
-  (step-complete (right-x (parse-0 penv-init-0 (std `(tuple
-    lam-wrap lam-unwrap 1-uno
-    1-sym? 1-lam? 1-bit? 1-uno? 1-pair?
-    1-sym-eq?
-    1-0b 1-1b
-    1-pair 1-pair-access
-    1-produce
-    1-error
-    1-gen-sym
-  ))))))))
+  (step-complete std-0-output-prog))))
 
 (match-define (cons lam-wrap (cons lam-unwrap (cons uno-1 std-1-input)))
   (map value std-0-output))
