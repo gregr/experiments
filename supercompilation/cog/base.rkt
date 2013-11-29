@@ -670,10 +670,17 @@
          (or (mentions-bvar-value? idx v0) (mentions-bvar-value? idx v1)))
         ((lam body) (mentions-bvar? (+ idx 1) body))
         (_ #f)))
+    (define (mentions-bvar-subst? idx sub)
+      (match sub
+        ((bvar-lift _)      #f)
+        ((bvar-use val sub) (or (mentions-bvar-value? idx val)
+                                (mentions-bvar-subst? idx sub)))))
     (define (mentions-bvar? idx term)
       (match term
         ((value val) (mentions-bvar-value? idx val))
         ((produce tm) (mentions-bvar? idx tm))
+        ((subst sub tm) (or (mentions-bvar-subst? idx sub)
+                            (mentions-bvar? idx tm)))
         ((action-2 _ t0 t1)
          (or (mentions-bvar? idx t0) (mentions-bvar? idx t1)))))
     (match val
@@ -686,6 +693,9 @@
   (match term
     ((value v) (unparse-value upe v))
     ((produce tm) `(produce ,(unparse upe tm)))
+    ((subst sub tm)
+     (match-let (((list uses lift) (unparse-subst unparse-value upe sub)))
+       `(subst ,uses ,lift ,(unparse upe tm))))
     ((action-2 (lam-apply)
       (action-2 (pair-access) tcnd
         (value (pair (? thunk-form? alt-0) (? thunk-form? alt-1))))
@@ -731,6 +741,13 @@
        (match (unparse new-upe body)
          (`(lam ,names ,body) (list 'lam (cons new-name names) body))
          (body                (list 'lam (list new-name) body)))))))
+(define (unparse-subst unparse-value upe sub)
+  (let loop ((upe upe) (sub sub) (uses '()))
+    (match sub
+      ((bvar-lift k)      (list (reverse uses) k))
+      ((bvar-use val sub) (loop upe sub
+                                (cons (unparse-value upe val) uses))))))
+
 (define (unparse-value-bit vb)
   (match vb
     ((b-0) 0)
