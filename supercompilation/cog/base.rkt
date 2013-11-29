@@ -538,6 +538,18 @@
 (define parse-under-0 (parse-under parse-0))
 
 (define parse-produce-0 (parse-apply-0 produce 2))
+(define (parse-subst-0 pe form)
+  (do either-monad
+    _ <- (check-arity 4 form)
+    `(,_ ,uses ,lift ,body) = form
+    _ <- (if (and (integer? lift) (>= lift 0)) (right (void))
+           (left (format "subst 'lift' must be a natural number: ~v" form)))
+    uses <- (map-parse-0 pe uses)
+    _ <- (if (andmap value? uses) (right (void))
+           (left (format "subst 'uses' must be values: ~v" form)))
+    uses = (map value-v uses)
+    body <- (parse-0 pe body)
+    (pure (subst (foldr bvar-use (bvar-lift lift) uses) body))))
 (define (parse-lam-apply-0 pe form)
   (do either-monad
     form <- (map-parse-0 pe form)
@@ -609,6 +621,7 @@
          penv-empty
          `((,penv-syntax-op-empty ,parse-lam-apply-0)
            (produce ,parse-produce-0)
+           (subst ,parse-subst-0)
            (lam ,parse-lam-0)
            (pair ,parse-pair-0)
            (pair-access ,parse-pair-access-0)

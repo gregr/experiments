@@ -30,6 +30,7 @@
   ((pair-access 0 (pair (lam (_) ()) (lam (x) x))) ())  ; this should not become an if-0
   ((lam (a b c) (produce ())) (produce 0) (produce 1) (produce (pair 0 1)))
   ((lam (x) (pair x (lam (y) x))) (lam (a) ()))
+  ((lam (x) (subst ((tuple 0 1 0) 1) 0 x)) ())  ; this example is nonsense
   ))
 
 (define parsed-tests (right-x (map-parse-0 penv-init-0 tests)))
