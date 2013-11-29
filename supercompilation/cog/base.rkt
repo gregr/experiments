@@ -212,7 +212,8 @@
 (data hole-term
   (hole-value      ())
   (hole-produce    ())
-  (hole-subst      (s))
+  (hole-subst-t    (s))
+  (hole-subst-s    (prefix suffix t))
   (hole-action-2-0 (act t1))
   (hole-action-2-1 (act t0)))
 
@@ -227,11 +228,12 @@
     ((hole-lam)               (list 0 (lam subterm)))
     ((hole-value)             (list 0 (value subterm)))
     ((hole-produce)           (list 0 (produce subterm)))
-    ((hole-subst s)           (list 0 (subst s subterm)))
-    ;((hole-subst-s t)         (list 0 (subst subterm)))  ; TODO
-    ;((hole-subst-t s)         (list 1 (subst subterm)))
     ((hole-action-2-0 act t1) (list 0 (action-2 act subterm t1)))
-    ((hole-action-2-1 act t0) (list 1 (action-2 act t0 subterm)))))
+    ((hole-action-2-1 act t0) (list 1 (action-2 act t0 subterm)))
+    ((hole-subst-t s)         (list 0 (subst s subterm)))
+    ((hole-subst-s prefix suffix t)
+     (list (+ 1 (length prefix))
+           (subst (foldr bvar-use (bvar-use subterm suffix) prefix) t)))))
 
 (define/match (hole-make idx focus)
   ((0 (pair l r))           (right (list (hole-pair-l r)          l)))
@@ -239,10 +241,25 @@
   ((0 (lam body))           (right (list (hole-lam)               body)))
   ((0 (value val))          (right (list (hole-value)             val)))
   ((0 (produce tm))         (right (list (hole-produce)           tm)))
-  ((0 (subst sub tm))       (right (list (hole-subst sub)         tm)))
   ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
   ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
+  ((0 (subst sub tm))       (right (list (hole-subst-t sub)       tm)))
+  (((? (lambda (k) (and (< 0 k) (>= (subst-length (subst-s focus)) k))) k)
+    (subst sub tm))
+   (match-let (((list val prefix suffix) (subst-hole-make (- idx 1) sub)))
+     (right (list (hole-subst-s prefix suffix tm) val))))
   ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
+
+(define (subst-length sub)
+  (match sub
+    ((bvar-lift _)    0)
+    ((bvar-use _ sub) (+ 1 (subst-length sub)))))
+
+(define (subst-hole-make idx sub)
+  (let loop ((idx idx) (sub sub) (acc '()))
+    (match* (idx sub)
+      ((0 (bvar-use v sub)) (list v (reverse acc) sub))
+      ((k (bvar-use v sub)) (loop (- k 1) sub (cons v acc))))))
 
 (define (interact-ascend-index context)
   (match context
