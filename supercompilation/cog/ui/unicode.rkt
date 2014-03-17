@@ -43,7 +43,9 @@
     (list-drop-range xs range)))
 
 (define brackets
-  (map list (list-drop-ranges (unicode-category-chars "Ps") '((66 68))) (list-drop-ranges (unicode-category-chars "Pe") '((19 20)))))
+  (map list
+       (list-drop-ranges (unicode-category-chars "Ps") '((66 68)))
+       (list-drop-ranges (unicode-category-chars "Pe") '((19 20)))))
 
 (define (display-preferred)
   (for ((range '(
