@@ -30,9 +30,31 @@
     ))
 (define (ansi-modifier-code modifier) (hash-ref ansi-modifiers modifier))
 
-(define (ansi-decorated mods fg-color bg-color str)
-  (ansi-escaped
-    (cons (ansi-fg-color-code fg-color)
-          (cons (ansi-bg-color-code bg-color)
-                (map ansi-modifier-code mods)))
-    str))
+(define-struct ansi-decorator (mods fg-color bg-color) #:transparent)
+(define ansi-dec-default (ansi-decorator '() 'default 'default))
+(define (ansi-dec-set-fg color dec)
+  (match dec
+    ((ansi-decorator mods _ bg-color) (ansi-decorator mods color bg-color))))
+(define (ansi-dec-set-bg color dec)
+  (match dec
+    ((ansi-decorator mods fg-color _) (ansi-decorator mods fg-color color))))
+(define (ansi-dec-modify mods dec)
+  (match dec
+    ((ansi-decorator mods-old fgc bgc)
+     (ansi-decorator (append mods-old mods) fgc bgc))))
+(define (ansi-decorated decorator str)
+  (match decorator
+    ((ansi-decorator mods fg-color bg-color)
+     (ansi-escaped
+       (cons (ansi-fg-color-code fg-color)
+             (cons (ansi-bg-color-code bg-color)
+                   (map ansi-modifier-code mods)))
+       str))))
+
+(define-struct ansi-string (str decorator) #:transparent)
+(define (ansi-string-new str) (ansi-string str ansi-dec-default))
+(define (ansi-string-redec update astr)
+  (match astr
+    ((ansi-string str dec) (ansi-string str (update dec)))))
+(define (ansi-string-decorated astr)
+  (ansi-decorated (ansi-string-decorator astr) (ansi-string-str astr)))
