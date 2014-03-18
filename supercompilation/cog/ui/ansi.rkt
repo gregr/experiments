@@ -1,4 +1,5 @@
 #lang racket
+(require "../util.rkt")
 (provide (all-defined-out))
 
 (define (ansi-escape codes)
@@ -32,16 +33,15 @@
 
 (define-struct ansi-decorator (mods fg-color bg-color) #:transparent)
 (define ansi-dec-default (ansi-decorator '() 'default 'default))
-(define (ansi-dec-set-fg color dec)
-  (match dec
-    ((ansi-decorator mods _ bg-color) (ansi-decorator mods color bg-color))))
-(define (ansi-dec-set-bg color dec)
-  (match dec
-    ((ansi-decorator mods fg-color _) (ansi-decorator mods fg-color color))))
-(define (ansi-dec-modify mods dec)
-  (match dec
-    ((ansi-decorator mods-old fgc bgc)
-     (ansi-decorator (append mods-old mods) fgc bgc))))
+(define/match (ansi-dec-lens-fg dec)
+  (((ansi-decorator mods fgc bgc))
+   (lens-result fgc (lambda (fgc) (ansi-decorator mods fgc bgc)))))
+(define/match (ansi-dec-lens-bg dec)
+  (((ansi-decorator mods fgc bgc))
+   (lens-result bgc (lambda (bgc) (ansi-decorator mods fgc bgc)))))
+(define/match (ansi-dec-lens-mods dec)
+  (((ansi-decorator mods fgc bgc))
+   (lens-result mods (lambda (mods) (ansi-decorator mods fgc bgc)))))
 (define (ansi-decorated decorator str)
   (match decorator
     ((ansi-decorator mods fg-color bg-color)
@@ -53,8 +53,11 @@
 
 (define-struct ansi-string (str decorator) #:transparent)
 (define (ansi-string-new str) (ansi-string str ansi-dec-default))
-(define (ansi-string-redec update astr)
-  (match astr
-    ((ansi-string str dec) (ansi-string str (update dec)))))
+(define/match (ansi-string-lens-str astr)
+  (((ansi-string str dec))
+   (lens-result str (lambda (str) (ansi-string str dec)))))
+(define/match (ansi-string-lens-dec astr)
+  (((ansi-string str dec))
+   (lens-result dec (lambda (dec) (ansi-string str dec)))))
 (define (ansi-string-decorated astr)
   (ansi-decorated (ansi-string-decorator astr) (ansi-string-str astr)))
