@@ -61,3 +61,19 @@
    (lens-result dec (lambda (dec) (ansi-string str dec)))))
 (define (ansi-string-decorated astr)
   (ansi-decorated (ansi-string-decorator astr) (ansi-string-str astr)))
+
+; from: http://rosettacode.org/wiki/Keyboard_input/Keypress_check
+(define-syntax-rule (with-stty-raw body ...)
+  (let ([saved #f])
+    (define (stty x) (system (~a "stty " x)) (void))
+    (dynamic-wind
+      (lambda ()
+        (set! saved (with-output-to-string (lambda () (stty "-g"))))
+        (stty "raw -echo opost"))
+      (lambda () body ...)
+      (lambda () (stty saved)))))
+
+(define (maybe-read-char)
+  (if (char-ready?)
+    (just (read-char))
+    (nothing)))
