@@ -45,6 +45,61 @@ Define effects as a consequence of a new term 'produce'.
     http://worrydream.com/LearnableProgramming/
 
 ===============================================================================
+= program graph editor
+===============================================================================
+
+manipulation:
+  view and traverse space
+    - maneuver to different term positions
+    - visualize all or parts of terms
+  view and traverse time
+    - something like sub-term evaluation tree thumbnail diagrams?
+    - undo/redo transformations, revisit past evaluation steps
+      - separate indication of the following transformations
+        * deterministic steps (all contiguous steps part of the same thumbnail group)
+        * non-deterministic steps (group by sub-term and contiguity of steps)
+        * rewrites
+        * complete replacements
+  manipulate terms
+    - meaning-preserving transformations
+      * evaluation steps
+      * rewrites
+    - introduce new terms
+      - intelligent defaults for sub-terms
+    - copy and replace terms
+    - combine terms
+      - example: build a compound term from existing sub-terms
+    - extract/abstract a term
+
+navigation, visualization, organization:
+  TODO: how should focusing work?
+
+programmable editing:
+  example features
+    - custom macros for automating common transformations
+    - automation via pattern-matching
+      - example: find all terms of form X and perform some transformation on them
+  important properties to make these features possible
+    - ability to recognize structures of interest
+    - ability to compose transformations
+    - ability to script other non-transformational editor behaviors
+      - focusing
+      - mapping controls/keys
+      - remembering editor states
+      - other forms of presentation/organization/book-keeping...
+
+seamless meta-interpreter integration:
+  recognize/visualize meaning of quoted terms
+    - programs at meta-level N are treated as data by an interpreter at meta-level N+1
+    - don't get stuck seeing these terms only as data
+    - be able to manipulate these quotations as if they were the programs they represent
+  given an interpretation of 'produce' terms, can we automatically build useful visualizations that correspond to the interpreter's description of:
+    - implicit or mutable state
+    - control inversion
+    - non-deterministic concurrency
+    - etc?
+
+===============================================================================
 = high-level encoding
 ===============================================================================
 
