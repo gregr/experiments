@@ -1,3 +1,21 @@
+===============================================================================
+= current priorities
+===============================================================================
+high level syntax
+  - fool-proof tag recognition
+  - finite steps that move safely from one tagged representation to the next
+    - hide the untagged intermediate steps
+  - include quoting/syntax-abstraction both before and after eval is defined
+  - basic data type definitions
+  - basic modules
+
+program graph editor:
+  look a few sections below
+
+===============================================================================
+= effects by reflection
+===============================================================================
+
 Define effects as a consequence of a new term 'produce'.
   Previously, terms would only terminate when stuck, or after converging to a
   value.  The 'produce' term is a way of aborting a computation earlier, upon
