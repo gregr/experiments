@@ -142,7 +142,22 @@ navigation, visualization, organization:
     - it should be possible to move between these versions
     - different versions could be being edited simultaneously by multiple programmers
       - it should be possible to see what other programmers are currently doing or have done
-  TODO: how should focusing work?
+  term organization and focusing
+    - provide multiple workspaces
+      - hierarchical or otherwise
+      - share or move data/terms around between them
+      - combine them
+      - split them
+      - possibly share with other programmers
+    - allow several potentially-unrelated free-floating terms in a workspace
+      - allow these to be grouped and moved around in groups
+    - focus on subterms in-situ
+    - pull out subterms into their own free-floating form that refers back to their position in the parent expression
+    - hide or discard terms
+      - completely hide to reduce clutter
+      - make large or complicated terms less distracting by replacing them with a representative symbol
+    - name and catalog terms and groups, free-floating or in-situ, for later search, retrieval and reference
+    - identify multiple instances of the same term (copied or coincidentally identical)
 
 programmable editing:
   example features
