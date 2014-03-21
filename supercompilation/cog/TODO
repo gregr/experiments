@@ -25,6 +25,19 @@ program graph editor:
         - may only be necessary to cross upwards beyond other substitutions
           - that is, you form a lambda, let the upper subsitution cross you on its way down, then you keep moving up
       - probably need a beta reduction rule that allows substitution of an argument 'produce' term for a linear parameter in strict position
+    syntactic issues
+      - processing programs as data
+        - keep in mind that programs are *not* text strings, though names may be
+        - "concrete" syntax is made of lisp-like s-exprs
+          - this form is produced by quoting of the program "text" and is what is passed as arguments to macros/fexprs
+        - abstract syntax is made up of terms
+          - this form is produced from concrete syntax and is what is actually manipulated by program transformations (such as eval)
+          - this would be the form indicated by staging annotations (think MetaOCaml)
+      - pretty presentation of terms involves
+        - smart operator handling: moving from prefix form to other arbitrary forms
+        - eliminating syntactic noise
+        - effective spatial layout
+        - highlighting and other decorations
 
 ===============================================================================
 = effects by reflection
