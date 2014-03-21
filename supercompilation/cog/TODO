@@ -11,6 +11,17 @@ high level syntax
 
 program graph editor:
   look a few sections below
+  implementation notes
+    for AST annotations, describe them via paths descriptions rather than directly injecting decoration state into the AST itself
+      - what I mean by path:
+          annotate the term found by starting from the root and going left, right, left, left... etc.
+      - allows diversity of presentations for the same AST
+    factoring out sub-expressions:
+      - push new substitution(s) upwards, in parallel
+        - reverse application of explicit substitutions
+      - eventually reify as a lambda application?
+        - may only be necessary to cross upwards beyond other substitutions
+          - that is, you form a lambda, let the upper subsitution cross you on its way down, then you keep moving up
 
 ===============================================================================
 = effects by reflection
@@ -70,6 +81,7 @@ manipulation:
   view and traverse space
     - maneuver to different term positions
     - visualize all or parts of terms
+    - some form of structural diff and merge
   view and traverse time
     - something like sub-term evaluation tree thumbnail diagrams?
     - undo/redo transformations, revisit past evaluation steps
@@ -78,10 +90,17 @@ manipulation:
         * non-deterministic steps (group by sub-term and contiguity of steps)
         * rewrites
         * complete replacements
+    - view program transitions at flexible granularities
+      - example: it should be possible to view program states corresponding to higher-level events, such as user interactions, video buffer refreshes, network events, etc.
+      - this seems related to the programmable editing section
   manipulate terms
     - meaning-preserving transformations
       * evaluation steps
       * rewrites
+      * conflict detection when historical dependencies change
+        example:
+          You reduce a term that depends on some binding.  Later, you change the binding.
+          Warn if the former reduction would no longer produce the same result, as this may not be the programmer's intention.
     - introduce new terms
       - intelligent defaults for sub-terms
     - copy and replace terms
@@ -90,6 +109,17 @@ manipulation:
     - extract/abstract a term
 
 navigation, visualization, organization:
+  prominently indicate the possible actions a programmer may take at any time
+    - like a catalog of building blocks, list the primitive term/value components that may be instantiated
+    - when choosing to perform an operation on existing components, make it apparent what components may be acted on
+  visualize variable bindings
+    - show the values all variables are bound to
+    - show variables that are unbound
+    - optionally show binding edges, connecting variable instances to their binder
+  allow different versions of the same program to exist and be edited concurrently
+    - it should be possible to move between these versions
+    - different versions could be being edited simultaneously by multiple programmers
+      - it should be possible to see what other programmers are currently doing or have done
   TODO: how should focusing work?
 
 programmable editing:
@@ -111,6 +141,8 @@ seamless meta-interpreter integration:
     - programs at meta-level N are treated as data by an interpreter at meta-level N+1
     - don't get stuck seeing these terms only as data
     - be able to manipulate these quotations as if they were the programs they represent
+  prominently display meta-variables corresponding to the meta-interpreter's state with respect to terms
+    - example: a meta-variable that reflects the state of a mutable store before and after some effectful term
   given an interpretation of 'produce' terms, can we automatically build useful visualizations that correspond to the interpreter's description of:
     - implicit or mutable state
     - control inversion
