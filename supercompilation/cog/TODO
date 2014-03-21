@@ -16,6 +16,8 @@ program graph editor:
       - what I mean by path:
           annotate the term found by starting from the root and going left, right, left, left... etc.
       - allows diversity of presentations for the same AST
+      - better for concurrency
+      - easier to prove AST transformations correct
     factoring out sub-expressions:
       - push new substitution(s) upwards, in parallel
         - reverse application of explicit substitutions
