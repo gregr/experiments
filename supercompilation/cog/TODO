@@ -24,6 +24,7 @@ program graph editor:
       - eventually reify as a lambda application?
         - may only be necessary to cross upwards beyond other substitutions
           - that is, you form a lambda, let the upper subsitution cross you on its way down, then you keep moving up
+      - probably need a beta reduction rule that allows substitution of an argument 'produce' term for a linear parameter in strict position
 
 ===============================================================================
 = effects by reflection
