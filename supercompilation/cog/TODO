@@ -122,7 +122,13 @@ manipulation:
     - copy and replace terms
     - combine terms
       - example: build a compound term from existing sub-terms
-    - extract/abstract a term
+    - lift out sub-expressions via functional or substitutional abstraction
+    - abstract constants by replacing them with variable expressions with the intended meaning
+      - example: focusing on the value of 'y'
+        before
+          x = 4; y = 20
+        after
+          x = 4; y = x * 5
 
 navigation, visualization, organization:
   prominently indicate the possible actions a programmer may take at any time
