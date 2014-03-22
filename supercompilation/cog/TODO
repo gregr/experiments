@@ -131,9 +131,15 @@ manipulation:
           x = 4; y = x * 5
 
 navigation, visualization, organization:
+  accessibility
+    - configurable color palettes
+    - optional multi-phased motions for increased precision
   prominently indicate the possible actions a programmer may take at any time
     - like a catalog of building blocks, list the primitive term/value components that may be instantiated
     - when choosing to perform an operation on existing components, make it apparent what components may be acted on
+    - affordances
+      - fixed arity terms show holes where subterms may be placed
+      - n-ary terms allow insertion at any position, moving neighboring subterms out of the way
   visualize variable bindings
     - show the values all variables are bound to
     - show variables that are unbound
@@ -158,6 +164,11 @@ navigation, visualization, organization:
       - make large or complicated terms less distracting by replacing them with a representative symbol
     - name and catalog terms and groups, free-floating or in-situ, for later search, retrieval and reference
     - identify multiple instances of the same term (copied or coincidentally identical)
+  marks for jumping around more quickly
+    - named
+    - unnamed, stack-like, referenced by offset from head or tail
+    - groupable, push/pop-able or saved/loaded by name
+    - preserved under transformation where possible
 
 programmable editing:
   example features
