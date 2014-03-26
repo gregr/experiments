@@ -38,6 +38,12 @@ program graph editor:
         - eliminating syntactic noise
         - effective spatial layout
         - highlighting and other decorations
+    database representation
+      - somewhat inspired by version-control, file systems, and the internet
+      - each data object is immutable, with a UID (not necessarily a GUID)
+      - hierarchical names as mutable references to data objects, somewhat like git branches
+        - updates synchronized via compare-and-swap to guarantee update's intent
+      - where do DB-based applications (text, gui, browser editors) store their state?
 
 ===============================================================================
 = effects by reflection
