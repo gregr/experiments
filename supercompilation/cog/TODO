@@ -169,6 +169,16 @@ navigation, visualization, organization:
     - unnamed, stack-like, referenced by offset from head or tail
     - groupable, push/pop-able or saved/loaded by name
     - preserved under transformation where possible
+  hierarchical naming and retrieval
+    - hierarchy can describe categorizations, parent/child relation between terms, or other resource organizations
+    - sort of like urls; not really like a directory structure (parent and parent/child can both be terms/resources)
+    - provides an intuitive organization, but doesn't reflect the exact data representation
+      - for instance, significant amounts of associations and meta-data may be stored alongside the actual resources
+        - potentially anything could be stored alongside
+        - all without having to reify your meta organization in the hierarchy itself, as you might in a file system
+    - support soft and hard linking
+    - hierarchies should be easily duplicable/relocatable via grafting
+    - should be publishable; should be able to refer to imported publications by something analogous to a hostname
 
 programmable editing:
   example features
