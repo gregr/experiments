@@ -44,6 +44,11 @@ program graph editor:
       - hierarchical names as mutable references to data objects, somewhat like git branches
         - updates synchronized via compare-and-swap to guarantee update's intent
       - where do DB-based applications (text, gui, browser editors) store their state?
+      - the hierarchical namespace is just a protocol that can be implemented in various ways
+        - local persistence via disk
+        - a remote machine's persistence accessed over the network
+        - data services provided by local or remote applications
+          - such as a term/program DB likely to be part of this program graph editor design...
 
 ===============================================================================
 = effects by reflection
