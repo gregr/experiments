@@ -182,6 +182,14 @@ navigation, visualization, organization:
     - preserved under transformation where possible
   hierarchical naming and retrieval
     - hierarchy can describe categorizations, parent/child relation between terms, or other resource organizations
+      - aside from terms, this should probably include the other editor elements, such as:
+        - views themselves
+          - views could be pointed either at terms, or at other views themselves to indicate the desire for some kind of soft-link-style sharing
+        - marks
+        - version history/pointers/logs
+        - "compiled" programs
+        - arbitrary non-term data
+        - processes
     - sort of like urls; not really like a directory structure (parent and parent/child can both be terms/resources)
     - provides an intuitive organization, but doesn't reflect the exact data representation
       - for instance, significant amounts of associations and meta-data may be stored alongside the actual resources
@@ -190,6 +198,8 @@ navigation, visualization, organization:
     - support soft and hard linking
     - hierarchies should be easily duplicable/relocatable via grafting
     - should be publishable; should be able to refer to imported publications by something analogous to a hostname
+      - imported publications should be mountable/graftable within your own local hierarchy
+        - either as copies, or as live links to the remote source
 
 programmable editing:
   example features
