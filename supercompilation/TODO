@@ -143,35 +143,6 @@ later, attempt to design a low-level language
     these may be easiest to achieve through direct code generation via high-level language library
 
 ================================================================
-= syntactic abstraction
-================================================================
-
-this is somewhat inspired by the kernel language, but simpler for analysis
-additional constructs can be satisfied entirely as a pre-processing phase, avoiding any complication of the calculus under study
-syntax combinations evaluate operator, reify the operands, and leave behind a residual procedure application to be performed at runtime
-  reification strategy for variables allows explicit evaluation via meta-circular interpretation
-  macros defined as procedures that directly implement the desired effect via explicit evaluation
-    more straightforward; application of a macro does NOT involve generating a quoted form that then needs expansion itself
-    avoiding the quotation dance makes it easy to maintain hygene, but also easy to be unhygienic when intended
-
-three additional constructs:
-  syntax-lambda to bind a syntactic operator
-    'application' of such an operator causes its argument expressions to be reified as data
-  syntax-application to indicate that arguments should be reified, even if the operator was not bound by syntax-lambda
-  standard-application to indicate that arguments should not be reified, even if the operator was bound by syntax-lambda
-
-reification:
-  keyword -> (pair 'keyword' (pair symbol symbol))
-  variable -> (pair 'variable' (pair symbol evaluated-value)) ; this is key
-  combination -> (pair 'combination' (list of reified expressions))
-  reified environments map symbols to values, but only for variables being reified
-    this makes information-flow analysis much simpler by avoiding unintentional capture
-    if desired, broader or narrower environments specified manually to extend or limit variable capture beyond the default
-
-explicit evaluation:
-  no runtime support should be needed; can be implemented as a meta-circular interpreter with this reification strategy
-
-================================================================
 = misc
 ================================================================
 
