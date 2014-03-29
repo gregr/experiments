@@ -31,6 +31,12 @@ very raw ideas
     - different data structures for concrete syntax and abstract syntax
       - concrete syntax resembles s-exprs, while abstract syntax represents term structure
     - weak "Kernel" idea: see the syntactic abstraction section
+  defining new data types
+    - probably needs to be done at some meta-level
+      - in order to guarantee unique tags
+      - to provide abstraction guarantees
+    - generated constructors/destructors can then be linked into modules
+    - ad-hoc definition of new types would need to performed as an "effect"
   basic modules
     - need representations for
       - records, for representing symbol-to-value mappings
