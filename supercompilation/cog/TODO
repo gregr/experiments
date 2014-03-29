@@ -2,12 +2,22 @@
 = current priorities
 ===============================================================================
 high level syntax
-  - fool-proof tag recognition
-  - finite steps that move safely from one tagged representation to the next
-    - hide the untagged intermediate steps
+  - tagged values and high level step, as described for syntax-1 below
   - include quoting/syntax-abstraction both before and after eval is defined
   - basic data type definitions
   - basic modules
+
+concrete syntaxes
+  syntax-0 = concrete syntax for raw terms that elides action/value wrappers, with pretty substitutions
+  syntax-0 step = single raw term step
+  syntax-1 = concrete syntax for higher-level terms including only the following:
+    - variables, syntax-1-tagged values
+    - substitutions of only syntax-1-tagged values over a syntax-1 term
+    - applications involving only other syntax-1 terms
+  syntax-1 step = one unconditional syntax-0 step followed by as many syntax-0 steps as necessary to eliminate all non-syntax-1 terms
+    - this may not always be possible: may hit an irreducible non-syntax-1 term
+      - when starting with a syntax-1 term, this non-syntax-1 term should always end up being a value, thus terminating
+        - unless there is a mistake in the design of syntax-1 primitives
 
 program graph editor:
   look a few sections below
