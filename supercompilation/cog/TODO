@@ -4,8 +4,6 @@
 high level syntax
   - tagged values and high level step, as described for syntax-1 below
   - include quoting/syntax-abstraction both before and after eval is defined
-  - basic data type definitions
-  - basic modules
 
 concrete syntaxes
   syntax-0 = concrete syntax for raw terms that elides action/value wrappers, with pretty substitutions
@@ -30,7 +28,7 @@ very raw ideas
   quoting and syntactic abstraction
     - different data structures for concrete syntax and abstract syntax
       - concrete syntax resembles s-exprs, while abstract syntax represents term structure
-    - weak "Kernel" idea: see the syntactic abstraction section
+    - "weak Kernel" idea: see the syntactic abstraction section
     some issues that will need to be solved for optimal presentation
       - clear but non-noisy indication of forms that will be treated as syntactic applications
       - converting between unprocessed and quoted forms for syntactic applications
@@ -49,7 +47,6 @@ very raw ideas
       - records, for representing symbol-to-value mappings
       - let-rec, for describing recursive module structures
     - see the high-level encoding notes a few sections below
-  clean up the high-level encoding section
 
 program graph editor:
   look a few sections below
@@ -318,17 +315,11 @@ seamless meta-interpreter integration:
       graphs?
   - should procedures also be packaged up with meta-data, like modules?
     - yes, at least include a basic type tag
-    - juxtaposition as sugar for applying these packaged procs, rather than for
-      applying low-level lambdas
-      - for low-level application, introduce a 'lam-apply' syntax
   - parsing, syntax transformers and metacircular eval
-    - partial fexprs
+    - partial fexprs aka "weak Kernel" (see the syntactic abstraction section)
     - syntax default (#%app)
     - setting the default
-    - whitelist or blacklist names
-  - how to interact with the pre-desugared syntax directly?
-    - syntax-0 is basically in direct correspondence with underlying terms
-    - higher level syntaxes will be more challenging
+    - whitelist or blacklist names bound to syntactic operators
 
 ===============================================================================
 = logic issues
