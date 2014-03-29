@@ -19,6 +19,15 @@ concrete syntaxes
       - when starting with a syntax-1 term, this non-syntax-1 term should always end up being a value, thus terminating
         - unless there is a mistake in the design of syntax-1 primitives
 
+very raw ideas
+  pretty substitutions
+    - provide penv with better names? s0, s1, etc.
+    - condensed visual representation
+      - name and memoize substitution binding sets
+      - after propagating, refer to the subst bindings by name at each propagated position
+      - toggle-able visibility of a substitution's binding set
+        - toggle a variable term to show the value it will be substituted for
+
 program graph editor:
   look a few sections below
   implementation notes
@@ -163,6 +172,7 @@ navigation, visualization, organization:
       - n-ary terms allow insertion at any position, moving neighboring subterms out of the way
   visualize variable bindings
     - show the values all variables are bound to
+      - replace substitution sets with names to reduce noise
     - show variables that are unbound
     - optionally show binding edges, connecting variable instances to their binder
   allow different versions of the same program to exist and be edited concurrently
