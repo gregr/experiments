@@ -31,6 +31,13 @@ very raw ideas
     - different data structures for concrete syntax and abstract syntax
       - concrete syntax resembles s-exprs, while abstract syntax represents term structure
     - weak "Kernel" idea: see the syntactic abstraction section
+    some issues that will need to be solved for optimal presentation
+      - clear but non-noisy indication of forms that will be treated as syntactic applications
+      - converting between unprocessed and quoted forms for syntactic applications
+        - automatic recognition and condensing of quoted forms that can be prettified
+      - prettification of "eval" applied to quoted terms
+        - they should be equivalent to unquoted terms, so take advantage of this
+          - relies on having a proof of: forall T. T ~= eval (quote T)
   defining new data types
     - probably needs to be done at some meta-level
       - in order to guarantee unique tags
