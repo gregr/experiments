@@ -27,6 +27,12 @@ very raw ideas
       - after propagating, refer to the subst bindings by name at each propagated position
       - toggle-able visibility of a substitution's binding set
         - toggle a variable term to show the value it will be substituted for
+  basic modules
+    - need representations for
+      - records, for representing symbol-to-value mappings
+      - let-rec, for describing recursive module structures
+    - see the high-level encoding notes a few sections below
+  clean up the high-level encoding section
 
 program graph editor:
   look a few sections below
