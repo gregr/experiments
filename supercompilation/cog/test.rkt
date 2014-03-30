@@ -1,7 +1,6 @@
 #lang racket
 (require "util.rkt")
 (require "syntax-abstract.rkt")
-(require "substitution.rkt")
 (require "semantics-denotational.rkt")
 (require "semantics-operational.rkt")
 (require "data-encoding.rkt")
