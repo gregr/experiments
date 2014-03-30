@@ -1,5 +1,6 @@
 #lang racket
 (require "util.rkt")
+(require "syntax-abstract.rkt")
 (require "base.rkt")
 
 (pretty-print (list-inits '(a b c d)))
