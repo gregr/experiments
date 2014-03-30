@@ -9,6 +9,7 @@
 (require "syntax-0-parsing.rkt")
 (require "syntax-0-unparsing.rkt")
 (require "interaction.rkt")
+(require "syntax-1-bootstrapping.rkt")
 (require "base.rkt")
 
 (pretty-print (list-inits '(a b c d)))
