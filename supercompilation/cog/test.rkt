@@ -10,7 +10,7 @@
 (require "interaction.rkt")
 (require "syntax-1-bootstrapping.rkt")
 (require "syntax-1-parsing.rkt")
-(require "base.rkt")
+(require "syntax-1.rkt")
 
 (pretty-print (list-inits '(a b c d)))
 ;'(() (a) (a b) (a b c) (a b c d))
