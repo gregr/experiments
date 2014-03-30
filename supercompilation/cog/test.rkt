@@ -7,6 +7,7 @@
 (require "data-encoding.rkt")
 (require "parsing.rkt")
 (require "syntax-0-parsing.rkt")
+(require "syntax-0-unparsing.rkt")
 (require "base.rkt")
 
 (pretty-print (list-inits '(a b c d)))
