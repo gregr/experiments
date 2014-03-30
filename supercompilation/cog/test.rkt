@@ -71,13 +71,6 @@
             (value (lam (value (pair (bvar 0) (bvar 1)))))
             (value (bvar 0))))
 
-;(pretty-print
-  ;(substitute 0 (bit (b-1)) test-term-0))
-;;(action-2
-;; (lam-apply)
-;; (value (lam (value (pair (bvar 0) (bit (b-1))))))
-;; (value (bit (b-1))))
-
 (define test-term-1
   (action-2 (lam-apply) (value (lam test-term-0)) (value (bit (b-1)))))
 
