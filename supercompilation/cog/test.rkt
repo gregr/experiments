@@ -4,6 +4,7 @@
 (require "substitution.rkt")
 (require "semantics-denotational.rkt")
 (require "semantics-operational.rkt")
+(require "parsing.rkt")
 (require "base.rkt")
 
 (pretty-print (list-inits '(a b c d)))

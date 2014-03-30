@@ -4,6 +4,7 @@
 (require "substitution.rkt")
 (require "semantics-denotational.rkt")
 (require "semantics-operational.rkt")
+(require "parsing.rkt")
 (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -215,84 +216,6 @@
 (define (interact-with term)
   (interact-loop
     (interact-state view-syntax-0 (interact-context-init term) '())))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; parsing
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(variant (penv (syntax vars)))
-(define penv-empty (penv dict-empty '()))
-(define (penv-syntax-add pe name op)
-  (match pe
-    ((penv syntax vars) (penv (dict-add syntax name op) vars))))
-(define (penv-syntax-del pe name)
-  (match pe
-    ((penv syntax vars) (penv (dict-del syntax name) vars))))
-(define (penv-syntax-get pe name) (dict-get (penv-syntax pe) name))
-(define (penv-syntax-rename pe old new)
-  (define (check-vars name msg)
-    (match (penv-vars-get pe name)
-      ((nothing) (right '()))
-      ((just _) (left msg))))
-  (do either-monad
-    _ <- (check-vars old "cannot rename non-keyword")
-    _ <- (check-vars new "rename-target already bound as a non-keyword")
-    syn-old <- (maybe->either "cannot rename non-existent keyword"
-                              (penv-syntax-get pe old))
-    pe0 = (penv-syntax-del pe old)
-    (pure (penv-syntax-add pe0 new syn-old))))
-(define penv-syntax-op-empty '||)
-(define (penv-syntax-op-get pe op)
-  (match (penv-syntax-get pe op)
-    ((just result) (right result))
-    ((nothing) (maybe->either (format "invalid operator: ~s" op)
-                              (penv-syntax-get pe penv-syntax-op-empty)))))
-(define (penv-vars-add pe name)
-  (match pe
-    ((penv syntax vars) (penv syntax (cons name vars)))))
-(define (penv-vars-get pe name) (list-index (penv-vars pe) name))
-
-(define v-uno (value (uno)))
-(define v-0 (value (bit (b-0))))
-(define v-1 (value (bit (b-1))))
-(define new-lam-apply (curry action-2 (lam-apply)))
-(define new-pair-access (curry action-2 (pair-access)))
-(define/match (new-pair l r)
-  (((value vl) (value vr)) (right (value (pair vl vr))))
-  ((_ _) (left (format "pair arguments must be values: ~v ~v" l r))))
-
-(define (check-arity arity form)
-  (if (equal? (length form) arity)
-    (right '())
-    (left (format "expected arity-~a form but found arity-~a form: ~s"
-                  arity (length form) form))))
-(define (check-symbol form)
-  (if (symbol? form)
-    (right '())
-    (left (format "expected symbol but found: ~s" form))))
-(define (parse-combination pe op form)
-  (do either-monad
-    proc <- (penv-syntax-op-get pe op)
-    (proc pe form)))
-(define ((map-parse parse) pe form)
-  (map-monad either-monad (curry parse pe) form))
-(define (((parse-apply map-parse) proc arity) pe form)
-  (do either-monad
-    _ <- (check-arity arity form)
-    args <- (map-parse pe (cdr form))
-    (pure (apply proc args))))
-(define ((parse-under parse) pe params body)
-  (do either-monad
-    _ <- (map-monad either-monad check-symbol params)
-    pe = (foldl (flip penv-vars-add) pe params)
-    (parse pe body)))
-(define (parse-bvar pe name)
-  (do either-monad
-    _ <- (check-symbol name)
-    _ <- (if (equal? name '_) (left "unexpected reference to _") (right name))
-    idx <- (maybe->either (format "unbound variable '~a'" name)
-                          (penv-vars-get pe name))
-    (pure (value (bvar idx)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; parsing (syntax-1)
