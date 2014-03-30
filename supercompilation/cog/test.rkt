@@ -4,6 +4,7 @@
 (require "substitution.rkt")
 (require "semantics-denotational.rkt")
 (require "semantics-operational.rkt")
+(require "data-encoding.rkt")
 (require "parsing.rkt")
 (require "base.rkt")
 
