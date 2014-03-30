@@ -6,6 +6,7 @@
 (require "semantics-operational.rkt")
 (require "data-encoding.rkt")
 (require "parsing.rkt")
+(require "syntax-0-parsing.rkt")
 (require "base.rkt")
 
 (pretty-print (list-inits '(a b c d)))
