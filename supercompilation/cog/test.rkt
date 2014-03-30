@@ -3,6 +3,7 @@
 (require "syntax-abstract.rkt")
 (require "substitution.rkt")
 (require "semantics-denotational.rkt")
+(require "semantics-operational.rkt")
 (require "base.rkt")
 
 (pretty-print (list-inits '(a b c d)))
