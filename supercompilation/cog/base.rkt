@@ -1,6 +1,7 @@
 #lang racket
 (require "util.rkt")
 (require "syntax-abstract.rkt")
+(require "substitution.rkt")
 (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,44 +52,6 @@
 ;;; operational semantics
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (pair-map f l r) (apply pair (map f (list l r))))
-(define (action-2-map f act t0 t1)
-  (apply (curry action-2 act) (map f (list t0 t1))))
-
-(define (substitute-bvar idx substitution)
-  (match substitution
-    ((bvar-lift k)  (bvar (+ idx k)))
-    ((bvar-use v s) (if (equal? 0 idx) v
-                      (substitute-bvar (- idx 1) s)))))
-
-(define (substitution-pop substitution count)
-  (match substitution
-    ((bvar-lift k)    (bvar-lift (+ k count)))
-    ((bvar-use v sub) (if (equal? 0 count) substitution
-                        (substitution-pop sub (- count 1))))))
-
-(define (substitute-substitution outer inner)
-  (match inner
-    ((bvar-lift k)    (substitution-pop outer k))
-    ((bvar-use v sub) (bvar-use (substitute-explicit-value outer v)
-                                (substitute-substitution outer sub)))))
-
-(define (substitute-explicit-value sub tv)
-  (match tv
-    ((pair l r)   (pair-map (curry substitute-explicit-value sub) l r))
-    ((bvar index) (substitute-bvar index sub))
-    ((lam body)   (lam (subst (bvar-use (bvar 0) (substitute-substitution
-                                                  (bvar-lift 1) sub))
-                              body)))
-    (_            tv)))
-
-(define (substitute-explicit sub term)
-  (match term
-    ((value tv)           (value (substitute-explicit-value sub tv)))
-    ((produce tm)         (produce (subst sub tm)))
-    ((subst inner tm)     (subst (substitute-substitution sub inner) tm))
-    ((action-2 act t0 t1) (action-2-map (curry subst sub) act t0 t1))))
-
 (define/match (execute-action-2-explicit act v0 v1)
   (((lam-apply)   (lam body)  _)
    (just (subst (bvar-use v1 (bvar-lift 0)) body)))
@@ -96,39 +59,37 @@
   (((pair-access) (bit (b-1)) (pair p0 p1)) (just (value p1)))
   ((_             _           _)            (nothing)))
 
+;(define (lift-bvars-value idx val)
+  ;(match val
+    ;((pair l r)   (pair-map (curry lift-bvars-value idx) l r))
+    ;((bvar index) (if (< index idx) (bvar index) (bvar (+ index 1))))
+    ;((lam body)   (lam (lift-bvars (+ idx 1) body)))
+    ;(_            val)))
+;(define (lift-bvars idx term)
+  ;(match term
+    ;((value val)          (value (lift-bvars-value idx val)))
+    ;((produce tm)         (produce (lift-bvars idx tm)))
+    ;((action-2 act t0 t1) (action-2-map (curry lift-bvars idx) act t0 t1))))
 
+;(define (substitute-value idx val tv)
+  ;(match tv
+    ;((pair l r)   (pair-map (curry substitute-value idx val) l r))
+    ;((bvar index) (if (< index idx) (bvar index)
+                    ;(if (> index idx) (bvar (- index 1)) val)))
+    ;((lam body)   (lam (substitute (+ idx 1) (lift-bvars-value 0 val) body)))
+    ;(_            tv)))
+;(define (substitute idx val term)
+  ;(match term
+    ;((value tv)           (value (substitute-value idx val tv)))
+    ;((produce tm)         (produce (substitute idx val tm)))
+    ;((action-2 act t0 t1) (action-2-map
+                            ;(curry substitute idx val) act t0 t1))))
 
-(define (lift-bvars-value idx val)
-  (match val
-    ((pair l r)   (pair-map (curry lift-bvars-value idx) l r))
-    ((bvar index) (if (< index idx) (bvar index) (bvar (+ index 1))))
-    ((lam body)   (lam (lift-bvars (+ idx 1) body)))
-    (_            val)))
-(define (lift-bvars idx term)
-  (match term
-    ((value val)          (value (lift-bvars-value idx val)))
-    ((produce tm)         (produce (lift-bvars idx tm)))
-    ((action-2 act t0 t1) (action-2-map (curry lift-bvars idx) act t0 t1))))
-
-(define (substitute-value idx val tv)
-  (match tv
-    ((pair l r)   (pair-map (curry substitute-value idx val) l r))
-    ((bvar index) (if (< index idx) (bvar index)
-                    (if (> index idx) (bvar (- index 1)) val)))
-    ((lam body)   (lam (substitute (+ idx 1) (lift-bvars-value 0 val) body)))
-    (_            tv)))
-(define (substitute idx val term)
-  (match term
-    ((value tv)           (value (substitute-value idx val tv)))
-    ((produce tm)         (produce (substitute idx val tm)))
-    ((action-2 act t0 t1) (action-2-map
-                            (curry substitute idx val) act t0 t1))))
-
-(define/match (execute-action-2 act v0 v1)
-  (((lam-apply)   (lam body)  _)            (just (substitute 0 v1 body)))
-  (((pair-access) (bit (b-0)) (pair p0 p1)) (just (value p0)))
-  (((pair-access) (bit (b-1)) (pair p0 p1)) (just (value p1)))
-  ((_             _           _)            (nothing)))
+;(define/match (execute-action-2 act v0 v1)
+  ;(((lam-apply)   (lam body)  _)            (just (substitute 0 v1 body)))
+  ;(((pair-access) (bit (b-0)) (pair p0 p1)) (just (value p0)))
+  ;(((pair-access) (bit (b-1)) (pair p0 p1)) (just (value p1)))
+  ;((_             _           _)            (nothing)))
 
 (define (step term)
   (match term
