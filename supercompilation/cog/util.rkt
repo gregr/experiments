@@ -4,6 +4,10 @@
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
+(define (list-set xs idx val)
+  (let-values (((start end) (split-at xs idx)))
+              (append start (cons val (cdr end)))))
+
 (struct lens-result (focus rebuild) #:transparent)
 (define (lens-identity src) (lens-result src (lambda (x) x)))
 (define ((lens-compose l0 l1) src)
