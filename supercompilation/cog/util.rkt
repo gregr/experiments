@@ -62,6 +62,29 @@
             (let ((temp (hash-set (record-hash field ...) key val)))
               (name (hash-ref temp 'field) ...))))))))))
 
+; cursors
+(define (ref+set datum)
+  (cond
+    ((list? datum) (list list-ref list-set))
+    ((dict? datum) (list dict-ref dict-set))))
+(record cursor focus trail ancestors)
+(define (cursor-new datum) (cursor datum '() '()))
+(define (cursor-refocus cur new-focus) (dict-set cur 'focus new-focus))
+(define (cursor-ascend cur)
+  (match cur
+    ((cursor focus (cons key keys) (cons parent ancestors))
+     (match-let* ((`(,_ ,p-set) (ref+set parent))
+                  (new-focus (p-set parent key focus)))
+       (cursor new-focus keys ancestors)))))
+(define (cursor-descend cur key)
+  (match cur
+    ((cursor focus keys ancestors)
+     (match-let* ((`(,p-ref ,_) (ref+set focus))
+                  (new-focus (p-ref focus key)))
+       (cursor new-focus (cons key keys) (cons focus ancestors))))))
+; TODO: convenient notation
+; possibly re-implement lenses in terms of cursors (compare perf?)
+
 (data monad (monad (pure bind)))
 
 (define-syntax do-with
