@@ -32,6 +32,32 @@
 ; for example, collect typeclass/multimethod instances
 ;   allow do notation to refer only to data name, rather than name-monad
 
+(require (for-syntax racket/list))
+
+(define-syntax (record-hash stx)
+  (syntax-case stx ()
+    ((_ field ...)
+     (let ((kvs (flatten (map syntax->list
+                              (syntax->list #'(('field field) ...))))))
+       #`(hash #,@kvs)))))
+
+(define-syntax record
+  (syntax-rules ()
+    ((_ name field ...)
+     (struct name (field ...) #:transparent
+      #:methods gen:dict
+      ((define (dict-ref rec key . rest)
+         (match rec
+           ((name field ...)
+            (apply hash-ref (append (list (record-hash field ...)
+                                          key)
+                                    rest)))))
+       (define (dict-set rec key val)
+         (match rec
+           ((name field ...)
+            (let ((temp (hash-set (record-hash field ...) key val)))
+              (name (hash-ref temp 'field) ...))))))))))
+
 (data monad (monad (pure bind)))
 
 (define-syntax do-with
