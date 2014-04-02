@@ -5,7 +5,7 @@
   (call/input-url
     (string->url "http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
     get-pure-port port->string))
-(define-struct unicode-record (name char code category other) #:transparent)
+(struct unicode-record (name char code category other) #:transparent)
 (define unicode-records
   (for/list ((line (string-split unicode-data-raw "\n")))
     (match (string-split line ";")

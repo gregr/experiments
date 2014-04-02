@@ -4,7 +4,7 @@
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
-(define-struct lens-result (focus rebuild) #:transparent)
+(struct lens-result (focus rebuild) #:transparent)
 (define (lens-identity src) (lens-result src (lambda (x) x)))
 (define ((lens-compose l0 l1) src)
   (match-let* (((lens-result focus0 rebuild0) (l0 src))
@@ -24,7 +24,7 @@
   (syntax-rules ()
     ((_) (void))
     ((_ (name fields) more ...)
-      (begin (define-struct name fields #:transparent) (variant more ...)))))
+      (begin (struct name fields #:transparent) (variant more ...)))))
 (define-syntax data
   (syntax-rules ()
     ((_ name var ...) (variant var ...))))

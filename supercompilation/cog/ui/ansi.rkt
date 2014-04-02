@@ -31,7 +31,7 @@
     ))
 (define (ansi-modifier-code modifier) (hash-ref ansi-modifiers modifier))
 
-(define-struct ansi-decorator (mods fg-color bg-color) #:transparent)
+(struct ansi-decorator (mods fg-color bg-color) #:transparent)
 (define ansi-dec-default (ansi-decorator '() 'default 'default))
 (define/match (ansi-dec-lens-fg dec)
   (((ansi-decorator mods fgc bgc))
@@ -51,7 +51,7 @@
                    (map ansi-modifier-code mods)))
        str))))
 
-(define-struct ansi-string (str decorator) #:transparent)
+(struct ansi-string (str decorator) #:transparent)
 (define (ansi-string-new str) (ansi-string str ansi-dec-default))
 (define/match (ansi-string-lens-str astr)
   (((ansi-string str dec))
