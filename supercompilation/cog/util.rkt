@@ -50,12 +50,11 @@
     ((_ name field ...)
      (struct name (field ...) #:transparent
       #:methods gen:dict
-      ((define (dict-ref rec key . rest)
+      ((define (dict-ref rec . rest)
          (match rec
            ((name field ...)
-            (apply hash-ref (append (list (record-hash field ...)
-                                          key)
-                                    rest)))))
+            (apply hash-ref
+                   (cons (record-hash field ...) rest)))))
        (define (dict-set rec key val)
          (match rec
            ((name field ...)
