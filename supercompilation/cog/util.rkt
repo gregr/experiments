@@ -128,6 +128,13 @@
       (cursor-refocus cur-next (trans (cursor-focus cur-next)))
       cur)))
 
+(define (path->lens path)
+  (lambda (rec)
+    (let ((cur (::@ (cursor-new rec) path)))
+      (lens-result
+        (::. cur)
+        (lambda (val) (::^*. (cursor-refocus cur val)))))))
+
 (data monad (monad (pure bind)))
 
 (define-syntax do-with
