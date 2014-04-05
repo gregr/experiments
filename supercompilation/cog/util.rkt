@@ -196,14 +196,10 @@
     ((just x) x)))
 
 (define dict-empty (hash))
-(define (dict-add dct key val) (hash-set dct key (just val)))
-(define (dict-del dct key) (hash-remove dct key))
-(define (dict-get dct key) (hash-ref dct key (nothing)))
+(define (dict-add dct key val) (dict-set dct key (just val)))
+(define (dict-get dct key) (dict-ref dct key (nothing)))
 (define (dict-get-default dct key default)
-  (match (dict-get dct key)
-    ((nothing) default)
-    ((just x) x)))
-(define (dict->alist dct) (hash->list dct))
+  (maybe-from default (dict-get dct key)))
 
 (define (assoc-cmp kcmp)
   (match-lambda** (((cons k0 v0) (cons k1 v1)) (kcmp k0 k1))))

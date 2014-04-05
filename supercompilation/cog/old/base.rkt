@@ -547,7 +547,7 @@
   (let ((strs (map (lambda (a) (format "~a" (val-a-show a))) env)))
     (string-join strs ", " #:before-first "[" #:after-last "]")))
 (define (dict-show prefix val-show dict)
-  (let* ((kvs (sort (dict->alist dict) (assoc-cmp >=)))
+  (let* ((kvs (sort (dict->list dict) (assoc-cmp >=)))
          (kvstrs (map (match-lambda
                         ((cons k (just v))
                          (format "~a~a: ~a" prefix k (val-show v))))
@@ -644,7 +644,7 @@
     ((penv syntax vars) (penv (dict-add syntax name op) vars))))
 (define (penv-syntax-del pe name)
   (match pe
-    ((penv syntax vars) (penv (dict-del syntax name) vars))))
+    ((penv syntax vars) (penv (dict-remove syntax name) vars))))
 (define (penv-syntax-get pe name) (dict-get (penv-syntax pe) name))
 (define (penv-syntax-rename pe old new)
   (let ((check-vars (lambda (name msg)

@@ -10,7 +10,7 @@
     ((penv syntax vars) (penv (dict-add syntax name op) vars))))
 (define (penv-syntax-del pe name)
   (match pe
-    ((penv syntax vars) (penv (dict-del syntax name) vars))))
+    ((penv syntax vars) (penv (dict-remove syntax name) vars))))
 (define (penv-syntax-get pe name) (dict-get (penv-syntax pe) name))
 (define (penv-syntax-rename pe old new)
   (define (check-vars name msg)
