@@ -65,10 +65,10 @@
 (define (length-encoded tup) (pair (nat-encode (tuple-length tup)) tup))
 
 ;; symbol
-(variant (symbol-entry (repr sub-table)))
+(record symbol-entry repr sub-table)
 (define (symbol-repr uid bitwidth) (bits-pad bitwidth (bits-encode uid)))
 
-(variant (symbol-table (capacity mapping rev-mapping next-uid)))
+(record symbol-table capacity mapping rev-mapping next-uid)
 (define (symbol-table-empty capacity)
   (symbol-table capacity dict-empty dict-empty 0))
 (define (symbol-table-bitwidth table)
@@ -105,8 +105,7 @@
 (define ((symbol-table-lens key) table)
   (match table
     ((symbol-table capacity mapping rev-mapping next-uid)
-     (let* ((entry (just-x (symbol-table-get table key)))
-            (next-table (symbol-entry-sub-table entry)))
+     (let ((entry (just-x (symbol-table-get table key))))
        (match entry
          ((symbol-entry repr sub-table)
           (define (rebuild new-table)
@@ -115,7 +114,7 @@
               (dict-add mapping key (symbol-entry repr new-table))
               rev-mapping
               next-uid))
-          (lens-result next-table rebuild)))))))
+          (lens-result sub-table rebuild)))))))
 (define (symbol-table-lens* keys) (:o (map symbol-table-lens keys)))
 
 (define ((symbol-table-decode-lens symbol) table)
