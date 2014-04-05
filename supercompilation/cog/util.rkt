@@ -45,9 +45,9 @@
                               (syntax->list #'(('field field) ...))))))
        #`(hash #,@kvs)))))
 
-(define-syntax record
+(define-syntax record-struct
   (syntax-rules ()
-    ((_ name field ...)
+    ((_ name (field ...) struct-rest ...)
      (struct name (field ...) #:transparent
       #:methods gen:dict
       ((define (dict-ref rec . rest)
@@ -71,7 +71,12 @@
          (match rec
            ((name field ...) (list-ref (list field ...) pos))))
        (define (dict-count rec)
-         (length '(field ...))))))))
+         (length '(field ...))))
+      struct-rest ...))))
+
+(define-syntax record
+  (syntax-rules ()
+    ((_ name field ...) (record-struct name (field ...)))))
 
 ; cursors
 (define (ref+set datum)
