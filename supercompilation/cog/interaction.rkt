@@ -44,11 +44,13 @@
   ((0 (produce tm))         (right (list (hole-produce)           tm)))
   ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
   ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
-  ((0 (subst sub tm))       (right (list (hole-subst-t sub)       tm)))
-  (((? (lambda (k) (and (< 0 k) (>= (subst-length (subst-s focus)) k))) k)
-    (subst sub tm))
-   (match-let (((list val prefix suffix) (subst-hole-make (- idx 1) sub)))
-     (right (list (hole-subst-s prefix suffix tm) val))))
+  ((k (subst sub tm))
+   (match k
+     (0 (right (list (hole-subst-t sub)       tm)))
+     ((? (lambda (k) (and (< 0 k) (>= (subst-length sub) k))) k)
+      (match-let (((list val prefix suffix) (subst-hole-make (- idx 1) sub)))
+        (right (list (hole-subst-s prefix suffix tm) val))))
+     (_ (left (format "cannot select subterm ~a of: ~v" idx focus)))))
   ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
 
 (define (subst-length sub)
