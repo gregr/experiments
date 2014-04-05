@@ -60,7 +60,19 @@
          (match rec
            ((name field ...)
             (let ((temp (hash-set (record-hash field ...) key val)))
-              (name (hash-ref temp 'field) ...))))))))))
+              (name (hash-ref temp 'field) ...)))))
+       (define (dict-iterate-first rec)
+         (if (empty? '(field ...)) #f 0))
+       (define (dict-iterate-next rec pos)
+         (let ((next (+ pos 1)))
+           (if (< next (length '(field ...))) next #f)))
+       (define (dict-iterate-key rec pos)
+         (list-ref '(field ...) pos))
+       (define (dict-iterate-value rec pos)
+         (match rec
+           ((name field ...) (list-ref (list field ...) pos))))
+       (define (dict-count rec)
+         (length '(field ...))))))))
 
 ; cursors
 (define (ref+set datum)
