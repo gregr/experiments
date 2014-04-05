@@ -547,7 +547,7 @@
   (let ((strs (map (lambda (a) (format "~a" (val-a-show a))) env)))
     (string-join strs ", " #:before-first "[" #:after-last "]")))
 (define (dict-show prefix val-show dict)
-  (let* ((kvs (sort (dict->list dict) (assoc-cmp >=)))
+  (let* ((kvs (sort (dict->list dict) >= #:key car))
          (kvstrs (map (match-lambda
                         ((cons k (just v))
                          (format "~a~a: ~a" prefix k (val-show v))))

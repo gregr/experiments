@@ -201,9 +201,6 @@
 (define (dict-get-default dct key default)
   (maybe-from default (dict-get dct key)))
 
-(define (assoc-cmp kcmp)
-  (match-lambda** (((cons k0 v0) (cons k1 v1)) (kcmp k0 k1))))
-
 (define set-empty (set))
 (define (set-unions ss)
   (match ss ('() set-empty) (_ (apply set-union ss))))
