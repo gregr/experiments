@@ -92,14 +92,41 @@
      (match-let* ((`(,_ ,p-set) (ref+set parent))
                   (new-focus (p-set parent key focus)))
        (cursor new-focus keys ancestors)))))
+(define (cursor-ascend-to cur-src cur-tgt)
+  (for/fold ((cur cur-src))
+            ((idx (in-range (- (length (cursor-trail cur-src))
+                               (length (cursor-trail cur-tgt))))))
+    (cursor-ascend cur)))
+(define (cursor-ascend* cur) (cursor-ascend-to cur (cursor-new '())))
 (define (cursor-descend cur key)
   (match cur
     ((cursor focus keys ancestors)
      (match-let* ((`(,p-ref ,_) (ref+set focus))
                   (new-focus (p-ref focus key)))
        (cursor new-focus (cons key keys) (cons focus ancestors))))))
-; TODO: convenient notation
-; possibly re-implement lenses in terms of cursors (compare perf?)
+(define (cursor-descend* cur keys)
+  (foldl (flip cursor-descend) cur keys))
+; TODO: possibly re-implement lenses in terms of cursors (compare perf?)
+
+(define ::^
+  (case-lambda
+    ((cur) (cursor-ascend cur))
+    ((cur-src cur-tgt) (cursor-ascend-to cur-src cur-tgt))))
+(define (::^. cur-src cur-tgt)
+  (cursor-focus (cursor-ascend-to cur-src cur-tgt)))
+(define ::^* cursor-ascend*)
+(define ::^*. (compose1 cursor-focus cursor-ascend*))
+(define (::@* cur paths) (cursor-descend* cur (apply append paths)))
+(define (::@ cur . paths) (::@* cur paths))
+(define (::. cur . paths) (cursor-focus (::@* cur paths)))
+(define (::= cur val . paths)
+  (cursor-ascend-to (cursor-refocus (::@* cur paths) val)
+                    cur))
+(define (::~ cur trans . paths)
+  (let ((cur-next (::@* cur paths)))
+    (cursor-ascend-to
+      (cursor-refocus cur-next (trans (cursor-focus cur-next)))
+      cur)))
 
 (data monad (monad (pure bind)))
 
