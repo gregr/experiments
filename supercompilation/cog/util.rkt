@@ -32,6 +32,10 @@
 (define-syntax data
   (syntax-rules ()
     ((_ name var ...) (variant var ...))))
+(define-syntax records
+  (syntax-rules ()
+    ((_ name (rname rfield ...) ...)
+     (begin (record rname rfield ...) ...))))
 ; TODO use data name to store properties
 ; for example, collect typeclass/multimethod instances
 ;   allow do notation to refer only to data name, rather than name-monad
@@ -162,9 +166,9 @@
         ys0 <- (map-monad monad proc ys)
         (pure (cons y0 ys0))))))
 
-(data maybe
-  (nothing ())
-  (just (x)))
+(records maybe
+  (nothing)
+  (just x))
 ; TODO: automatically generate folds from data definitions
 (define (maybe-fold nothing-fold just-fold maybe)
   (match maybe
