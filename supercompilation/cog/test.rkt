@@ -16,8 +16,8 @@
 ;'(() (a) (a b) (a b c) (a b c d))
 
 
-(pretty-print (:.* 'src))
-(pretty-print (:=* 'src 'tgt))
+(pretty-print (:. 'src))
+(pretty-print (:= 'src 'tgt))
 
 
 (define tests `(

@@ -95,6 +95,8 @@
 (define (cursor-descend* cur keys)
   (foldl (flip cursor-descend) cur keys))
 
+; cursor notation
+(define :o (curry apply append))
 (define ::^
   (case-lambda
     ((cur) (cursor-ascend cur))
@@ -103,7 +105,7 @@
   (cursor-focus (cursor-ascend-to cur-src cur-tgt)))
 (define ::^* cursor-ascend*)
 (define ::^*. (compose1 cursor-focus cursor-ascend*))
-(define (::@* cur paths) (cursor-descend* cur (apply append paths)))
+(define (::@* cur paths) (cursor-descend* cur (:o paths)))
 (define (::@ cur . paths) (::@* cur paths))
 (define (::. cur . paths) (cursor-focus (::@* cur paths)))
 (define (::= cur val . paths)
@@ -115,18 +117,12 @@
       (cursor-refocus cur-next (trans (cursor-focus cur-next)))
       cur)))
 
-; TODO: improve these definitions
 (define path->lens identity)
 
-(define :o                  (curry apply append))
-(define (:. src lens)       (::. (cursor-new src) lens))
-(define (:= src val lens)   (::. (::= (cursor-new src) val lens)))
-
-(define (:~ src trans lens) (:= src (trans (:. src lens)) lens))
-(define (:o* . ls)           (:o ls))
-(define (:.* src . ls)       (:. src (:o ls)))
-(define (:=* src val . ls)   (:= src val (:o ls)))
-(define (:~* src trans . ls) (:~ src trans (:o ls)))
+; lens-like operators
+(define (:. src . paths)       (::. (cursor-new src) (:o paths)))
+(define (:= src val . paths)   (::. (::= (cursor-new src) val (:o paths))))
+(define (:~ src trans . paths) (::. (::~ (cursor-new src) trans (:o paths))))
 
 
 (data monad (monad (pure bind)))
