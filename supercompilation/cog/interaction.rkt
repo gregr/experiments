@@ -159,19 +159,14 @@
 (record interact-state view context history)
 (define (interact-state-viewcontext st)
   ((interact-state-view st) (interact-state-context st)))
-(define interact-state-lens-context '(context))
-(define interact-state-lens-view '(view))
-(define interact-state-lens-history '(history))
 
 (define ((left-display-default default) result)
   (either-fold (lambda (msg) (display msg) default) identity result))
 
-(define ((interact-safe lens) trans st)
-  (right (:~ st (compose1 (left-display-default (:. st lens)) trans) lens)))
-(define interact-safe-context
-  (interact-safe interact-state-lens-context))
-(define interact-safe-view
-  (interact-safe interact-state-lens-view))
+(define ((interact-safe path) trans st)
+  (right (:~ st (compose1 (left-display-default (:. st path)) trans) path)))
+(define interact-safe-context (interact-safe '(context)))
+(define interact-safe-view (interact-safe '(view)))
 
 (define (interact-loop state)
   (let loop ((st state))
@@ -194,13 +189,13 @@
               ("b" (interact-safe-context interact-big st))
               ("c" (interact-safe-context interact-complete st))
               ("x" (interact-safe-view view-toggle st))
-              ("u" (match (:. st interact-state-lens-history)
+              ("u" (match (:.* st 'history)
                      ('() (displayln "nothing to undo!") (right st))
                      ((cons prev-state hist) (right prev-state))))
               ("q" (left "quitting"))
               (_ (displayln "invalid choice") (right st)))
       st = (if (equal? input "u") st
-             (:~ st (curry cons prev-st) interact-state-lens-history))
+             (:~* st (curry cons prev-st) 'history))
       (loop st))))
 
 (define (interact-with term)
