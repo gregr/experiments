@@ -159,9 +159,9 @@
 (record interact-state view context history)
 (define (interact-state-viewcontext st)
   ((interact-state-view st) (interact-state-context st)))
-(define interact-state-lens-context (path->lens '(context)))
-(define interact-state-lens-view (path->lens '(view)))
-(define interact-state-lens-history (path->lens '(history)))
+(define interact-state-lens-context '(context))
+(define interact-state-lens-view '(view))
+(define interact-state-lens-history '(history))
 
 (define ((left-display-default default) result)
   (either-fold (lambda (msg) (display msg) default) identity result))

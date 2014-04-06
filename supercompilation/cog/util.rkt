@@ -117,8 +117,6 @@
       (cursor-refocus cur-next (trans (cursor-focus cur-next)))
       cur)))
 
-(define path->lens identity)
-
 ; lens-like operators
 (define (:. src . paths)       (::. (cursor-new src) (:o paths)))
 (define (:= src val . paths)   (::. (::= (cursor-new src) val (:o paths))))

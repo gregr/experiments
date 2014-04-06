@@ -102,7 +102,7 @@
                         (+ 1 next-uid)))
          (_ (error (format "symbol already added for key: ~v" key))))))))
 
-(define (symbol-table-lens key) (path->lens `(mapping ,key x sub-table)))
+(define (symbol-table-lens key) `(mapping ,key x sub-table))
 (define (symbol-table-lens* keys) (:o (map symbol-table-lens keys)))
 
 (define ((symbol-table-decode-lens symbol) table)
