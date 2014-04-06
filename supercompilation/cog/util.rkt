@@ -9,7 +9,7 @@
               (append start (cons val (cdr end)))))
 
 (struct lens-result (focus rebuild) #:transparent)
-(define (lens-identity src) (lens-result src (lambda (x) x)))
+(define (lens-identity src) (lens-result src identity))
 (define ((lens-compose l0 l1) src)
   (match-let* (((lens-result focus0 rebuild0) (l0 src))
                ((lens-result focus1 rebuild1) (l1 focus0)))
