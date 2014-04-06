@@ -126,7 +126,7 @@
 (define (:~* src . path)       (:~ src path))
 
 
-(data monad (monad (pure bind)))
+(record monad pure bind)
 
 (define-syntax do-with
   (syntax-rules (<-)
@@ -172,9 +172,9 @@
       ((nothing) (nothing))
       ((just x) (next x))))))
 
-(data either
-  (left (x))
-  (right (x)))
+(records either
+  (left x)
+  (right x))
 (define (either-fold left-fold right-fold either)
   (match either
     ((left x) (left-fold x))
