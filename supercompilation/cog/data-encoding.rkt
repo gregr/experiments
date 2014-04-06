@@ -102,19 +102,7 @@
                         (+ 1 next-uid)))
          (_ (error (format "symbol already added for key: ~v" key))))))))
 
-(define ((symbol-table-lens key) table)
-  (match table
-    ((symbol-table capacity mapping rev-mapping next-uid)
-     (let ((entry (just-x (symbol-table-get table key))))
-       (match entry
-         ((symbol-entry repr sub-table)
-          (define (rebuild new-table)
-            (symbol-table
-              capacity
-              (dict-add mapping key (symbol-entry repr new-table))
-              rev-mapping
-              next-uid))
-          (lens-result sub-table rebuild)))))))
+(define (symbol-table-lens key) (path->lens `(mapping ,key x sub-table)))
 (define (symbol-table-lens* keys) (:o (map symbol-table-lens keys)))
 
 (define ((symbol-table-decode-lens symbol) table)
