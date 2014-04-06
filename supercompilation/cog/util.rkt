@@ -8,22 +8,6 @@
   (let-values (((start end) (split-at xs idx)))
               (append start (cons val (cdr end)))))
 
-(struct lens-result (focus rebuild) #:transparent)
-(define (lens-identity src) (lens-result src identity))
-(define ((lens-compose l0 l1) src)
-  (match-let* (((lens-result focus0 rebuild0) (l0 src))
-               ((lens-result focus1 rebuild1) (l1 focus0)))
-    (lens-result focus1 (compose1 rebuild0 rebuild1))))
-(define (lens-compose* ls) (foldr lens-compose lens-identity ls))
-(define :o                  lens-compose*)
-(define (:. src lens)       (lens-result-focus (lens src)))
-(define (:= src val lens)   ((lens-result-rebuild (lens src)) val))
-(define (:~ src trans lens) (:= src (trans (:. src lens)) lens))
-(define (:o* . ls)           (:o ls))
-(define (:.* src . ls)       (:. src (:o ls)))
-(define (:=* src val . ls)   (:= src val (:o ls)))
-(define (:~* src trans . ls) (:~ src trans (:o ls)))
-
 (define-syntax variant
   (syntax-rules ()
     ((_) (void))
@@ -110,7 +94,6 @@
        (cursor new-focus (cons key keys) (cons focus ancestors))))))
 (define (cursor-descend* cur keys)
   (foldl (flip cursor-descend) cur keys))
-; TODO: possibly re-implement lenses in terms of cursors (compare perf?)
 
 (define ::^
   (case-lambda
@@ -132,12 +115,19 @@
       (cursor-refocus cur-next (trans (cursor-focus cur-next)))
       cur)))
 
-(define (path->lens path)
-  (lambda (rec)
-    (let ((cur (::@ (cursor-new rec) path)))
-      (lens-result
-        (::. cur)
-        (lambda (val) (::^*. (cursor-refocus cur val)))))))
+; TODO: improve these definitions
+(define path->lens identity)
+
+(define :o                  (curry apply append))
+(define (:. src lens)       (::. (cursor-new src) lens))
+(define (:= src val lens)   (::. (::= (cursor-new src) val lens)))
+
+(define (:~ src trans lens) (:= src (trans (:. src lens)) lens))
+(define (:o* . ls)           (:o ls))
+(define (:.* src . ls)       (:. src (:o ls)))
+(define (:=* src val . ls)   (:= src val (:o ls)))
+(define (:~* src trans . ls) (:~ src trans (:o ls)))
+
 
 (data monad (monad (pure bind)))
 
