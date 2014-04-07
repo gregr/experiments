@@ -136,8 +136,8 @@
 (define (:= src val . paths)   (::. (::= (cursor-new src) val (:o paths))))
 (define (:~ src trans . paths) (::. (::~ (cursor-new src) trans (:o paths))))
 (define (:.* src . path)       (:. src path))
-(define (:=* src . path)       (:= src path))
-(define (:~* src . path)       (:~ src path))
+(define (:=* src val . path)   (:= src val path))
+(define (:~* src trans . path) (:~ src trans path))
 
 
 (record monad pure bind)
