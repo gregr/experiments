@@ -8,6 +8,13 @@
   (let-values (((start end) (split-at xs idx)))
               (append start (cons val (cdr end)))))
 
+(define-for-syntax (identifier-with-? ident)
+  (datum->syntax
+    ident
+    (string->symbol
+      (string-append (symbol->string (syntax->datum ident))
+                     "?"))))
+
 (define-syntax variant
   (syntax-rules ()
     ((_) (void))
@@ -16,10 +23,17 @@
 (define-syntax data
   (syntax-rules ()
     ((_ name var ...) (variant var ...))))
-(define-syntax records
-  (syntax-rules ()
+(define-syntax (records stx)
+  (syntax-case stx ()
     ((_ name (rname rfield ...) ...)
-     (begin (record rname rfield ...) ...))))
+     #`(begin
+         (define (#,(identifier-with-? #'name) datum)
+           (or
+             #,@(map
+                  (lambda (ident)
+                    (list (identifier-with-? ident) #'datum))
+                  (syntax->list #'(rname ...)))))
+         (record rname rfield ...) ...))))
 ; TODO use data name to store properties
 ; for example, collect typeclass/multimethod instances
 ;   allow do notation to refer only to data name, rather than name-monad
