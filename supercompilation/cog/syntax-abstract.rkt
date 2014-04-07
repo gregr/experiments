@@ -2,30 +2,30 @@
 (require "util.rkt")
 (provide (all-defined-out))
 
-(data value-bit
-  (b-0 ())
-  (b-1 ()))
+(records value-bit
+  (b-0)
+  (b-1))
 
-(data term-value
-  (bit  (b))
-  (uno  ())
-  (pair (l r))
-  (bvar (idx))
-  (lam  (body)))
+(records term-value
+  (uno)
+  (bit  b)
+  (pair l r)
+  (bvar idx)
+  (lam  body))
 
-(data term-substitution
-  (bvar-lift (k))
-  (bvar-use  (v s)))
+(records term-substitution
+  (bvar-lift k)
+  (bvar-use  v s))
 
-(data term-action-2
-  (pair-access ())
-  (lam-apply   ()))
+(records term-action-2
+  (pair-access)
+  (lam-apply))
 
-(data term
-  (value     (v))
-  (produce   (t))
-  (subst     (s t))
-  (action-2  (act t0 t1)))
+(records term
+  (value    v)
+  (produce  t)
+  (subst    s t)
+  (action-2 act t0 t1))
 
 (define (pair-map f l r) (apply pair (map f (list l r))))
 (define (action-2-map f act t0 t1)

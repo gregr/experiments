@@ -6,28 +6,28 @@
 ;;; abstract syntax
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(data value-bit
-  (b-0 ())
-  (b-1 ()))
+(records value-bit
+  (b-0)
+  (b-1))
 
-(data value-atomic
-  (promise (uid))
-  (indirect (uid))
-  (bit (b))
-  (uno ())
-  (sym (name)))
+(records value-atomic
+  (promise uid)
+  (indirect uid)
+  (bit b)
+  (uno)
+  (sym name))
 
-(data value-compound
-  (lam (body env))
-  (pair (l r)))
+(records value-compound
+  (lam body env)
+  (pair l r))
 
-(data term
-  (val-a (x))
-  (val-c (x))
-  (bound (idx))
-  (app (proc arg))
-  (pair-access (bit pair))
-  (let-rec (defs body)))
+(records term
+  (val-a x)
+  (val-c x)
+  (bound idx)
+  (app proc arg)
+  (pair-access bit pair)
+  (let-rec defs body))
 
 (record term-context base finished pending)
 
@@ -78,22 +78,22 @@
 ;;; small-step interpretation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(data cont
-  (ohc (oh cont))
-  (halt ())
-  (return-caller (env cont))
-  (return-update (puid env cont))
-  (return-skolem (suid env cont)))
+(records cont
+  (ohc oh cont)
+  (halt )
+  (return-caller env cont)
+  (return-update puid env cont)
+  (return-skolem suid env cont))
 
 (record state focus cont env clg next-uid)
 
-(data promise-entry
-  (delayed (tc env))
-  (kept (atom))
-  (broken (x)))
+(records promise-entry
+  (delayed tc env)
+  (kept atom)
+  (broken x))
 
-(data promise-entry-broken
-  (skolem (uid)))
+(records promise-entry-broken
+  (skolem uid))
 
 (record catalog data promises)
 (define clg-empty (catalog dict-empty dict-empty))
@@ -637,7 +637,7 @@
 ;;; parsing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(data penv (penv (syntax vars)))
+(record penv syntax vars)
 (define penv-empty (penv dict-empty '()))
 (define (penv-syntax-add pe name op)
   (match pe

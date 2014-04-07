@@ -5,18 +5,18 @@
 (require "syntax-0-unparsing.rkt")
 (provide (all-defined-out))
 
-(data hole-term-value
-  (hole-pair-l (r))
-  (hole-pair-r (l))
-  (hole-lam    ()))
+(records hole-term-value
+  (hole-pair-l r)
+  (hole-pair-r l)
+  (hole-lam))
 
-(data hole-term
-  (hole-value      ())
-  (hole-produce    ())
-  (hole-subst-t    (s))
-  (hole-subst-s    (prefix suffix t))
-  (hole-action-2-0 (act t1))
-  (hole-action-2-1 (act t0)))
+(records hole-term
+  (hole-value)
+  (hole-produce)
+  (hole-subst-t    s)
+  (hole-subst-s    prefix suffix t)
+  (hole-action-2-0 act t1)
+  (hole-action-2-1 act t0))
 
 (record interact-context holes focus)
 
