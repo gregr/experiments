@@ -4,7 +4,7 @@
 (require "syntax-0-parsing.rkt")
 (provide (all-defined-out))
 
-(variant (upenv (vars)))
+(record upenv vars)
 (define upenv-empty (upenv '()))
 ; TODO: use more of the alphabet
 (define (upenv-next-name vars)

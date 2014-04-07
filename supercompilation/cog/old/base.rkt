@@ -29,7 +29,7 @@
   (pair-access (bit pair))
   (let-rec (defs body)))
 
-(variant (term-context (base finished pending)))
+(record term-context base finished pending)
 
 (define (term->context term)
   (match-let (((cons base pending)
@@ -85,7 +85,7 @@
   (return-update (puid env cont))
   (return-skolem (suid env cont)))
 
-(variant (state (focus cont env clg next-uid)))
+(record state focus cont env clg next-uid)
 
 (data promise-entry
   (delayed (tc env))
@@ -95,7 +95,7 @@
 (data promise-entry-broken
   (skolem (uid)))
 
-(variant (catalog (data promises)))
+(record catalog data promises)
 (define clg-empty (catalog dict-empty dict-empty))
 (define (clg-add-datum clg uid val)
   (match clg

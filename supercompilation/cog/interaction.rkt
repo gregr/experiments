@@ -18,7 +18,7 @@
   (hole-action-2-0 (act t1))
   (hole-action-2-1 (act t0)))
 
-(variant (interact-context (holes focus)))
+(record interact-context holes focus)
 
 (define (interact-context-init term) (interact-context '() term))
 
@@ -110,7 +110,7 @@
     ((interact-context holes focus)
      (reverse (cons focus (map hole-present holes))))))
 
-(variant (void-closure (is-value upenv)))
+(record void-closure is-value upenv)
 (define (unparse-void-closure upe term)
   (if (void? term) (void-closure #f upe)
     (unparse-orec unparse-void-closure unparse-value-void-closure upe term)))

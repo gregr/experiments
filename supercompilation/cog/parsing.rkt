@@ -3,7 +3,7 @@
 (require "syntax-abstract.rkt")
 (provide (all-defined-out))
 
-(variant (penv (syntax vars)))
+(record penv syntax vars)
 (define penv-empty (penv dict-empty '()))
 (define (penv-syntax-add pe name op)
   (match pe
