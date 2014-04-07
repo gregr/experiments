@@ -8,37 +8,15 @@
   (let-values (((start end) (split-at xs idx)))
               (append start (cons val (cdr end)))))
 
+; record syntax
+(require (for-syntax racket/list))
+
 (define-for-syntax (identifier-with-? ident)
   (datum->syntax
     ident
     (string->symbol
       (string-append (symbol->string (syntax->datum ident))
                      "?"))))
-
-(define-syntax variant
-  (syntax-rules ()
-    ((_) (void))
-    ((_ (name fields) more ...)
-      (begin (struct name fields #:transparent) (variant more ...)))))
-(define-syntax data
-  (syntax-rules ()
-    ((_ name var ...) (variant var ...))))
-(define-syntax (records stx)
-  (syntax-case stx ()
-    ((_ name (rname rfield ...) ...)
-     #`(begin
-         (define (#,(identifier-with-? #'name) datum)
-           (or
-             #,@(map
-                  (lambda (ident)
-                    (list (identifier-with-? ident) #'datum))
-                  (syntax->list #'(rname ...)))))
-         (record rname rfield ...) ...))))
-; TODO use data name to store properties
-; for example, collect typeclass/multimethod instances
-;   allow do notation to refer only to data name, rather than name-monad
-
-(require (for-syntax racket/list))
 
 (define-syntax (record-hash stx)
   (syntax-case stx ()
@@ -79,6 +57,18 @@
 (define-syntax record
   (syntax-rules ()
     ((_ name field ...) (record-struct name (field ...)))))
+
+(define-syntax (records stx)
+  (syntax-case stx ()
+    ((_ name (rname rfield ...) ...)
+     #`(begin
+         (define (#,(identifier-with-? #'name) datum)
+           (or
+             #,@(map
+                  (lambda (ident)
+                    (list (identifier-with-? ident) #'datum))
+                  (syntax->list #'(rname ...)))))
+         (record rname rfield ...) ...))))
 
 ; cursors
 (define (ref+set datum)
@@ -170,7 +160,6 @@
 (records maybe
   (nothing)
   (just x))
-; TODO: automatically generate folds from data definitions
 (define (maybe-fold nothing-fold just-fold maybe)
   (match maybe
     ((nothing) nothing-fold)
