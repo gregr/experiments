@@ -1,13 +1,11 @@
 #lang racket
-(require gregr-misc/record)
-(require racket/stxparam)
 (provide (all-defined-out))
 
-(define (pretty-string x) (call-with-output-string (curry pretty-print x)))
+(require gregr-misc/list)
+(require gregr-misc/record)
+(require racket/stxparam)
 
-(define (list-set xs idx val)
-  (let-values (((start end) (split-at xs idx)))
-              (append start (cons val (cdr end)))))
+(define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
 ; cursors
 (define (ref+set datum)
@@ -139,18 +137,12 @@
 
 (define (zip xs ys) (map cons xs ys))
 
-(define (iterate proc seed count)
-  (if (<= count 0) (list seed)
-    (cons seed (iterate proc (proc seed) (- count 1)))))
-
 (define (list-index lst key)
   (let loop ((lst lst) (key key) (index 0))
     (match lst
       ('() (nothing))
       ((cons key0 lst)
         (if (equal? key0 key) (just index) (loop lst key (+ index 1)))))))
-(define (list-init lst) (reverse (cdr (reverse lst))))
-(define (list-inits lst) (reverse (iterate list-init lst (length lst))))
 
 (define dict-empty (hash))
 (define (dict-add dct key val) (dict-set dct key (just val)))
