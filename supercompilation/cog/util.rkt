@@ -1,5 +1,10 @@
 #lang racket
 (provide (all-defined-out))
+(provide (all-from-out
+           gregr-misc/cursor
+           gregr-misc/list
+           gregr-misc/record
+           ))
 
 (require gregr-misc/cursor)
 (require gregr-misc/list)
