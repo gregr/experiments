@@ -2,6 +2,7 @@
 (provide (all-defined-out))
 (provide (all-from-out
            gregr-misc/cursor
+           gregr-misc/either
            gregr-misc/list
            gregr-misc/match
            gregr-misc/maybe
@@ -10,6 +11,7 @@
            ))
 
 (require gregr-misc/cursor)
+(require gregr-misc/either)
 (require gregr-misc/list)
 (require gregr-misc/match)
 (require gregr-misc/maybe)
@@ -41,19 +43,10 @@
     ((nothing) nothing-from)
     ((just x) x)))
 
-(records either
-  (left x)
-  (right x))
 (define (either-fold left-fold right-fold either)
   (match either
     ((left x) (left-fold x))
     ((right x) (right-fold x))))
-(define either-monad (monad
-  right
-  (lambda (prev next)
-    (match prev
-      ((left x) (left x))
-      ((right x) (next x))))))
 (define (either-iterate f arg)
   (match (f arg)
     ((left _)    arg)
