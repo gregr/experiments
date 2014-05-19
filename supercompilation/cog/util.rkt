@@ -4,6 +4,7 @@
            gregr-misc/cursor
            gregr-misc/list
            gregr-misc/match
+           gregr-misc/maybe
            gregr-misc/monad
            gregr-misc/record
            ))
@@ -11,6 +12,7 @@
 (require gregr-misc/cursor)
 (require gregr-misc/list)
 (require gregr-misc/match)
+(require gregr-misc/maybe)
 (require gregr-misc/monad)
 (require gregr-misc/record)
 (require racket/stxparam)
@@ -30,9 +32,6 @@
         ys0 <- (map-monad monad proc ys)
         (pure (cons y0 ys0))))))
 
-(records maybe
-  (nothing)
-  (just x))
 (define (maybe-fold nothing-fold just-fold maybe)
   (match maybe
     ((nothing) nothing-fold)
@@ -41,12 +40,6 @@
   (match maybe
     ((nothing) nothing-from)
     ((just x) x)))
-(define maybe-monad (monad
-  just
-  (lambda (prev next)
-    (match prev
-      ((nothing) (nothing))
-      ((just x) (next x))))))
 
 (records either
   (left x)
