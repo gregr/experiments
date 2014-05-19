@@ -17,7 +17,6 @@
 (require gregr-misc/maybe)
 (require gregr-misc/monad)
 (require gregr-misc/record)
-(require racket/stxparam)
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
