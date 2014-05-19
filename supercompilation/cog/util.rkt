@@ -4,34 +4,22 @@
            gregr-misc/cursor
            gregr-misc/list
            gregr-misc/match
+           gregr-misc/monad
            gregr-misc/record
            ))
 
 (require gregr-misc/cursor)
 (require gregr-misc/list)
 (require gregr-misc/match)
+(require gregr-misc/monad)
 (require gregr-misc/record)
 (require racket/stxparam)
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
-(record monad pure bind)
-
-(define-syntax do-with
-  (syntax-rules (<-)
-    ((_ combine pat <- stmt rest ...)
-      (combine stmt (match-lambda (pat (do-with combine rest ...)))))
-    ((_ combine pat = stmt rest ...)
-      (match-let ((pat stmt)) (do-with combine rest ...)))
-    ((_ combine stmt) stmt)))
-(define-syntax-parameter pure
-  (lambda (stx) (raise-syntax-error #f "must be used inside 'do'" stx)))
 (define-syntax do
   (syntax-rules ()
-    ((_ monad stmt ...)
-      (syntax-parameterize
-        ((pure (syntax-rules () ((_ ex) ((monad-pure monad) ex)))))
-          (do-with (monad-bind monad) stmt ...)))))
+    ((_ body ...) (begin/with-monad body ...))))
 
 (define (map-monad monad proc xs)
   (match xs
