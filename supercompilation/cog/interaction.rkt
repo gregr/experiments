@@ -64,25 +64,21 @@
       ((0 (bvar-use v sub)) (list v (reverse acc) sub))
       ((k (bvar-use v sub)) (loop (- k 1) sub (cons v acc))))))
 
-(define (interact-ascend-index context)
-  (match context
-    ((interact-context holes focus)
-     (match holes
-       ((cons hole holes)
-        (match-let (((list idx new-focus) (hole-fill hole focus)))
-          (right (list idx (interact-context holes new-focus)))))
-       (_ (left "no hole to fill"))))))
+(define/destruct (interact-ascend-index (interact-context holes focus))
+  (match holes
+    ((cons hole holes)
+     (match-let (((list idx new-focus) (hole-fill hole focus)))
+       (right (list idx (interact-context holes new-focus)))))
+    (_ (left "no hole to fill"))))
 (define (interact-ascend context)
   (do either-monad
     (list _ context) <- (interact-ascend-index context)
     (pure context)))
 
-(define (interact-descend-index idx context)
-  (match context
-    ((interact-context holes focus)
-     (do either-monad
-       (list hole new-focus) <- (hole-make idx focus)
-       (pure (interact-context (cons hole holes) new-focus))))))
+(define/destruct (interact-descend-index idx (interact-context holes focus))
+  (do either-monad
+    (list hole new-focus) <- (hole-make idx focus)
+    (pure (interact-context (cons hole holes) new-focus))))
 (define interact-descend (curry interact-descend-index 0))
 
 (define ((interact-shift offset) context)
@@ -92,23 +88,19 @@
 (define interact-shift-left (interact-shift -1))
 (define interact-shift-right (interact-shift 1))
 
-(define (interact-with-focus f context)
-  (match context
-    ((interact-context holes focus)
-     (do either-monad
-       new-focus <- (f focus)
-       (pure (interact-context holes new-focus))))))
+(define/destruct (interact-with-focus f (interact-context holes focus))
+  (do either-monad
+    new-focus <- (f focus)
+    (pure (interact-context holes new-focus))))
 
 (define interact-step (curry interact-with-focus step-safe))
 (define interact-complete
   (curry interact-with-focus (compose1 right step-complete)))
 (define interact-big (curry interact-with-focus (compose1 right step-big)))
 
-(define (interact-context-present context)
+(define/destruct (interact-context-present (interact-context holes focus))
   (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
-  (match context
-    ((interact-context holes focus)
-     (reverse (cons focus (map hole-present holes))))))
+  (reverse (cons focus (map hole-present holes))))
 
 (record void-closure is-value upenv)
 (define (unparse-void-closure upe term)

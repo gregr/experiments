@@ -5,12 +5,10 @@
 
 (record penv syntax vars)
 (define penv-empty (penv dict-empty '()))
-(define (penv-syntax-add pe name op)
-  (match pe
-    ((penv syntax vars) (penv (dict-add syntax name op) vars))))
-(define (penv-syntax-del pe name)
-  (match pe
-    ((penv syntax vars) (penv (dict-remove syntax name) vars))))
+(define/destruct (penv-syntax-add (penv syntax vars) name op)
+  (penv (dict-add syntax name op) vars))
+(define/destruct (penv-syntax-del (penv syntax vars) name)
+  (penv (dict-remove syntax name) vars))
 (define (penv-syntax-get pe name) (dict-get (penv-syntax pe) name))
 (define (penv-syntax-rename pe old new)
   (define (check-vars name msg)
@@ -30,9 +28,8 @@
     ((just result) (right result))
     ((nothing) (maybe->either (format "invalid operator: ~s" op)
                               (penv-syntax-get pe penv-syntax-op-empty)))))
-(define (penv-vars-add pe name)
-  (match pe
-    ((penv syntax vars) (penv syntax (cons name vars)))))
+(define/destruct (penv-vars-add (penv syntax vars) name)
+  (penv syntax (cons name vars)))
 (define (penv-vars-get pe name) (list-index (penv-vars pe) name))
 
 (define v-uno (value (uno)))

@@ -29,9 +29,8 @@
 
 ;; bootstrapping
 (define (let-module defs body)
-  (foldr (lambda (def body)
-           (match def
-             (`(,name ,expr) `((lam (,name) ,body) ,expr))))
+  (foldr (lambda/destruct (`(,name ,expr) body)
+          `((lam (,name) ,body) ,expr))
          body defs))
 
 (define (std prog)

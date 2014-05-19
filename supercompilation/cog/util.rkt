@@ -3,11 +3,13 @@
 (provide (all-from-out
            gregr-misc/cursor
            gregr-misc/list
+           gregr-misc/match
            gregr-misc/record
            ))
 
 (require gregr-misc/cursor)
 (require gregr-misc/list)
+(require gregr-misc/match)
 (require gregr-misc/record)
 (require racket/stxparam)
 
