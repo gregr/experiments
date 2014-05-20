@@ -37,10 +37,6 @@
   (match maybe
     ((nothing) nothing-fold)
     ((just x) (just-fold x))))
-(define (maybe-from nothing-from maybe)
-  (match maybe
-    ((nothing) nothing-from)
-    ((just x) x)))
 
 (define (either-fold left-fold right-fold either)
   (match either
