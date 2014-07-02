@@ -60,7 +60,8 @@
     cterm <- (step-continuation cterm)
     (step-execute cterm)))
 
-; TODO: using cursors, this is now much slower; improve the performance?
+(define step-full (curry maybe-iterate step-once))
+
 (define (step term)
   (begin/with-monad
     either-monad
@@ -73,8 +74,9 @@
     (step term)
     (left (format "cannot step non-term: ~v" term))))
 
-(define step-complete (curry either-iterate step-safe))
+(define step-complete (compose1 ::^*. step-full ::0))
 
+; TODO: this may be redundant now that step-complete is performant
 (define (step-big term)
   (match term
     ((produce tm)   (produce (step-big tm)))
