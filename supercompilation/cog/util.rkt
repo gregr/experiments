@@ -74,39 +74,3 @@
 (define set-empty (set))
 (define (set-unions ss)
   (match ss ('() set-empty) (_ (apply set-union ss))))
-
-; TODO:
-; for1[-monad]: flip last two params of map[-monad]
-
-; testing
-
-;(display
-  ;(do-with (lambda (prev next) (+ 1 (next prev)))
-    ;a (+ 3 4)
-    ;b (+ a 5)
-    ;b))
-;(newline)
-
-;> (penv-syntax-add penv-empty 'x 'y)
-;(penv (dict (list (cons 'x (just 'y)))) '())
-;> (penv-vars-add penv-empty 'z)
-;(penv (dict '()) '(z))
-;> (penv-vars-add (penv-syntax-add penv-empty 'x 'y) 'z)
-;(penv (dict (list (cons 'x (just 'y)))) '(z))
-;> (penv-syntax-del (penv-vars-add (penv-syntax-add penv-empty 'x 'y) 'z) 'x)
-;(penv (dict (list (cons 'x (nothing)) (cons 'x (just 'y)))) '(z))
-;>
-
-;> (list-index (list 1 2 3 4 5 'a 'b 'c) 4)
-;(just 3)
-;> (list-index (list 1 2 3 4 5 'a 'b 'c) 'b)
-;(just 6)
-;> (list-index (list 1 2 3 4 5 'a 'b 'c) 'd)
-;(nothing)
-;> (list-index (list 1 2 3 4 5 'a 'b 'c) 7)
-;(nothing)
-;> (list-index (list 1 2 3 4 5 'a 'b 'c) 0)
-;(nothing)
-;> (list-index (list 1 2 3 4 5 'a 'b 'c) 1)
-;(just 0)
-;>
