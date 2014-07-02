@@ -26,14 +26,14 @@
 
 (define (step-continuation-upward-with key cterm)
   (match* (key (::. cterm))
-    (('t0 (action-2 act t0 t1)) (::@ cterm '(t1)))
-    ((_   _)                    (step-continuation-upward cterm))))
+    (('t0 (action-2 _ _ _)) (just (::@ cterm '(t1))))
+    (('t1 (action-2 _ _ _)) (just cterm))
+    ((_   _)                (step-continuation-upward cterm))))
 
 (define (step-continuation-upward cterm)
   (match (cursor-trail cterm)
-    ('()             (nothing))
-    ((cons key keys)
-     (step-continuation-upward-with key (::^ cterm)))))
+    ('()          (nothing))
+    ((cons key _) (step-continuation-upward-with key (::^ cterm)))))
 
 (define (step-continuation cterm)
   (maybe-or
