@@ -37,16 +37,6 @@
         ys0 <- (map-monad monad proc ys)
         (pure (cons y0 ys0))))))
 
-(define (maybe-fold nothing-fold just-fold maybe)
-  (match maybe
-    ((nothing) nothing-fold)
-    ((just x) (just-fold x))))
-
-(define (either-fold left-fold right-fold either)
-  (match either
-    ((left x) (left-fold x))
-    ((right x) (right-fold x))))
-
 (define (maybe->either left-arg maybe)
   (maybe-fold (left left-arg) right maybe))
 
