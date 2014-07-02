@@ -46,22 +46,26 @@
 (define (step-execute cterm)
   (let ((term (::. cterm)))
     (match term
-      ((value _)      (left (format "cannot execute value: ~v" term)))
-      ((produce _)    (left (format "cannot execute produce ~v" term)))
-      ((subst sub tm) (right (::= cterm (substitute-explicit sub tm))))
+      ((value _)      (nothing))
+      ((produce _)    (nothing))
+      ((subst sub tm) (just (::= cterm (substitute-explicit sub tm))))
       ((action-2 act (value v0) (value v1))
-       (either-map
+       (maybe-map
          (curry ::= cterm)
-         (maybe->either (format "cannot execute stuck term: ~v" term)
-                        (execute-action-2-explicit act v0 v1)))))))
+         (execute-action-2-explicit act v0 v1))))))
+
+(define (step-once cterm)
+  (begin/with-monad
+    maybe-monad
+    cterm <- (step-continuation cterm)
+    (step-execute cterm)))
 
 ; TODO: using cursors, this is now much slower; improve the performance?
 (define (step term)
   (begin/with-monad
     either-monad
     cterm <- (maybe->either (format "cannot step irreducible term: ~v" term)
-                            (step-continuation (::0 term)))
-    cterm <- (step-execute cterm)
+                            (step-once (::0 term)))
     (pure (::^*. cterm))))
 
 (define (step-safe term)
