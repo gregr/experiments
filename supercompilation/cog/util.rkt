@@ -46,10 +46,6 @@
   (match either
     ((left x) (left-fold x))
     ((right x) (right-fold x))))
-(define (either-iterate f arg)
-  (match (f arg)
-    ((left _)    arg)
-    ((right arg) (either-iterate f arg))))
 
 (define (maybe->either left-arg maybe)
   (maybe-fold (left left-arg) right maybe))
