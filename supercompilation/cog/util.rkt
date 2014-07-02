@@ -1,22 +1,26 @@
 #lang racket
-(provide (all-defined-out))
-(provide (all-from-out
-           gregr-misc/cursor
-           gregr-misc/either
-           gregr-misc/list
-           gregr-misc/match
-           gregr-misc/maybe
-           gregr-misc/monad
-           gregr-misc/record
-           ))
+(provide
+  (all-defined-out)
+  (all-from-out
+    gregr-misc/cursor
+    gregr-misc/either
+    gregr-misc/list
+    gregr-misc/match
+    gregr-misc/maybe
+    gregr-misc/monad
+    gregr-misc/record
+    )
+  )
 
-(require gregr-misc/cursor)
-(require gregr-misc/either)
-(require gregr-misc/list)
-(require gregr-misc/match)
-(require gregr-misc/maybe)
-(require gregr-misc/monad)
-(require gregr-misc/record)
+(require
+  gregr-misc/cursor
+  gregr-misc/either
+  gregr-misc/list
+  gregr-misc/match
+  gregr-misc/maybe
+  gregr-misc/monad
+  gregr-misc/record
+  )
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 

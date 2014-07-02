@@ -1,8 +1,11 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "substitution.rkt")
 (provide (all-defined-out))
+
+(require
+  "substitution.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (define/match (execute-action-2-explicit act v0 v1)
   (((lam-apply)   (lam body)  _)

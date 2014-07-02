@@ -1,16 +1,18 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "semantics-denotational.rkt")
-(require "semantics-operational.rkt")
-(require "data-encoding.rkt")
-(require "parsing.rkt")
-(require "syntax-0-parsing.rkt")
-(require "syntax-0-unparsing.rkt")
-(require "interaction.rkt")
-(require "syntax-1-bootstrapping.rkt")
-(require "syntax-1-parsing.rkt")
-(require "syntax-1.rkt")
+(require
+  "data-encoding.rkt"
+  "interaction.rkt"
+  "parsing.rkt"
+  "semantics-denotational.rkt"
+  "semantics-operational.rkt"
+  "syntax-0-parsing.rkt"
+  "syntax-0-unparsing.rkt"
+  "syntax-1-bootstrapping.rkt"
+  "syntax-1-parsing.rkt"
+  "syntax-1.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (pretty-print (list-inits '(a b c d)))
 ;'(() (a) (a b) (a b c) (a b c d))

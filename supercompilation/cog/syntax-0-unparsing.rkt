@@ -1,8 +1,11 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "syntax-0-parsing.rkt")
 (provide (all-defined-out))
+
+(require
+  "syntax-0-parsing.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (record upenv vars)
 (define upenv-empty (upenv '()))

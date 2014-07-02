@@ -1,8 +1,11 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "substitution.rkt")
 (provide (all-defined-out))
+
+(require
+  "substitution.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (define (null-consume v) '())
 (define (noisy-consume val) (displayln (format "produced: ~v" val)) '())

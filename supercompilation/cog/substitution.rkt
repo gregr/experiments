@@ -1,7 +1,10 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
 (provide (all-defined-out))
+
+(require
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (define (substitute-bvar idx substitution)
   (match substitution

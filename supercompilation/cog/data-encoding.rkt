@@ -1,7 +1,10 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
 (provide (all-defined-out))
+
+(require
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 ;; tuple
 (define tuple-nil         (uno))

@@ -1,6 +1,7 @@
 #lang racket
-(require "util.rkt")
 (provide (all-defined-out))
+
+(require "util.rkt")
 
 (records value-bit
   (b-0)

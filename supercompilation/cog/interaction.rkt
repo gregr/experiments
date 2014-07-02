@@ -1,9 +1,12 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "semantics-operational.rkt")
-(require "syntax-0-unparsing.rkt")
 (provide (all-defined-out))
+
+(require
+  "semantics-operational.rkt"
+  "syntax-0-unparsing.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (records hole-term-value
   (hole-pair-l r)

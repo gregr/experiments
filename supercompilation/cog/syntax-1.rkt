@@ -1,8 +1,11 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-1-bootstrapping.rkt")
-(require "syntax-1-parsing.rkt")
 (provide (all-defined-out))
+
+(require
+  "syntax-1-bootstrapping.rkt"
+  "syntax-1-parsing.rkt"
+  "util.rkt"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; syntax-1 program building

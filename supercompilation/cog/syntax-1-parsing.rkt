@@ -1,9 +1,12 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "parsing.rkt")
-(require "syntax-1-bootstrapping.rkt")
 (provide (all-defined-out))
+
+(require
+  "parsing.rkt"
+  "syntax-1-bootstrapping.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (define (parse-1 pe form)
   (match form

@@ -1,12 +1,15 @@
 #lang racket
-(require "util.rkt")
-(require "syntax-abstract.rkt")
-(require "semantics-operational.rkt")
-(require "data-encoding.rkt")
-(require "syntax-0-parsing.rkt")
-(require "syntax-0-unparsing.rkt")
-(require "interaction.rkt")
 (provide (all-defined-out))
+
+(require
+  "data-encoding.rkt"
+  "interaction.rkt"
+  "semantics-operational.rkt"
+  "syntax-0-parsing.rkt"
+  "syntax-0-unparsing.rkt"
+  "syntax-abstract.rkt"
+  "util.rkt"
+  )
 
 (define (syntax-0-le val)
   (unparse upenv-empty (value (length-encoded val))))

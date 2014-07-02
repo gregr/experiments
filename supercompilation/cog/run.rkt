@@ -1,9 +1,11 @@
 #lang racket
-(require readline)
-(require "util.rkt")
-(require "semantics-denotational.rkt")
-(require "interaction.rkt")
-(require "syntax-0-parsing.rkt")
+(require
+  readline
+  "interaction.rkt"
+  "semantics-denotational.rkt"
+  "syntax-0-parsing.rkt"
+  "util.rkt"
+  )
 
 (define (interpret-port parse interpret return inp)
   (let ((form (read inp)))
