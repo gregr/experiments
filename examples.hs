@@ -43,3 +43,14 @@ instance (a ~ b) => ApplyTup () a b where
 
 instance (ApplyTup b d result, a ~ c) => ApplyTup (a, b) (c -> d) result where
   applyTup f (arg, rest) = applyTup (f arg) rest
+
+
+-- explicit "dictionary-passing" translation
+applyTupEx (self, next) f args = self next f args
+
+applyTupUnitMethod () result () = result
+applyTupPairMethod (next, cont) f (arg, rest) = next cont (f arg) rest
+
+testMethod = (applyTupPairMethod, (applyTupPairMethod, (applyTupPairMethod, (applyTupUnitMethod, ()))))
+testArgs = (True, ((), (4, ())))
+testApplyTupEx = applyTupEx testMethod (\x () y -> (x, y)) testArgs
