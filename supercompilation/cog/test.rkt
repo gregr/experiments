@@ -39,11 +39,16 @@
 
 (define parsed-tests (right-x (map-parse-0 penv-init-0 tests)))
 (define unparsed-tests (map (curry unparse upenv-empty) parsed-tests))
-(pretty-print unparsed-tests)
+
+(module+ main
+  (pretty-print unparsed-tests)
+  )
 
 (define (eval-print el)
   (print (denote-eval noisy-consume el)) (display "\n"))
-(let ((_ (map eval-print parsed-tests))) (void))
+(module+ main
+  (let ((_ (map eval-print parsed-tests))) (void))
+  )
 
 (define test-term-4 (right-x (parse-0 (penv-vars-add penv-init-0 's0)
   `((lam (x) (pair (pair s0 x) (lam (y) (pair (pair y x) s0))))
@@ -65,23 +70,45 @@
     ,(unparse upenv-empty (value (nat-encode 5)))
     s0))))
 
-(interact-with test-term-6)
-(interact-with-0 (std `(
-  (bits-assoc (tuple 1 0 1)
-    (pair (tuple 1 1 0)
-          (tuple (pair (pair (tuple 1 1 1 1 0) (tuple 0 1 0 1)) (tuple 1 0))
-                 (pair (pair (tuple 1 1 1 1 0) (tuple 0 1 0 0)) (tuple 0 1))))
-    (pair (tuple 1 1 1 1 0) (tuple 0 1 0 0))))))
-;(interact-with-0 (std `(
-  ;(bits-unsized-eq? (tuple 1 1 1 1 1 0)
-    ;(tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))
+(define test-term-7
+  (right-x (parse-0 penv-init-0
+    (std `(
+           (bits-assoc (tuple 1 0 1)
+                       (pair (tuple 1 1 0)
+                             (tuple (pair (pair (tuple 1 1 1 1 0) (tuple 0 1 0 1)) (tuple 1 0))
+                                    (pair (pair (tuple 1 1 1 1 0) (tuple 0 1 0 0)) (tuple 0 1))))
+                       (pair (tuple 1 1 1 1 0) (tuple 0 1 0 0))))))))
 
+(module+ main
+  (interact-with test-term-6)
+  (interact-with test-term-7)
+  ;(interact-with-0 (std `(
+    ;(bits-unsized-eq? (tuple 1 1 1 1 1 0)
+      ;(tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))
+  )
 
 (define prog (std-1 `(pair 0b (pair 1b (pair bit? ())))))
 (define prog2 (std-1 `(pair 0b (pair 1b (pair 0b ())))))
 (define prog3 (std-1 '0b))
 
-(denote-eval noisy-consume (std-1 `((lam (x) (pair x ())) (lam (a b) a))))
-(denote-eval noisy-consume (std-1 `(produce (sym? 0b))))
-(denote-eval noisy-consume (std-1 `(produce (bit? 0b))))
-(denote-eval noisy-consume (std-1 `(produce (uno? 0b))))
+(module+ main
+  (denote-eval noisy-consume (std-1 `((lam (x) (pair x ())) (lam (a b) a))))
+  (denote-eval noisy-consume (std-1 `(produce (sym? 0b))))
+  (denote-eval noisy-consume (std-1 `(produce (bit? 0b))))
+  (denote-eval noisy-consume (std-1 `(produce (uno? 0b))))
+  )
+
+(module+ test
+  (require rackunit)
+  (check-equal?
+    (step-complete test-term-6)
+    (value
+      (pair
+        (bvar 0)
+        (pair (bvar 0) (pair (bvar 0) (pair (bvar 0) (pair (bvar 0) (uno)))))))
+    )
+  (check-equal?
+    (step-complete test-term-7)
+    (value (pair (bit (b-0)) (pair (bit (b-1)) (uno))))
+    )
+  )
