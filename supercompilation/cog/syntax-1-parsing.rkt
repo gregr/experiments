@@ -23,7 +23,7 @@
 (define (new-lam-1 arg-name body)
   (new-lam-apply
     (new-lam-apply lam-wrap (value (_sym arg-name)))
-    (value (lam body))))
+    (value (lam (lattr-name arg-name) body))))
 
 (define (parse-lam-apply-1 pe form)
   (do either-monad

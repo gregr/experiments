@@ -32,13 +32,13 @@
         ((bvar index) (equal? index idx))
         ((pair v0 v1)
          (or (mentions-bvar-value? idx v0) (mentions-bvar-value? idx v1)))
-        ((lam body) (mentions-bvar? (+ idx 1) body))
+        ((lam _ body) (mentions-bvar? (+ idx 1) body))
         (_ #f)))
     (define (mentions-bvar-subst? idx sub)
       (match sub
         ((bvar-lift _)      #f)
-        ((bvar-use val sub) (or (mentions-bvar-value? idx val)
-                                (mentions-bvar-subst? idx sub)))))
+        ((bvar-use _ val sub) (or (mentions-bvar-value? idx val)
+                                  (mentions-bvar-subst? idx sub)))))
     (define (mentions-bvar? idx term)
       (match term
         ((value val) (mentions-bvar-value? idx val))
@@ -48,7 +48,7 @@
         ((action-2 _ t0 t1)
          (or (mentions-bvar? idx t0) (mentions-bvar? idx t1)))))
     (match val
-      ((lam body) (not (mentions-bvar? 0 body)))
+      ((lam _ body) (not (mentions-bvar? 0 body)))
       (_ #f)))
   (define (unparse-thunk upe thunk)
     (match (unparse-value upe thunk)
@@ -68,8 +68,8 @@
             ,(unparse-thunk upe alt-0) ,(unparse-thunk upe alt-1)))
     ((action-2 (lam-apply)
                (value (? (curry equal? Y-combinator)))
-               (value (lam body)))
-     (match (unparse-value upe (lam body))
+               (value (lam attr body)))
+     (match (unparse-value upe (lam attr body))
        (`(lam ,names ,body) `(fix ,names ,body))))
     ((action-2 (lam-apply) tproc targ)
      (unparse-application unparse upe tproc (list targ)))
@@ -83,7 +83,7 @@
           ; having to do this is terrible
           (not (action-2 (lam-apply)
                          (value (? (curry equal? Y-combinator)))
-                         (value (lam body)))))
+                         (value (lam _ body)))))
      (unparse-application unparse upe tproc (cons targ targs)))
     (_ (map (curry unparse upe) (cons tproc targs)))))
 (define (unparse-action-2 act f0 f1)
@@ -100,7 +100,7 @@
         (`(tuple . ,elems) `(tuple . ,(cons fl elems)))
         (fr                `(pair ,fl ,fr)))))
     ((bvar idx) (upenv-vars-get upe idx))
-    ((lam body)
+    ((lam attr body)  ; TODO: use attr to determine name
      (match-let (((cons new-name new-upe) (upenv-vars-add upe)))
        (match (unparse new-upe body)
          (`(lam ,names ,body) (list 'lam (cons new-name names) body))
@@ -109,8 +109,8 @@
   (let loop ((upe upe) (sub sub) (uses '()))
     (match sub
       ((bvar-lift k)      (list (reverse uses) k))
-      ((bvar-use val sub) (loop upe sub
-                                (cons (unparse-value upe val) uses))))))
+      ((bvar-use (lattr name _ _) val sub)  ; TODO: use entire attr
+       (loop upe sub (cons (cons name (unparse-value upe val)) uses))))))
 
 (define (unparse-value-bit vb)
   (match vb

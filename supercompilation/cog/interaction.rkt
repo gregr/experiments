@@ -11,13 +11,13 @@
 (records hole-term-value
   (hole-pair-l r)
   (hole-pair-r l)
-  (hole-lam))
+  (hole-lam attr))
 
 (records hole-term
   (hole-value)
   (hole-produce)
   (hole-subst-t    s)
-  (hole-subst-s    prefix suffix t)
+  (hole-subst-s    attr prefix suffix t)
   (hole-action-2-0 act t1)
   (hole-action-2-1 act t0))
 
@@ -29,20 +29,23 @@
   (match hole
     ((hole-pair-l r)          (list 0 (pair subterm r)))
     ((hole-pair-r l)          (list 1 (pair l subterm)))
-    ((hole-lam)               (list 0 (lam subterm)))
+    ((hole-lam attr)          (list 0 (lam attr subterm)))
     ((hole-value)             (list 0 (value subterm)))
     ((hole-produce)           (list 0 (produce subterm)))
     ((hole-action-2-0 act t1) (list 0 (action-2 act subterm t1)))
     ((hole-action-2-1 act t0) (list 1 (action-2 act t0 subterm)))
     ((hole-subst-t s)         (list 0 (subst s subterm)))
-    ((hole-subst-s prefix suffix t)
+    ((hole-subst-s attr prefix suffix t)
      (list (+ 1 (length prefix))
-           (subst (foldr bvar-use (bvar-use subterm suffix) prefix) t)))))
+           (subst (foldr
+                    (match-lambda** (((cons attr v) rest)
+                                     (bvar-use attr v rest)))
+                    (bvar-use attr subterm suffix) prefix) t)))))
 
 (define/match (hole-make idx focus)
   ((0 (pair l r))           (right (list (hole-pair-l r)          l)))
   ((1 (pair l r))           (right (list (hole-pair-r l)          r)))
-  ((0 (lam body))           (right (list (hole-lam)               body)))
+  ((0 (lam attr body))      (right (list (hole-lam attr)          body)))
   ((0 (value val))          (right (list (hole-value)             val)))
   ((0 (produce tm))         (right (list (hole-produce)           tm)))
   ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
@@ -51,21 +54,21 @@
    (match k
      (0 (right (list (hole-subst-t sub)       tm)))
      ((? (lambda (k) (and (< 0 k) (>= (subst-length sub) k))) k)
-      (match-let (((list val prefix suffix) (subst-hole-make (- idx 1) sub)))
-        (right (list (hole-subst-s prefix suffix tm) val))))
+      (match-let (((list attr val prefix suffix) (subst-hole-make (- idx 1) sub)))
+        (right (list (hole-subst-s attr prefix suffix tm) val))))
      (_ (left (format "cannot select subterm ~a of: ~v" idx focus)))))
   ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
 
 (define (subst-length sub)
   (match sub
     ((bvar-lift _)    0)
-    ((bvar-use _ sub) (+ 1 (subst-length sub)))))
+    ((bvar-use _ _ sub) (+ 1 (subst-length sub)))))
 
 (define (subst-hole-make idx sub)
   (let loop ((idx idx) (sub sub) (acc '()))
     (match* (idx sub)
-      ((0 (bvar-use v sub)) (list v (reverse acc) sub))
-      ((k (bvar-use v sub)) (loop (- k 1) sub (cons v acc))))))
+      ((0 (bvar-use attr v sub)) (list attr v (reverse acc) sub))
+      ((k (bvar-use attr v sub)) (loop (- k 1) sub (cons (cons attr v) acc))))))
 
 (define/destruct (interact-ascend-index (interact-context holes focus))
   (match holes

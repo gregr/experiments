@@ -11,8 +11,8 @@
   (require rackunit))
 
 (define/match (execute-action-2 act v0 v1)
-  (((lam-apply)   (lam body)  _)
-   (just (subst (bvar-use v1 (bvar-lift 0)) body)))
+  (((lam-apply)   (lam attr body)  _)
+   (just (subst (bvar-use attr v1 (bvar-lift 0)) body)))
   (((pair-access) (bit (b-0)) (pair p0 p1)) (just (value p0)))
   (((pair-access) (bit (b-1)) (pair p0 p1)) (just (value p1)))
   ((_             _           _)            (nothing)))
@@ -97,10 +97,10 @@
 (module+ test
   (define test-term-0
     (action-2 (lam-apply)
-              (value (lam (value (pair (bvar 0) (bvar 1)))))
+              (value (lam lattr-void (value (pair (bvar 0) (bvar 1)))))
               (value (bvar 0))))
   (define test-term-1
-    (action-2 (lam-apply) (value (lam test-term-0)) (value (bit (b-1)))))
+    (action-2 (lam-apply) (value (lam lattr-void test-term-0)) (value (bit (b-1)))))
   (define completed (step-complete test-term-1))
   (check-equal?
     completed

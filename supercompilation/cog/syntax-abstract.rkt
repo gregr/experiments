@@ -3,6 +3,10 @@
 
 (require "util.rkt")
 
+(record lattr arg-name arg-syntax lam-syntax)
+(define lattr-void (lattr (void) (void) (void)))
+(define (lattr-name name) (lattr name (void) (void)))
+
 (records value-bit
   (b-0)
   (b-1))
@@ -12,11 +16,11 @@
   (bit  b)
   (pair l r)
   (bvar idx)
-  (lam  body))
+  (lam  attr body))
 
 (records term-substitution
   (bvar-lift k)
-  (bvar-use  v s))
+  (bvar-use  attr v s))
 
 (records term-action-2
   (pair-access)

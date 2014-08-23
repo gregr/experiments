@@ -38,9 +38,9 @@
                       (dr (denote-value consume r)))
                   (lambda (env) (cons (dl env) (dr env)))))
     ((bvar idx) (lambda (env) (denote-env-lookup env idx)))
-    ((lam body) (let ((db (denote consume body)))
-                  (lambda (env)
-                    (lambda (arg) (db (denote-env-extend env arg))))))))
+    ((lam attr body) (let ((db (denote consume body)))
+                       (lambda (env)
+                         (lambda (arg) (db (denote-env-extend env arg))))))))
 (define (denote-value-bit vb)
   (match vb
     ((b-0) (lambda (env) 0))

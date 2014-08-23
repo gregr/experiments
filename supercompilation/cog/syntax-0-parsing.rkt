@@ -28,11 +28,15 @@
     _ <- (if (and (integer? lift) (>= lift 0)) (right (void))
            (left (format "subst 'lift' must be a natural number: ~v" form)))
     uses <- (map-parse-0 pe uses)
-    _ <- (if (andmap value? uses) (right (void))
-           (left (format "subst 'uses' must be values: ~v" form)))
-    uses = (map value-v uses)
+    uattrs = (map (lambda (name) (lattr-name name)) (map car uses))
+    uvals = (map cdr uses)
+    _ <- (if (andmap value? uvals) (right (void))
+           (left (format "subst 'uvals' must be values: ~v" form)))
+    uvals = (map value-v uvals)
     body <- (parse-0 pe body)
-    (pure (subst (foldr bvar-use (bvar-lift lift) uses) body))))
+    puses = (map (curry bvar-use) uattrs uvals)
+    (pure (subst (foldr (lambda (papp rest) (papp rest))
+                        (bvar-lift lift) puses) body))))
 (define (parse-lam-apply-0 pe form)
   (do either-monad
     form <- (map-parse-0 pe form)
@@ -49,7 +53,7 @@
     _ <- (if (>= (length names) 1) (right (void))
            (left (format "lam must include at least one parameter: ~v" form)))
     body <- (parse-under-0 pe names body)
-    (pure (foldr (lambda (_ body) (value (lam body))) body names))))
+    (pure (foldr (lambda (name body) (value (lam (lattr-name name) body))) body names))))
 (define parse-pair-access-0 (parse-apply-0 new-pair-access 3))
 (define (parse-pair-0 pe form)
   (do either-monad
@@ -96,7 +100,7 @@
     _ <- (if (>= (length names) 1) (right (void))
            (left (format "fix must include at least one parameter: ~v" form)))
     body <- (parse-under-0 pe names body)
-    proc = (foldr (lambda (_ body) (value (lam body))) body names)
+    proc = (foldr (lambda (name body) (value (lam (lattr-name name) body))) body names)
     (pure (new-lam-apply (value Y-combinator) proc))))
 
 (define penv-init-0
