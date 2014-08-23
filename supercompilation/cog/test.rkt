@@ -14,14 +14,6 @@
   "util.rkt"
   )
 
-(pretty-print (list-inits '(a b c d)))
-;'(() (a) (a b) (a b c) (a b c d))
-
-
-(pretty-print (:. 'src))
-(pretty-print (:= 'src 'tgt))
-
-
 (define tests `(
   ()                          ; '()
   (pair 0 (pair 1 ()))        ; '(0 1)
