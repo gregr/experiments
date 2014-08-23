@@ -7,6 +7,9 @@
   "util.rkt"
   )
 
+(module+ test
+  (require rackunit))
+
 (define (null-consume v) '())
 (define (noisy-consume val) (displayln (format "produced: ~v" val)) '())
 
@@ -46,3 +49,10 @@
 (define denote-env-empty            '())
 (define (denote-env-lookup env idx) (list-ref env idx))
 (define (denote-env-extend env v)   (cons v env))
+
+(module+ test
+  (define dt
+    (denote null-consume (value (pair (bvar 0) (pair (bit (b-0)) (uno))))))
+  (check-equal? (dt (denote-env-extend denote-env-empty 'a))
+                '(a 0))
+  )

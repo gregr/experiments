@@ -46,28 +46,6 @@
 (let ((_ (map eval-print parsed-tests))) (void))
 
 
-;> (define dt (denote (value (pair (bvar 0) (pair (bit (b-0)) (uno))))))
-;> (dt denote-env-empty)
-;list-ref: contract violation
-  ;expected: pair?
-  ;given: '()
-  ;argument position: 1st
-  ;other arguments...:
-   ;0
-  ;context...:
-   ;/home/greg/projects/experiments/supercompilation/cog/base.rkt:63:0: denote-env-lookup
-   ;/home/greg/projects/experiments/supercompilation/cog/base.rkt:52:18
-   ;/usr/racket/collects/racket/private/misc.rkt:87:7
-;> (dt (denote-env-extend denote-env-empty 'a))
-;'(a 0)
-;> (dt (denote-env-extend denote-env-empty (bvar 0)))
-;(list (bvar 0) 0)
-;> (dt (denote-env-extend denote-env-empty (list 'bvar 0)))
-;'((bvar 0) 0)
-;> (dt (denote-env-extend denote-env-empty 'v0))
-;'(v0 0)
-
-
 (define test-term-0
   (action-2 (lam-apply)
             (value (lam (value (pair (bvar 0) (bvar 1)))))
