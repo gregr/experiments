@@ -6,6 +6,9 @@
   "util.rkt"
   )
 
+(module+ test
+  (require rackunit))
+
 ;; tuple
 (define tuple-nil         (uno))
 (define (tuple-cons x xs) (pair x xs))
@@ -34,10 +37,42 @@
 (define (tuple-pad len val tup)
   (tuple-encode-revappend (make-list (- len (tuple-length tup)) val) tup))
 
+(module+ test
+  (check-equal?
+    (tuple-encode (list 'a 'b 'c))
+    (pair 'a (pair 'b (pair 'c (uno))))
+    )
+  (check-equal?
+    (tuple-pad 7 0 (tuple-encode (list 'a 'b 'c)))
+    (pair 0 (pair 0 (pair 0 (pair 0 (pair 'a (pair 'b (pair 'c (uno))))))))
+    )
+  )
+
 ;; nat
 (define (nat-encode n)
   (tuple-pad (+ n 1) (bit (b-1)) (tuple-encode (list (bit (b-0))))))
 (define (nat-decode nat) (- (tuple-length nat) 1))
+
+(module+ test
+  (check-equal?
+    (nat-encode 7)
+    (pair
+      (bit (b-1))
+      (pair
+        (bit (b-1))
+        (pair
+          (bit (b-1))
+          (pair
+            (bit (b-1))
+            (pair
+              (bit (b-1))
+              (pair (bit (b-1)) (pair (bit (b-1)) (pair (bit (b-0)) (uno)))))))))
+    )
+  (check-equal?
+    (nat-decode (nat-encode 7))
+    7
+    )
+  )
 
 ;; bit
 (define (bit-encode bool)
@@ -63,6 +98,67 @@
   (tuple-pad n (bit (b-0)) bits))
 (define (bits-count bits) (tuple-length bits))
 (define (bits-required n) (bits-count (bits-encode (- n 1))))
+
+(module+ test
+  (check-equal?
+    (bits-encode 15)
+    (pair
+      (bit (b-1))
+      (pair (bit (b-1)) (pair (bit (b-1)) (pair (bit (b-1)) (uno)))))
+    )
+  (check-equal?
+    (bits-decode (bits-encode 15))
+    15
+    )
+  (check-equal?
+    (bits-pad 8 (bits-encode 15))
+    (pair
+      (bit (b-0))
+      (pair
+        (bit (b-0))
+        (pair
+          (bit (b-0))
+          (pair
+            (bit (b-0))
+            (pair
+              (bit (b-1))
+              (pair (bit (b-1)) (pair (bit (b-1)) (pair (bit (b-1)) (uno)))))))))
+    )
+  (check-equal?
+    (bits-decode (bits-pad 8 (bits-encode 15)))
+    15
+    )
+  (check-equal?
+    (bits-encode 16)
+    (pair
+      (bit (b-1))
+      (pair
+        (bit (b-0))
+        (pair (bit (b-0)) (pair (bit (b-0)) (pair (bit (b-0)) (uno))))))
+    )
+  (check-equal?
+    (bits-decode (bits-encode 16))
+    16
+    )
+  (check-equal?
+    (bits-pad 8 (bits-encode 16))
+    (pair
+      (bit (b-0))
+      (pair
+        (bit (b-0))
+        (pair
+          (bit (b-0))
+          (pair
+            (bit (b-1))
+            (pair
+              (bit (b-0))
+              (pair (bit (b-0)) (pair (bit (b-0)) (pair (bit (b-0)) (uno)))))))))
+    )
+  (check-equal?
+    (bits-decode (bits-pad 8 (bits-encode 16)))
+    16
+    )
+)
 
 ;; length-encoding for tuple-like values
 (define (length-encoded tup) (pair (nat-encode (tuple-length tup)) tup))
