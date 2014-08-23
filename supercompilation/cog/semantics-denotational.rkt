@@ -19,7 +19,7 @@
   (match term
     ((value val)    (denote-value consume val))
     ((produce tm)   (compose1 consume (denote consume tm)))
-    ((subst sub tm) (denote consume (substitute-explicit sub tm)))
+    ((subst sub tm) (denote consume (substitute sub tm)))
     ((action-2 act t0 t1)
      (let ((d0 (denote consume t0))
            (d1 (denote consume t1))

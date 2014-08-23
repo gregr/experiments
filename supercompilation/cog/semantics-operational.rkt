@@ -10,7 +10,7 @@
 (module+ test
   (require rackunit))
 
-(define/match (execute-action-2-explicit act v0 v1)
+(define/match (execute-action-2 act v0 v1)
   (((lam-apply)   (lam body)  _)
    (just (subst (bvar-use v1 (bvar-lift 0)) body)))
   (((pair-access) (bit (b-0)) (pair p0 p1)) (just (value p0)))
@@ -51,11 +51,11 @@
     (match term
       ((value _)      (nothing))
       ((produce _)    (nothing))
-      ((subst sub tm) (just (::= cterm (substitute-explicit sub tm))))
+      ((subst sub tm) (just (::= cterm (substitute sub tm))))
       ((action-2 act (value v0) (value v1))
        (maybe-map
          (curry ::= cterm)
-         (execute-action-2-explicit act v0 v1))))))
+         (execute-action-2 act v0 v1))))))
 
 (define (step-once cterm)
   (begin/with-monad
@@ -83,12 +83,12 @@
 (define (step-big term)
   (match term
     ((produce tm)   (produce (step-big tm)))
-    ((subst sub tm) (step-big (substitute-explicit sub tm)))
+    ((subst sub tm) (step-big (substitute sub tm)))
     ((action-2 act t0 t1)
      (let ((t0 (step-big t0)) (t1 (step-big t1)))
        (match* (t0 t1)
          (((value v0) (value v1))
-          (match (execute-action-2-explicit act v0 v1)
+          (match (execute-action-2 act v0 v1)
             ((just tm) (step-big tm))
             ((nothing) (action-2 act t0 t1))))
          ((_ _) (action-2 act t0 t1)))))
