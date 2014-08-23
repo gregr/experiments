@@ -260,3 +260,22 @@
   (symbol-table-encode** (unbox *symbol-table*) keys tgt-keys))
 (define (symbol-decode** keys symbols)
   (symbol-table-decode** (unbox *symbol-table*) keys symbols))
+
+(module+ test
+  (define test-ns 0)
+  (define test-symbol-keys (map (curry cons test-ns) '(ta tb tc)))
+  (void (map symbol-encode test-symbol-keys))
+  (check-equal?
+    (map symbol-decode (map symbol-encode test-symbol-keys))
+    '((0 . ta) (0 . tb) (0 . tc))
+    )
+  (symbol-add* '(one) 2)
+  (symbol-add* '(one two))
+  (symbol-add* '(one three))
+  (void (map symbol-encode* '((one) (one two) (one three))))
+  (void (map (curry symbol-encode** '()) '((one) (one two) (one three))))
+  (check-equal?
+    (map (curry symbol-decode** '()) (map (curry symbol-encode** '()) '((one) (one two) (one three))))
+    '((one) (one two) (one three))
+    )
+  )

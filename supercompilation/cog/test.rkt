@@ -45,23 +45,6 @@
   (print (denote-eval noisy-consume el)) (display "\n"))
 (let ((_ (map eval-print parsed-tests))) (void))
 
-
-(define test-ns 0)
-(define test-symbol-keys (map (curry cons test-ns) '(ta tb tc)))
-(pretty-print (map symbol-encode test-symbol-keys))
-(pretty-print (map symbol-decode (map symbol-encode test-symbol-keys)))
-;'((0 . ta) (0 . tb) (0 . tc))
-
-(symbol-add* '(one) 2)
-(symbol-add* '(one two))
-(symbol-add* '(one three))
-(pretty-print (map symbol-encode* '((one) (one two) (one three))))
-(pretty-print (map (curry symbol-encode** '()) '((one) (one two) (one three))))
-(pretty-print
-  (map (curry symbol-decode** '()) (map (curry symbol-encode** '()) '((one) (one two) (one three)))))
-;'((one) (one two) (one three))
-
-
 (define test-term-4 (right-x (parse-0 (penv-vars-add penv-init-0 's0)
   `((lam (x) (pair (pair s0 x) (lam (y) (pair (pair y x) s0))))
     (pair s0 (lam (z) (pair s0 z))))
