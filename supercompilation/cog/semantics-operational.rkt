@@ -7,6 +7,9 @@
   "util.rkt"
   )
 
+(module+ test
+  (require rackunit))
+
 (define/match (execute-action-2-explicit act v0 v1)
   (((lam-apply)   (lam body)  _)
    (just (subst (bvar-use v1 (bvar-lift 0)) body)))
@@ -90,3 +93,22 @@
             ((nothing) (action-2 act t0 t1))))
          ((_ _) (action-2 act t0 t1)))))
     (_ term)))
+
+(module+ test
+  (define test-term-0
+    (action-2 (lam-apply)
+              (value (lam (value (pair (bvar 0) (bvar 1)))))
+              (value (bvar 0))))
+  (define test-term-1
+    (action-2 (lam-apply) (value (lam test-term-0)) (value (bit (b-1)))))
+  (define completed (step-complete test-term-1))
+  (check-equal?
+    completed
+    (value (pair (bit (b-1)) (bit (b-1)))))
+  (check-match
+    (step test-term-1)
+    (right _))
+  (check-match
+    (step completed)
+    (left _))
+  )
