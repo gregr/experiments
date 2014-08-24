@@ -68,11 +68,6 @@
       (value (uno)))
      `(if-0 ,(unparse upe tcnd)
             ,(unparse-thunk upe alt-0) ,(unparse-thunk upe alt-1)))
-    ;((action-2 (lam-apply)
-               ;(value (? (curry equal? Y-combinator)))
-               ;(value (lam attr body)))
-     ;(match (unparse-value upe (lam attr body))
-       ;(`(lam ,names ,body) `(fix ,names ,body))))
     ((action-2 (lam-apply) tproc targ)
      (unparse-application unparse upe tproc (list targ)))
     ((action-2 (pair-access) (value (bit b)) tpair)
@@ -81,12 +76,6 @@
      (unparse-action-2 act (unparse upe t0) (unparse upe t1)))))
 (define (unparse-application unparse upe tproc targs)
   (match tproc
-    ;((and (action-2 (lam-apply) tproc targ)
-          ;; having to do this is terrible
-          ;(not (action-2 (lam-apply)
-                         ;(value (? (curry equal? Y-combinator)))
-                         ;(value (lam _ body)))))
-     ;(unparse-application unparse upe tproc (cons targ targs)))
     (_ (map (curry unparse upe) (cons tproc targs)))))
 (define (unparse-action-2 act f0 f1)
   (match act
@@ -102,7 +91,7 @@
         (`(tuple . ,elems) `(tuple . ,(cons fl elems)))
         (fr                `(pair ,fl ,fr)))))
     ((bvar idx) (upenv-vars-get upe idx))
-    ((lam attr body)  ; TODO: use attr to determine name
+    ((lam attr body)
      (match-let (((cons new-name new-upe) (upenv-vars-add upe attr)))
        (match (unparse new-upe body)
          (`(lam ,names ,body) (list 'lam (cons new-name names) body))
