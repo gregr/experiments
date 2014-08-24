@@ -29,7 +29,7 @@
            (left (format "subst 'lift' must be a natural number: ~v" form)))
     uses <- (map-parse-0 pe uses)
     uattrs = (map (lambda (name) (lattr-name name)) (map car uses))
-    uvals = (map cdr uses)
+    uvals = (map caadr uses)
     _ <- (if (andmap value? uvals) (right (void))
            (left (format "subst 'uvals' must be values: ~v" form)))
     uvals = (map value-v uvals)
