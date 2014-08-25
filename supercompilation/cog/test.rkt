@@ -11,6 +11,7 @@
   "syntax-1-parsing.rkt"
   "syntax-1.rkt"
   "syntax-abstract.rkt"
+  "workspace.rkt"
   "util.rkt"
   )
 
@@ -88,6 +89,26 @@
   (denote-eval noisy-consume (std-1 `(produce (sym? 0b))))
   (denote-eval noisy-consume (std-1 `(produce (bit? 0b))))
   (denote-eval noisy-consume (std-1 `(produce (uno? 0b))))
+
+  (displayln "\n")
+
+  (define (test-int term) (interaction (curry unparse upenv-empty) (::0 term) '()))
+  (define test-tab-0 (tab (void) (::0 (list 0 1 3))))
+  (define test-tab-1 (tab (void) (::@ (::0 (list 1 2 3)) '(rest))))
+  (define test-int-0 (test-int (value (pair (uno) (bit (b-0))))))
+  (define test-int-1 (test-int (value (pair (uno) (bit (b-1))))))
+  (define test-int-2 (test-int test-term-6))
+  (define test-int-3 (test-int (value (pair (bit (b-0)) (bit (b-1))))))
+  (define test-idb (:~* interaction-db-empty
+                        (lambda (hv) (hash-set* hv 0 test-int-0 1 test-int-1 2 test-int-2 3 test-int-3))
+                        'uid->interaction))
+  (define test-ws-0 (workspace (::0 (list test-tab-0 test-tab-1)) test-idb))
+  (define test-ws-1 (workspace (::@ (::0 (list test-tab-0 test-tab-1)) '(rest)) test-idb))
+
+  (display (present-workspace test-ws-0))
+  (display "\n\n")
+  (display (present-workspace test-ws-1))
+  (display "\n\n")
   )
 
 (module+ main
