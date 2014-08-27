@@ -43,7 +43,7 @@
                           (range (length interactions)))
                      presented-interactions))
          (index (length (cursor-trail ic)))
-         (views (:~ views bracket-view (list-path index))))
+         (views (:~ views bracket-view (list-path index 'first))))
     (string-join views major-divider)))
 
 (define/destruct (present-workspace (workspace ctab idb))
@@ -51,7 +51,7 @@
          (tabs (::^*. ctab))
          (tab (list-ref tabs index))
          (tab-names (:~ (map ~a (range (length tabs)))
-                        bracket-tab (list-path index)))
+                        bracket-tab (list-path index 'first)))
          (uid->interaction (interaction-db-uid->interaction idb)))
     (string-join (list
                    (present-tab uid->interaction tab)
