@@ -2,6 +2,8 @@
 (provide (all-defined-out))
 
 (require
+  "syntax-0-unparsing.rkt"
+  "syntax-abstract.rkt"
   "util.rkt"
   )
 
@@ -11,7 +13,35 @@
 (record interaction pretty current history)
 (record interaction-db uid->interaction name<->uid active-uids discarded-uids preserved)
 
+(define (interaction-new term)
+  (interaction (curry unparse upenv-empty) (::0 term) '()))
+(define interaction-minimal (interaction-new (value (uno))))
+
 (define interaction-db-empty (interaction-db (hash) (hash) (set) (set) (hash)))
+(define/destruct (interaction-db-add
+                   (interaction-db uid->i name<->uid active discarded preserved)
+                   interaction)
+  (let* ((uid (+ 1 (apply max (cons -1 (hash-keys uid->i)))))
+         (uid->i (hash-set uid->i uid interaction))
+         (name<->uid (hash-set* name<->uid uid (set) (~a uid) uid))
+         (active (set-add active uid)))
+    (list (interaction-db uid->i name<->uid active discarded preserved)
+          uid)))
+
+(define tab-empty (tab (void) (::0 '())))
+(define/destruct (tab-add (tab layout ic) iuid)
+  (tab layout (::~ ic (curry cons iuid))))
+(define (tab-minimal idb)
+  (match-let (((list idb uid) (interaction-db-add idb interaction-minimal)))
+    (list idb (tab-add tab-empty uid))))
+
+(define/destruct (workspace-normalize (workspace ctab idb))
+  (if (< 0 (length (::^*. ctab)))
+    (workspace ctab idb)
+    (match-let (((list idb new-tab) (tab-minimal idb)))
+      (workspace (::0 (list new-tab)) idb))))
+(define workspace-empty (workspace (::0 '()) interaction-db-empty))
+(define workspace-minimal (workspace-normalize workspace-empty))
 
 ;; presentation
 (define major-divider "================================\n")

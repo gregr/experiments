@@ -109,6 +109,8 @@
   (display "\n\n")
   (display (present-workspace test-ws-1))
   (display "\n\n")
+  (display (present-workspace workspace-minimal))
+  (display "\n\n")
   )
 
 (module+ main
