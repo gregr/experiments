@@ -93,8 +93,8 @@
   (displayln "\n")
 
   (define (test-int term) (interaction (curry unparse upenv-empty) (::0 term) '()))
-  (define test-tab-0 (tab (void) (::0 (list 0 1 3))))
-  (define test-tab-1 (tab (void) (::@ (::0 (list 1 2 3)) '(rest))))
+  (define test-tab-0 (tab (void) (list 0 1 3)))
+  (define test-tab-1 (tab (void) (list 1 2 3)))
   (define test-int-0 (test-int (value (pair (uno) (bit (b-0))))))
   (define test-int-1 (test-int (value (pair (uno) (bit (b-1))))))
   (define test-int-2 (test-int test-term-6))
@@ -102,14 +102,16 @@
   (define test-idb (:~* interaction-db-empty
                         (lambda (hv) (hash-set* hv 0 test-int-0 1 test-int-1 2 test-int-2 3 test-int-3))
                         'uid->interaction))
-  (define test-ws-0 (workspace (::0 (list test-tab-0 test-tab-1)) test-idb))
-  (define test-ws-1 (workspace (::@ (::0 (list test-tab-0 test-tab-1)) '(rest)) test-idb))
+  (define test-ws-view-0 (workspace-view 0 (list 0 0)))
+  (define test-ws-0 (workspace (list test-tab-0 test-tab-1) test-idb))
+  (define test-ws-view-1 (workspace-view 1 (list 0 1)))
+  (define test-ws-1 (workspace (list test-tab-0 test-tab-1) test-idb))
 
-  (display (present-workspace test-ws-0))
+  (display (present-workspace test-ws-view-0 test-ws-0))
   (display "\n\n")
-  (display (present-workspace test-ws-1))
+  (display (present-workspace test-ws-view-1 test-ws-1))
   (display "\n\n")
-  (display (present-workspace workspace-minimal))
+  (display (present-workspace workspace-view-empty workspace-empty))
   (display "\n\n")
   )
 

@@ -7,15 +7,15 @@
   "util.rkt"
   )
 
-(record workspace tab-cursor interaction-db)
-(record tab layout interaction-uid-cursor)
+(record workspace-view tab-index ic-indices)
+(record workspace tabs interaction-db)
+(record tab layout interaction-uids)
 
 (record interaction pretty current history)
 (record interaction-db uid->interaction name<->uid active-uids discarded-uids preserved)
 
 (define (interaction-new term)
   (interaction (curry unparse upenv-empty) (::0 term) '()))
-(define interaction-minimal (interaction-new (value (uno))))
 
 (define interaction-db-empty (interaction-db (hash) (hash) (set) (set) (hash)))
 (define/destruct (interaction-db-add
@@ -28,20 +28,11 @@
     (list (interaction-db uid->i name<->uid active discarded preserved)
           uid)))
 
-(define tab-empty (tab (void) (::0 '())))
-(define/destruct (tab-add (tab layout ic) iuid)
-  (tab layout (::~ ic (curry cons iuid))))
-(define (tab-minimal idb)
-  (match-let (((list idb uid) (interaction-db-add idb interaction-minimal)))
-    (list idb (tab-add tab-empty uid))))
-
-(define/destruct (workspace-normalize (workspace ctab idb))
-  (if (< 0 (length (::^*. ctab)))
-    (workspace ctab idb)
-    (match-let (((list idb new-tab) (tab-minimal idb)))
-      (workspace (::0 (list new-tab)) idb))))
-(define workspace-empty (workspace (::0 '()) interaction-db-empty))
-(define workspace-minimal (workspace-normalize workspace-empty))
+(define tab-empty (tab (void) '()))
+(define/destruct (tab-add (tab layout iuids) ic-index iuid)
+  (tab layout (:~ iuids (curry cons iuid) (list-path ic-index))))
+(define workspace-empty (workspace (list tab-empty) interaction-db-empty))
+(define workspace-view-empty (workspace-view -1 '()))
 
 ;; presentation
 (define major-divider "================================\n")
@@ -49,7 +40,7 @@
 (define select-divider "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
 
 (define ((bracket left right) str) (string-append left str right))
-(define bracket-view (bracket select-divider select-divider))
+(define bracket-ic-view (bracket select-divider select-divider))
 (define bracket-tab (bracket "[" "]"))
 
 (define (present-cterm pretty cterm)
@@ -64,26 +55,26 @@
                  (format "history length: ~a\n" (length history)))
                minor-divider))
 
-(define/destruct (present-tab uid->interaction (tab layout ic))
-  (let* ((interactions
-           (map (curry dict-ref uid->interaction) (::^*. ic)))
+(define/destruct (present-tab uid->interaction ic-index (tab layout iuids))
+  (let* ((interactions (map (curry dict-ref uid->interaction) iuids))
          (presented-interactions (map present-interaction interactions))
-         (views (map string-append
+         (ic-views (map string-append
                      (map (curry format (string-append "< ~a >\n" minor-divider))
                           (range (length interactions)))
                      presented-interactions))
-         (index (length (cursor-trail ic)))
-         (views (:~ views bracket-view (list-path index 'first))))
-    (string-join views major-divider)))
+         (ic-views (:~ ic-views bracket-ic-view (list-path ic-index 'first))))
+    (string-join ic-views major-divider)))
 
-(define/destruct (present-workspace (workspace ctab idb))
-  (let* ((index (length (cursor-trail ctab)))
-         (tabs (::^*. ctab))
-         (tab (list-ref tabs index))
-         (tab-names (:~ (map ~a (range (length tabs)))
-                        bracket-tab (list-path index 'first)))
-         (uid->interaction (interaction-db-uid->interaction idb)))
-    (string-join (list
-                   (present-tab uid->interaction tab)
-                   (string-append "tabs: " (string-join tab-names " ") "\n"))
-                 major-divider)))
+(define/destruct (present-workspace (workspace-view tab-index ic-indices)
+                                    (workspace tabs idb))
+  (if (< tab-index 0) "tabs: ..."
+    (let* ((uid->interaction (interaction-db-uid->interaction idb))
+          (ic-index (list-ref ic-indices tab-index))
+          (tab (list-ref tabs tab-index))
+          (tab-names (map ~a (range (length tabs))))
+          (tab-names (:~ tab-names bracket-tab (list-path tab-index 'first)))
+          (tab-view (present-tab uid->interaction ic-index tab)))
+      (string-join
+        (list tab-view
+              (string-append "tabs: " (string-join tab-names " ") "\n"))
+        major-divider))))
