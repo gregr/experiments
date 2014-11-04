@@ -435,6 +435,9 @@ seamless meta-interpreter integration:
 = logic issues
 ===============================================================================
 
+update:
+  to have higher-order logic without types, the answer seems to be determining whether the embedding of a higher-order term (instantiating a higher-order quantified term) will produce a non-terminating propositional computation
+
 - proof constructors
   - forall-term, forall-value (and somehow these may be
     mutually-recursive/inductive?
