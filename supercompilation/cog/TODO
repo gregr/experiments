@@ -1,4 +1,51 @@
 ===============================================================================
+= editor ideas
+===============================================================================
+git-like branchable/mergeable hierarchical-groups
+  group-level analogs to interaction-level operations
+cursor-oriented interaction
+  node types and syntax annotations (if/then/else) determine path traversal and presentation
+vim-like tabs, "buffers", buffer-specific navigation (and help), command/search
+  move between tabs; change tab position
+  move between buffers; change buffer position; change layout/organization of all buffers in a given tab
+dwarf-fortress-like hotkey/manual-select command menu with multiple detail levels (multiple ?-press toggles)
+operations
+  introduce (basic, existing (such as from another tab; not a copy), remembered)
+  delete(q for quit)
+  copy
+  replace (basic, existing (move/copy), remembered)
+  merge
+  remember(w for write)
+  mark (name a buffer or buffer-position/subterm)
+  jump to mark (local or global)
+buffers and "remembering" slots are both boxes for containing terms and both retain history of what terms they have contained (with truncation or exponential decay support?)
+  buffers are interactively mutable, but "remembering" slots are inert and live in the background; you can write to these slots, but not interact with them directly
+    otherwise, they're the same concept
+      actually, let the slots save entire versions of a buffer interaction so that interaction history can also be preserved
+workspaces, tabs, views
+  active interactions (buffers), versioned interaction (files, "remember" slots)
+    term-cursors
+    histories store a sequence of (command, term-cursor)
+    undo/redo linearization instead of branching history
+      or not; copying suffices for this functionality
+visualization aids
+  syntax-0 presentaiton: bracketed vs. named vs. raw AST
+  coloring
+  annotation "terms"
+  indirect referencing
+  global, memoized referencing of
+    substitutions, %uid
+    large values (size determined bottom-up?) &uid
+    (large?) closed lambdas #uid
+  unnamed vars: $index
+  named vars: name or name$index
+clean substitutions
+  hide irrelevant vars (name = name) and lifts
+  bvar-relevance garbage collection
+  ability to push substitution(s) down to bvars; ability to eliminate substitution(s) completely
+    control scope of these operations by choosing top-level only, or also under lambdas
+
+===============================================================================
 = more rough ideas
 ===============================================================================
 lambda introductions
