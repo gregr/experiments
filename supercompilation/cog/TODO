@@ -541,6 +541,32 @@ new machinery
   (return-context (cont env clg-replay)))
 
 ===============================================================================
+= Domain-specific programming tools
+===============================================================================
+
+http://www.evanmiller.org/dont-kill-math.html
+
+can accept that code is made up of symbols
+  this is acknowledged in drawing dyn viz
+  whether or not the code is represented as plain text, or in a more diagrammatic way
+having to comprehend the generalizations described by code simply by reading text and simulating the behavior in your mind involves super-human effort and should be unnecessary; comprehension of the concrete is direct and often effortless (exceptions involve data too large for the mind, requiring exploration/navigation; but this is still not an unnatural effort)
+  should comprehension of code be made more direct by interactively visualizing the program's transformation as concrete data flows through it? is there a better approach than this?
+output/effect of running code is concrete
+code is currently written directly
+why not instead write code with tools for manipulating the concrete, then generalizing?
+  leverage the directness of the concrete medium to know what output you'll be getting with much more certainty
+  explicit generalization by indicating/marking important concrete features and their relationships
+  tools for implicit generalization probably involve machine learning
+is symbolism unavoidable for manipulating the abstract?
+  you can describe values concretely given enough context
+  can you describe actions/operations concretely?
+    as machines? but how do you describe these machines without even more context?
+    for instance, a specific pixel drawing requires only a grid of colored pixels
+      these additional concepts seem to be symbols, reinvented
+    even if you don't agree that you need to reinvent symbols to describe machines, once you are dealing with machines you are back where you started: the problem of having to simulate their behavior to perform analysis
+      it seems the best we can do is provide tools that assist with this simulation?
+
+===============================================================================
 = Summary of summaries of http://worrydream.com/LearnableProgramming/
 ===============================================================================
 
