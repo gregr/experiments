@@ -1,4 +1,25 @@
 ===============================================================================
+= priorities
+===============================================================================
+add lam/subst annotations/attributes
+  for indicating preferred argument names, syntactic notes, presentation notes, interaction preferences, etc.
+  annotations can probably also be encoded in quoted lambda terms and reflected into the raw lambda annotation during eval
+syntax definitions
+  printing (pretty or otherwise)
+    present? presentation? presenting?
+  parsing
+encodings
+  constructors
+  recognizers
+interaction
+  simple idea to start with: improve interaction by coloring focus background
+    probably requires custom pretty-printing of terms
+bootstrapping; defining...
+  data types
+  modules
+  other primitives?
+
+===============================================================================
 = current priorities
 ===============================================================================
 high level syntax
