@@ -14,6 +14,10 @@ PL/logic research
 research related to computation, mathematics, mind?
   ftp://ftp.cs.ru.nl/pub/CompMath.Found
 
+OS dev
+  http://wiki.osdev.org/Tutorials
+  http://www.coranac.com/tonc/text/asm.htm
+
 ================================================================
 
 wanted: size inference (and polymorphism) to calculate totality information
