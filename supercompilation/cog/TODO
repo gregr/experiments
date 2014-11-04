@@ -540,3 +540,31 @@ new machinery
   (return-caller (cont env)))
   (return-context (cont env clg-replay)))
 
+===============================================================================
+= Summary of summaries of http://worrydream.com/LearnableProgramming/
+===============================================================================
+
+The environment should allow the learner to:
+  read the vocabulary -- what do these words mean?
+    The environment should make meaning transparent, so the learner can concentrate on high-level concepts, not vocabulary.
+    The environment should explain in context. Show and tell. Annotate the data, not just the code.
+  follow the flow -- what happens when?
+    The environment can make flow tangible, by enabling the programmer to explore forward and backward at her own pace.
+    The environment can make flow visible, by visualizing the pattern of execution.
+    The environment can represent time at multiple granularities, such as frames or event responses, to enable exploration across these meaningful chunks of execution.
+  see the state -- what is the computer thinking?
+    The environment must show the data. If a line of code computes a thing, that thing should be immediately visible.
+    The environment must show comparisons. If a program computes many things, all of those things should be shown in context. This is nothing more than data visualization.
+    The system must have no hidden state. State should either be eliminated, or represented as explicit objects on the screen. Every action must have a visible effect.
+  create by reacting -- start somewhere, then sculpt
+    The environment must be designed to get something on the screen as soon as possible, so the programmer can start reacting. This requires modeling the programmer's thought process, and designing a system that can pick up on the earliest possible seed of thought.
+    The environment must dump the parts bucket onto the floor, allowing the programmer to continuously react to her raw material and spark new ideas.
+  create by abstracting -- start concrete, then generalize
+    The environment should encourage the learner to start constant, then vary, by providing meaningful ways of gradually and seamlessly transitioning constant expressions into variable expressions.
+    The environment should encourage the learner to start with one, then make many, by providing ways of using those variable expressions at a higher level, such as function application or looping.
+
+The language should provide:
+  identity and metaphor -- how can I relate the computer's world to my own?
+  decomposition -- how do I break down my thoughts into mind-sized pieces?
+  recomposition -- how do I glue pieces together?
+  readability -- what do these words mean?
