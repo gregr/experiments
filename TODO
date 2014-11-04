@@ -18,6 +18,16 @@ OS dev
   http://wiki.osdev.org/Tutorials
   http://www.coranac.com/tonc/text/asm.htm
 
+scalable universe: entanglement
+  also, how do we seamlessly transition between processing regions?
+  some sort of hierarchical annealing
+    allow tiling of regions
+    more efficient macroscopic evolution of sectors
+  remember "observed" region states and modifications
+    to reclaim efficiency, gradually eliminate modifications over time, explainable via weathering, entropy, etc.
+  how quickly can a new world/region/sector be generated? and then evolved to be interesting?
+    minimize the amount pre-generated, that would otherwise sit around wasting resources
+
 ================================================================
 
 wanted: size inference (and polymorphism) to calculate totality information
