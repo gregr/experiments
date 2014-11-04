@@ -1,3 +1,8 @@
+research related to computation, mathematics, mind?
+  ftp://ftp.cs.ru.nl/pub/CompMath.Found
+
+================================================================
+
 wanted: size inference (and polymorphism) to calculate totality information
 and distinguish inductive and coinductive situations
   polymorphism over inductive/coinductive uses
