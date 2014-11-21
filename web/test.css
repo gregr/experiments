@@ -9,7 +9,9 @@ ul {
   display: inline-block;
   border-radius: 8px;
   padding: 4px;
-  margin: 0px;
+  margin: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
   background-color: rgba(200,255,200,0.05);
 }
 
@@ -19,8 +21,8 @@ li {
   border-radius: 4px;
   padding: 4px;
   margin: 2px;
-  margin-left: 2px;
-  margin-right: 2px;
+  margin-left: 3px;
+  margin-right: 3px;
   background-color: rgba(200,255,200,0.05);
 }
 
