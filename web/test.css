@@ -1,0 +1,39 @@
+/* inspired by http://celeriac.net/iiiiioiooooo/public/ */
+body {
+  font-family: monospace;
+  color: white;
+  background-color: rgba(50,50,50,1.0);
+}
+
+ul {
+  display: inline-block;
+  border-radius: 8px;
+  padding: 4px;
+  margin: 0px;
+  background-color: rgba(200,255,200,0.05);
+}
+
+li {
+  display: inline-block;
+  list-style-type: none;
+  border-radius: 4px;
+  padding: 4px;
+  margin: 2px;
+  margin-left: 2px;
+  margin-right: 2px;
+  background-color: rgba(200,255,200,0.05);
+}
+
+.aggregate {
+  display: block;
+  padding: 0px;
+  background-color: rgba(0,0,0,0);
+}
+
+.first {
+  color: rgba(255,200,100,0.8);
+}
+
+.selected {
+  background-color:rgba(255,100,0,0.7);
+}
