@@ -46,7 +46,7 @@
 (define (present-cterm pretty cterm)
   (string-join (list
                   (pretty-string (cursor-trail cterm))
-                  (pretty-string (pretty (::. cterm))))
+                  (pretty-string (pretty (::.* cterm))))
                 minor-divider))
 
 (define/destruct (present-interaction (interaction pretty current history))

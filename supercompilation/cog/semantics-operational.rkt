@@ -18,7 +18,7 @@
   ((_             _           _)            (nothing)))
 
 (define (step-continuation-downward cterm)
-  (match (::. cterm)
+  (match (::.* cterm)
     ((value _)            (nothing))
     ((produce tm)         (step-continuation-downward (::@ cterm '(tm))))
     ((subst sub tm)       (just cterm))
@@ -28,7 +28,7 @@
      (maybe-or (sub-cont 't0) (sub-cont 't1) (just cterm)))))
 
 (define (step-continuation-upward-with key cterm)
-  (match* (key (::. cterm))
+  (match* (key (::.* cterm))
     (('t0 (action-2 _ _ _)) (just (::@ cterm '(t1))))
     (('t1 (action-2 _ _ _)) (just cterm))
     ((_   _)                (step-continuation-upward cterm))))
@@ -47,14 +47,14 @@
       (step-continuation upward))))
 
 (define (step-execute cterm)
-  (let ((term (::. cterm)))
+  (let ((term (::.* cterm)))
     (match term
       ((value _)      (nothing))
       ((produce _)    (nothing))
-      ((subst sub tm) (just (::= cterm (substitute sub tm))))
+      ((subst sub tm) (just (::=* cterm (substitute sub tm))))
       ((action-2 act (value v0) (value v1))
        (maybe-map
-         (curry ::= cterm)
+         (curry ::=* cterm)
          (execute-action-2 act v0 v1))))))
 
 (define (step-once cterm)
