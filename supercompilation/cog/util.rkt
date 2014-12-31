@@ -42,8 +42,6 @@
 
 (define ((flip proc) x y) (proc y x))
 
-(define (zip xs ys) (map cons xs ys))
-
 (define (list-index lst key)
   (let loop ((lst lst) (key key) (index 0))
     (match lst
