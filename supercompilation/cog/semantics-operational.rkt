@@ -97,7 +97,12 @@
 (module+ test
   (define test-term-0
     (action-2 (lam-apply)
-              (value (lam lattr-void (value (pair (bvar 0) (bvar 1)))))
+              (value (lam lattr-void
+                          (action-2 (pair-access)
+                                    (value (bvar 0))
+                                    (value (pair (uno)
+                                                 (pair (bvar 0)
+                                                       (bvar 1)))))))
               (value (bvar 0))))
   (define test-term-1
     (action-2 (lam-apply) (value (lam lattr-void test-term-0)) (value (bit (b-1)))))
