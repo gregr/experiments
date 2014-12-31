@@ -1,6 +1,5 @@
 #lang racket
 (require
-  readline
   "interaction.rkt"
   "semantics-denotational.rkt"
   "syntax-0-parsing.rkt"
@@ -28,16 +27,19 @@
 (define eval-port (make-parameter denote-eval-port))
 (define program-source (make-parameter (current-input-port)))
 
-(command-line
- #:once-each
- (("-f" "--file") filename "Read program terms from file"
-                  (program-source (open-input-file filename)))
- #:once-any
- (("-d" "--denotational") "Choose denotational interpretation"
-                          (eval-port denote-eval-port))
- (("-s" "--small-step") "Choose small-step interpretation"
-                        (eval-port step-eval-port)))
+(module+ main
+  (require readline)
+  (command-line
+    #:once-each
+    (("-f" "--file") filename "Read program terms from file"
+                     (program-source (open-input-file filename)))
+    #:once-any
+    (("-d" "--denotational") "Choose denotational interpretation"
+                             (eval-port denote-eval-port))
+    (("-s" "--small-step") "Choose small-step interpretation"
+                           (eval-port step-eval-port)))
 
-(match ((eval-port) (curry parse-0 penv-init-0) (program-source))
-  ((left err) (displayln err))
-  ((right result) result))
+  (match ((eval-port) (curry parse-0 penv-init-0) (program-source))
+    ((left err) (displayln err))
+    ((right result) result))
+  )
