@@ -1,5 +1,7 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  substitute
+  )
 
 (require
   "syntax-abstract.rkt"
