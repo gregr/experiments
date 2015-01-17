@@ -39,7 +39,13 @@
 (define v-0 (value (bit (b-0))))
 (define v-1 (value (bit (b-1))))
 (define new-lam-apply (curry action-2 (lam-apply)))
-(define new-pair-access (curry action-2 (pair-access)))
+(define (new-pair-access tcnd tpair)
+  (new-lam-apply
+    (new-lam-apply
+      (value (lam lattr-void
+                  (value (lam lattr-void
+                              (pair-access (bvar 1) (bvar 0))))))
+      tcnd) tpair))
 (define/match (new-pair l r)
   (((value vl) (value vr)) (right (value (pair vl vr))))
   ((_ _) (left (format "pair arguments must be values: ~v ~v" l r))))
