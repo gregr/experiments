@@ -5,7 +5,7 @@
 
 (require
   "syntax-abstract.rkt"
-  "util.rkt"
+  gregr-misc/list
   )
 
 (define (substitute-lift substitution count)
