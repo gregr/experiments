@@ -12,12 +12,12 @@
   bvar-lift
   bvar-use
 
-  pair-access
   lam-apply
 
+  (struct-out subst)
   (struct-out value)
   (struct-out produce)
-  (struct-out subst)
+  (struct-out pair-access)
   (struct-out action-2)
 
   lattr
@@ -49,11 +49,11 @@
   (bvar-use  attr v s))
 
 (records term-action-2
-  (pair-access)
   (lam-apply))
 
 (records term
-  (value    v)
-  (produce  t)
-  (subst    s t)
-  (action-2 act t0 t1))
+  (subst       s t)
+  (value       v)
+  (produce     t)
+  (pair-access index pair)
+  (action-2    act t0 t1))
