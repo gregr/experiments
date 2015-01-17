@@ -16,10 +16,14 @@
 (define (denote-eval consume term) ((denote consume term) denote-env-empty))
 
 (define (denote consume term)
+  (define den-val (curry denote-value consume))
   (match term
-    ((value val)    (denote-value consume val))
-    ((produce tm)   (compose1 consume (denote consume tm)))
     ((subst sub tm) (denote consume (substitute sub tm)))
+    ((value val)    (den-val val))
+    ((produce tm)   (compose1 consume (denote consume tm)))
+    ((pair-access vbit vpair)
+     (match-let (((list dbit dpair) (map* den-val vbit vpair)))
+       (lambda (env) ((vector-ref (vector car cdr) (dbit env)) (dpair env)))))
     ((action-2 act t0 t1)
      (let ((d0 (denote consume t0))
            (d1 (denote consume t1))
@@ -27,8 +31,6 @@
        (lambda (env) (dact (d0 env) (d1 env)))))))
 (define (denote-action-2 act)
   (match act
-    ((pair-access) (lambda (vbit vpair)
-                     ((vector-ref (vector car cdr) vbit) vpair)))
     ((lam-apply)   (lambda (vproc varg) (vproc varg)))))
 (define (denote-value consume val)
   (match val
@@ -61,11 +63,9 @@
   (define test-term-0
     (action-2 (lam-apply)
               (value (lam lattr-void
-                          (action-2 (pair-access)
-                                    (value (bvar 0))
-                                    (value (pair (uno)
-                                                 (pair (bvar 0)
-                                                       (bvar 1)))))))
+                          (pair-access (bvar 0)
+                                       (pair (uno)
+                                             (pair (bvar 0) (bvar 1))))))
               (value (bvar 0))))
   (define test-term-1
     (action-2 (lam-apply) (value (lam lattr-void test-term-0)) (value (bit (b-1)))))
