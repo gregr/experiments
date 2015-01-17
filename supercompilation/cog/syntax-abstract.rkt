@@ -25,7 +25,9 @@
   lattr-void
   )
 
-(require "util.rkt")
+(require
+  gregr-misc/record
+  )
 
 (record lattr arg-name arg-syntax lam-syntax)
 (define lattr-void (lattr (void) (void) (void)))
