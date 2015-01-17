@@ -32,7 +32,7 @@
 
 (define (substitute-value sub tv)
   (match tv
-    ((pair l r)   (pair-map (curry substitute-value sub) l r))
+    ((pair l r)   (apply-map* pair (curry substitute-value sub) l r))
     ((bvar index) (substitute-bvar sub index))
     ((lam attr body)
      (lam attr (subst (bvar-use attr (bvar 0)
@@ -41,8 +41,10 @@
     (_            tv)))
 
 (define (substitute sub term)
+  (define sub-value (curry substitute-value sub))
   (match term
-    ((value tv)           (value (substitute-value sub tv)))
-    ((produce tm)         (produce (subst sub tm)))
     ((subst inner tm)     (subst (substitute-substitution sub inner) tm))
-    ((action-2 act t0 t1) (action-2-map (curry subst sub) act t0 t1))))
+    ((value tv)           (value (sub-value tv)))
+    ((produce tm)         (produce (subst sub tm)))
+    ((action-2 act t0 t1) (apply-map* (curry action-2 act)
+                                      (curry subst sub) t0 t1))))

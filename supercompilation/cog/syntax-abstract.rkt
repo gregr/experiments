@@ -31,7 +31,3 @@
   (produce  t)
   (subst    s t)
   (action-2 act t0 t1))
-
-(define (pair-map f l r) (apply pair (map f (list l r))))
-(define (action-2-map f act t0 t1)
-  (apply (curry action-2 act) (map f (list t0 t1))))
