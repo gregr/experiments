@@ -151,7 +151,7 @@
   )))))
 
 (define std-0-output (tuple-decode (value-v
-  (step-big std-0-output-prog))))
+  (step-complete std-0-output-prog))))
 
 (match-define (cons lam-wrap (cons lam-unwrap (cons uno-1 std-1-input)))
   (map value std-0-output))

@@ -108,7 +108,6 @@
 (define interact-step (curry interact-with-focus step-safe))
 (define interact-complete
   (curry interact-with-focus (compose1 right step-complete)))
-(define interact-big (curry interact-with-focus (compose1 right step-big)))
 
 (define/destruct (interact-context-present (interact-context holes focus))
   (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
@@ -175,7 +174,7 @@
 (define (interact-loop state)
   (let loop ((st state))
     (printf "~a" (interact-state-viewcontext st))
-    (display "[hjkl](movement),[s]tep(count),[b]ig-step,[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
+    (display "[hjkl](movement),[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
     (do either-monad
       prev-st = st
       input = (read-line)
@@ -190,7 +189,6 @@
                          (compose1 (curry interact-safe-context interact-step)
                                    right-x)
                          (right st) count))))
-              ("b" (interact-safe-context interact-big st))
               ("c" (interact-safe-context interact-complete st))
               ("x" (interact-safe-view view-toggle st))
               ("u" (match (:.* st 'history)

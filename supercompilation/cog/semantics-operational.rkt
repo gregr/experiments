@@ -82,21 +82,6 @@
 
 (define step-complete (compose1 ::^*. step-full ::0))
 
-; TODO: this may be redundant now that step-complete is performant
-(define (step-big term)
-  (match term
-    ((produce tm)   (produce (step-big tm)))
-    ((subst sub tm) (step-big (substitute sub tm)))
-    ((action-2 act t0 t1)
-     (let ((t0 (step-big t0)) (t1 (step-big t1)))
-       (match* (t0 t1)
-         (((value v0) (value v1))
-          (match (execute-action-2 act v0 v1)
-            ((just tm) (step-big tm))
-            ((nothing) (action-2 act t0 t1))))
-         ((_ _) (action-2 act t0 t1)))))
-    (_ term)))
-
 (module+ test
   (define test-term-0
     (action-2 (lam-apply)
