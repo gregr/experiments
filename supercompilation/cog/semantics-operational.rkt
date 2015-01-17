@@ -13,15 +13,15 @@
 (define/match (execute-action-2 act v0 v1)
   (((lam-apply)   (lam attr body)  _)
    (just (subst (bvar-use attr v1 (bvar-lift 0)) body)))
-  (((pair-access) (bit (b-0)) (pair p0 p1)) (just (value p0)))
-  (((pair-access) (bit (b-1)) (pair p0 p1)) (just (value p1)))
   ((_             _           _)            (nothing)))
 
 (define (step-continuation-downward cterm)
   (match (::.* cterm)
+    ((subst sub tm)       (just cterm))
     ((value _)            (nothing))
     ((produce tm)         (step-continuation-downward (::@ cterm '(tm))))
-    ((subst sub tm)       (just cterm))
+    ((pair-access (bit _) (pair _ _))    (just cterm))
+    ((pair-access _ _)    (nothing))
     ((action-2 act t0 t1)
      (define (sub-cont choice)
        (step-continuation-downward (::@ cterm (list choice))))
@@ -49,9 +49,12 @@
 (define (step-execute cterm)
   (let ((term (::.* cterm)))
     (match term
+      ((subst sub tm) (just (::=* cterm (substitute sub tm))))
       ((value _)      (nothing))
       ((produce _)    (nothing))
-      ((subst sub tm) (just (::=* cterm (substitute sub tm))))
+      ((pair-access (bit bt) (pair p0 p1))
+       (just (::=* cterm (value (match bt ((b-0) p0) ((b-1) p1))))))
+      ((pair-access _ _) (nothing))
       ((action-2 act (value v0) (value v1))
        (maybe-map
          (curry ::=* cterm)
@@ -73,7 +76,7 @@
     (pure (::^*. cterm))))
 
 (define (step-safe term)
-  (if (or (value? term) (produce? term) (subst? term) (action-2? term))
+  (if (or (value? term) (produce? term) (pair-access? term) (subst? term) (action-2? term))
     (step term)
     (left (format "cannot step non-term: ~v" term))))
 
@@ -98,11 +101,9 @@
   (define test-term-0
     (action-2 (lam-apply)
               (value (lam lattr-void
-                          (action-2 (pair-access)
-                                    (value (bvar 0))
-                                    (value (pair (uno)
-                                                 (pair (bvar 0)
-                                                       (bvar 1)))))))
+                          (pair-access (bvar 0)
+                                       (pair (uno)
+                                             (pair (bvar 0) (bvar 1))))))
               (value (bvar 0))))
   (define test-term-1
     (action-2 (lam-apply) (value (lam lattr-void test-term-0)) (value (bit (b-1)))))
