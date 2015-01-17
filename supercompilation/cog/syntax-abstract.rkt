@@ -1,5 +1,29 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  b-0
+  b-1
+
+  uno
+  bit
+  pair
+  bvar
+  lam
+
+  bvar-lift
+  bvar-use
+
+  pair-access
+  lam-apply
+
+  (struct-out value)
+  (struct-out produce)
+  (struct-out subst)
+  (struct-out action-2)
+
+  lattr
+  lattr-name
+  lattr-void
+  )
 
 (require "util.rkt")
 
