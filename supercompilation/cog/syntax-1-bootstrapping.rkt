@@ -1,5 +1,12 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  _sym
+  lam-wrap
+  lam-unwrap
+  std
+  std-1-input
+  uno-1
+  )
 
 (require
   "data-encoding.rkt"
@@ -8,7 +15,8 @@
   "syntax-0-parsing.rkt"
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
-  "util.rkt"
+  gregr-misc/either
+  gregr-misc/match
   )
 
 (define (syntax-0-le val)

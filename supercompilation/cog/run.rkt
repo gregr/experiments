@@ -4,6 +4,7 @@
   "semantics-denotational.rkt"
   "syntax-0-parsing.rkt"
   "util.rkt"
+  gregr-misc/either
   )
 
 (define (interpret-port parse interpret return inp)

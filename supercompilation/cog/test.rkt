@@ -12,7 +12,8 @@
   "syntax-1.rkt"
   "syntax-abstract.rkt"
   "workspace.rkt"
-  "util.rkt"
+  gregr-misc/cursor
+  gregr-misc/either
   )
 
 (define tests `(

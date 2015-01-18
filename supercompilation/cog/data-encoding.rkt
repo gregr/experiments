@@ -1,9 +1,24 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  length-encoded
+  nat-decode
+  nat-encode
+  symbol-decode
+  symbol-encode
+  tuple-decode
+  tuple-encode
+  )
 
 (require
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/cursor
+  gregr-misc/either
+  gregr-misc/list
+  gregr-misc/match
+  gregr-misc/maybe
+  gregr-misc/monad
+  gregr-misc/record
   )
 
 (module+ test

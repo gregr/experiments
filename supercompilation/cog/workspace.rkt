@@ -1,10 +1,23 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  interaction
+  interaction-db-empty
+  present-workspace
+  tab
+  workspace
+  workspace-empty
+  workspace-view
+  workspace-view-empty
+  )
 
 (require
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/cursor
+  gregr-misc/list
+  gregr-misc/match
+  gregr-misc/record
   )
 
 (record workspace-view tab-index ic-indices)

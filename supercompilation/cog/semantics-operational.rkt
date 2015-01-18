@@ -1,10 +1,21 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  step-complete
+  step-complete-safe
+  step-safe
+  )
 
 (require
   "substitution.rkt"
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/cursor
+  gregr-misc/either
+  gregr-misc/list
+  gregr-misc/match
+  gregr-misc/maybe
+  gregr-misc/monad
+  gregr-misc/record
   )
 
 (module+ test

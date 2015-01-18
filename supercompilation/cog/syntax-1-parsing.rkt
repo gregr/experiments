@@ -1,11 +1,17 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  new-lam-apply-1
+  parse-1
+  penv-init-1
+  )
 
 (require
   "parsing.rkt"
   "syntax-1-bootstrapping.rkt"
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/either
+  gregr-misc/monad
   )
 
 (define (parse-1 pe form)

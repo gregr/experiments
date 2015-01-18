@@ -1,11 +1,17 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  map-parse-0
+  parse-0
+  penv-init-0
+  )
 
 (require
   "data-encoding.rkt"
   "parsing.rkt"
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/either
+  gregr-misc/monad
   )
 
 (define (parse-0 pe form)

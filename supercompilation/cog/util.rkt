@@ -1,25 +1,20 @@
 #lang racket
 (provide
-  (all-defined-out)
-  (all-from-out
-    gregr-misc/cursor
-    gregr-misc/either
-    gregr-misc/list
-    gregr-misc/match
-    gregr-misc/maybe
-    gregr-misc/monad
-    gregr-misc/record
-    )
+  dict-empty
+  dict-add
+  dict-get
+  do
+  flip
+  list-index
+  map-monad
+  maybe->either
+  pretty-string
   )
 
 (require
-  gregr-misc/cursor
   gregr-misc/either
-  gregr-misc/list
-  gregr-misc/match
   gregr-misc/maybe
   gregr-misc/monad
-  gregr-misc/record
   )
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))

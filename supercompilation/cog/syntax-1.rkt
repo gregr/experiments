@@ -1,10 +1,12 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  std-1
+  )
 
 (require
   "syntax-1-bootstrapping.rkt"
   "syntax-1-parsing.rkt"
-  "util.rkt"
+  gregr-misc/either
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

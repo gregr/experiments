@@ -1,9 +1,33 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  check-arity
+  map-parse
+  new-lam-apply
+  new-pair
+  new-pair-access
+  parse-apply
+  parse-bvar
+  parse-combination
+  parse-under
+  penv-empty
+  penv-syntax-add
+  penv-syntax-op-empty
+  penv-vars-add
+  v-0
+  v-1
+  v-uno
+  )
 
 (require
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/cursor
+  gregr-misc/either
+  gregr-misc/list
+  gregr-misc/match
+  gregr-misc/maybe
+  gregr-misc/monad
+  gregr-misc/record
   )
 
 (record penv syntax vars)

@@ -1,10 +1,13 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  denote-eval
+  noisy-consume
+  )
 
 (require
   "substitution.rkt"
   "syntax-abstract.rkt"
-  "util.rkt"
+  gregr-misc/list
   )
 
 (module+ test

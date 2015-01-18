@@ -1,11 +1,19 @@
 #lang racket
-(provide (all-defined-out))
+(provide
+  interact-with
+  )
 
 (require
   "semantics-operational.rkt"
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
   "util.rkt"
+  gregr-misc/cursor
+  gregr-misc/either
+  gregr-misc/list
+  gregr-misc/match
+  gregr-misc/monad
+  gregr-misc/record
   )
 
 (records hole-term-value
