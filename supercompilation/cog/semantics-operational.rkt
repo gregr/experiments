@@ -75,12 +75,16 @@
                             (step-once (::0 term)))
     (pure (::^*. cterm))))
 
+(define step-complete (compose1 ::^*. step-full ::0))
+
 (define (step-safe term)
   (if (or (value? term) (produce? term) (pair-access? term) (subst? term) (action-2? term))
     (step term)
     (left (format "cannot step non-term: ~v" term))))
-
-(define step-complete (compose1 ::^*. step-full ::0))
+(define (step-complete-safe term)
+  (if (or (value? term) (produce? term) (pair-access? term) (subst? term) (action-2? term))
+    (right (step-complete term))
+    (left (format "cannot step-complete non-term: ~v" term))))
 
 (module+ test
   (define test-term-0

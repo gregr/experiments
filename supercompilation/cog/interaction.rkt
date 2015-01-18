@@ -106,8 +106,7 @@
     (pure (interact-context holes new-focus))))
 
 (define interact-step (curry interact-with-focus step-safe))
-(define interact-complete
-  (curry interact-with-focus (compose1 right step-complete)))
+(define interact-complete (curry interact-with-focus step-complete-safe))
 
 (define/destruct (interact-context-present (interact-context holes focus))
   (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
