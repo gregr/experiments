@@ -28,8 +28,8 @@
   (hole-subst-s    attr prefix suffix t)
   (hole-pair-access-0 v1)
   (hole-pair-access-1 v0)
-  (hole-action-2-0 act t1)
-  (hole-action-2-1 act t0))
+  (hole-lam-apply-0 t1)
+  (hole-lam-apply-1 t0))
 
 (record interact-context holes focus)
 
@@ -37,16 +37,16 @@
 
 (define (hole-fill hole subterm)
   (match hole
-    ((hole-pair-l r)           (list 0 (pair subterm r)))
-    ((hole-pair-r l)           (list 1 (pair l subterm)))
-    ((hole-lam attr)           (list 0 (lam attr subterm)))
-    ((hole-value)              (list 0 (value subterm)))
-    ((hole-produce)            (list 0 (produce subterm)))
-    ((hole-pair-access-0 v1)   (list 0 (pair-access subterm v1)))
-    ((hole-pair-access-1 v0)   (list 1 (pair-access v0 subterm)))
-    ((hole-action-2-0 act t1)  (list 0 (action-2 act subterm t1)))
-    ((hole-action-2-1 act t0)  (list 1 (action-2 act t0 subterm)))
-    ((hole-subst-t s)          (list 0 (subst s subterm)))
+    ((hole-pair-l r)         (list 0 (pair subterm r)))
+    ((hole-pair-r l)         (list 1 (pair l subterm)))
+    ((hole-lam attr)         (list 0 (lam attr subterm)))
+    ((hole-value)            (list 0 (value subterm)))
+    ((hole-produce)          (list 0 (produce subterm)))
+    ((hole-pair-access-0 v1) (list 0 (pair-access subterm v1)))
+    ((hole-pair-access-1 v0) (list 1 (pair-access v0 subterm)))
+    ((hole-lam-apply-0 t1)   (list 0 (lam-apply subterm t1)))
+    ((hole-lam-apply-1 t0)   (list 1 (lam-apply t0 subterm)))
+    ((hole-subst-t s)        (list 0 (subst s subterm)))
     ((hole-subst-s attr prefix suffix t)
      (list (+ 1 (length prefix))
            (subst (foldr
@@ -62,8 +62,8 @@
   ((0 (produce tm))         (right (list (hole-produce)           tm)))
   ((0 (pair-access v0 v1))  (right (list (hole-pair-access-0 v1)  v0)))
   ((1 (pair-access v0 v1))  (right (list (hole-pair-access-1 v0)  v1)))
-  ((0 (action-2 act t0 t1)) (right (list (hole-action-2-0 act t1) t0)))
-  ((1 (action-2 act t0 t1)) (right (list (hole-action-2-1 act t0) t1)))
+  ((0 (lam-apply t0 t1)) (right (list (hole-lam-apply-0 t1) t0)))
+  ((1 (lam-apply t0 t1)) (right (list (hole-lam-apply-1 t0) t1)))
   ((k (subst sub tm))
    (match k
      (0 (right (list (hole-subst-t sub)       tm)))

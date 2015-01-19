@@ -27,14 +27,10 @@
     ((pair-access vbit vpair)
      (match-let (((list dbit dpair) (map* den-val vbit vpair)))
        (lambda (env) ((vector-ref (vector car cdr) (dbit env)) (dpair env)))))
-    ((action-2 act t0 t1)
-     (let ((d0 (denote consume t0))
-           (d1 (denote consume t1))
-           (dact (denote-action-2 act)))
-       (lambda (env) (dact (d0 env) (d1 env)))))))
-(define (denote-action-2 act)
-  (match act
-    ((lam-apply)   (lambda (vproc varg) (vproc varg)))))
+    ((lam-apply t0 t1)
+     (let ((d0 (denote consume t0)) (d1 (denote consume t1)))
+       (lambda (env) ((d0 env) (d1 env)))))))
+
 (define (denote-value consume val)
   (match val
     ((bit vb)   (denote-value-bit vb))
@@ -64,14 +60,14 @@
 
 (module+ test
   (define test-term-0
-    (action-2 (lam-apply)
-              (value (lam lattr-void
-                          (pair-access (bvar 0)
-                                       (pair (uno)
-                                             (pair (bvar 0) (bvar 1))))))
-              (value (bvar 0))))
+    (lam-apply
+      (value (lam lattr-void
+                  (pair-access (bvar 0)
+                               (pair (uno)
+                                     (pair (bvar 0) (bvar 1))))))
+      (value (bvar 0))))
   (define test-term-1
-    (action-2 (lam-apply) (value (lam lattr-void test-term-0)) (value (bit (b-1)))))
+    (lam-apply (value (lam lattr-void test-term-0)) (value (bit (b-1)))))
   (define completed ((denote null-consume test-term-1) denote-env-empty))
   (check-equal?
     completed

@@ -47,5 +47,4 @@
     ((value tv)           (value (sub-value tv)))
     ((produce tm)         (produce (subst sub tm)))
     ((pair-access idx pr) (apply-map* pair-access sub-value idx pr))
-    ((action-2 act t0 t1) (apply-map* (curry action-2 act)
-                                      (curry subst sub) t0 t1))))
+    ((lam-apply proc arg) (apply-map* lam-apply (curry subst sub) proc arg))))

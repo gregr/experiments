@@ -47,7 +47,7 @@
     ((produce tm) `(produce ,(unparse upe tm)))
     ((pair-access idx pr) (list* 'pair-access
                                  (map* (curry unparse-value upe) idx pr)))
-    ((action-2 (lam-apply) tproc targ)
+    ((lam-apply tproc targ)
      (unparse-application unparse upe tproc (list targ)))))
 (define (unparse-application unparse upe tproc targs)
   (match tproc

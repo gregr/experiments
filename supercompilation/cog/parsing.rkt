@@ -62,7 +62,7 @@
 (define v-uno (value (uno)))
 (define v-0 (value (bit (b-0))))
 (define v-1 (value (bit (b-1))))
-(define new-lam-apply (curry action-2 (lam-apply)))
+(define new-lam-apply lam-apply)
 (define (new-pair-access tcnd tpair)
   (new-lam-apply
     (new-lam-apply

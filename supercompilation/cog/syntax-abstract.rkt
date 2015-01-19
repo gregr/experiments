@@ -12,12 +12,11 @@
   bvar-lift
   bvar-use
 
-  lam-apply
 
   subst
   produce
   pair-access
-  action-2
+  lam-apply
   term?
   (struct-out value)
 
@@ -49,12 +48,9 @@
   (bvar-lift k)
   (bvar-use  attr v s))
 
-(records term-action-2
-  (lam-apply))
-
 (records term
   (subst       s t)
   (value       v)
   (produce     t)
   (pair-access index pair)
-  (action-2    act t0 t1))
+  (lam-apply   proc arg))
