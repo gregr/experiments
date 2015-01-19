@@ -14,11 +14,12 @@
 
   lam-apply
 
-  (struct-out subst)
+  subst
+  produce
+  pair-access
+  action-2
+  term?
   (struct-out value)
-  (struct-out produce)
-  (struct-out pair-access)
-  (struct-out action-2)
 
   lattr
   lattr-name
