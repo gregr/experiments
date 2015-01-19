@@ -5,7 +5,6 @@
   dict-get
   do
   flip
-  list-index
   map-monad
   maybe->either
   pretty-string
@@ -36,13 +35,6 @@
   (maybe-fold (left left-arg) right maybe))
 
 (define ((flip proc) x y) (proc y x))
-
-(define (list-index lst key)
-  (let loop ((lst lst) (key key) (index 0))
-    (match lst
-      ('() (nothing))
-      ((cons key0 lst)
-        (if (equal? key0 key) (just index) (loop lst key (+ index 1)))))))
 
 (define dict-empty (hash))
 (define (dict-add dct key val) (dict-set dct key (just val)))

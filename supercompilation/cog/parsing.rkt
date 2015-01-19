@@ -57,7 +57,10 @@
                               (penv-syntax-get pe penv-syntax-op-empty)))))
 (define/destruct (penv-vars-add (penv syntax vars) name)
   (penv syntax (cons name vars)))
-(define (penv-vars-get pe name) (list-index (penv-vars pe) name))
+(define (penv-vars-get pe name)
+  (match (list-index-equal (penv-vars pe) name)
+    (-1 (nothing))
+    (idx (just idx))))
 
 (define v-uno (value (uno)))
 (define v-0 (value (bit (b-0))))
