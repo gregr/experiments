@@ -14,91 +14,71 @@
   gregr-misc/match
   gregr-misc/monad
   gregr-misc/record
+  gregr-misc/sugar
   )
 
-(records hole-term-value
-  (hole-pair-l r)
-  (hole-pair-r l)
-  (hole-lam attr))
+(def (subst-keys sub)
+  sub-keys =
+  (let loop ((prev '(v)) (sub sub))
+    (match sub
+      ((bvar-lift _)      '())
+      ((bvar-use _ _ sub)
+       (lets
+         next = (list* 's prev)
+         (list* next (loop next sub))))))
+  _ = (displayln "sub keys:")
+  _ = (displayln sub-keys)
+  (list* '(t) sub-keys))
 
-(records hole-term
-  (hole-value)
-  (hole-produce)
-  (hole-subst-t       s)
-  (hole-subst-s       attr prefix suffix t)
-  (hole-pair-access-0 v1)
-  (hole-pair-access-1 v0)
-  (hole-lam-apply-0   t1)
-  (hole-lam-apply-1   t0))
+(define (hole-keys focus)
+  (match focus
+    ((subst sub _) (subst-keys sub))
+    ((lam _ _)     '((body)))
+    (_ (if (or (term? focus) (pair? focus))
+         (map list (dict-keys focus)) '()))))
 
-(record interact-context holes focus)
+(def (hole-key idx focus)
+  keys = (hole-keys focus)
+  (if (and (<= 0 idx) (< idx (length keys)))
+    (right (list-ref keys idx))
+    (left (format "cannot select subterm ~a of: ~v" idx focus))))
 
-(define (interact-context-init term) (interact-context '() term))
+(define (interact-ascend-index cterm)
+  (if (empty? (cursor-trail cterm)) (left "no hole to fill")
+    (lets
+      (list count new-cterm) =
+      (let loop ((count 1) (cterm (::^ cterm)))
+        (if (term-substitution? (::.* cterm))
+          (loop (+ count 1) (::^ cterm)) (list count cterm)))
+      key = (reverse (take (cursor-trail cterm) count))
+      keys = (hole-keys (::.* new-cterm))
+      idx = (list-index-equal keys key)
+      (right (list idx new-cterm)))))
 
-(define (hole-fill hole subterm)
-  (match hole
-    ((hole-pair-l r)         (list 0 (pair subterm r)))
-    ((hole-pair-r l)         (list 1 (pair l subterm)))
-    ((hole-lam attr)         (list 0 (lam attr subterm)))
-    ((hole-value)            (list 0 (value subterm)))
-    ((hole-produce)          (list 0 (produce subterm)))
-    ((hole-pair-access-0 v1) (list 0 (pair-access subterm v1)))
-    ((hole-pair-access-1 v0) (list 1 (pair-access v0 subterm)))
-    ((hole-lam-apply-0 t1)   (list 0 (lam-apply subterm t1)))
-    ((hole-lam-apply-1 t0)   (list 1 (lam-apply t0 subterm)))
-    ((hole-subst-t s)        (list 0 (subst s subterm)))
-    ((hole-subst-s attr prefix suffix t)
-     (list (+ 1 (length prefix))
-           (subst (foldr
-                    (match-lambda** (((cons attr v) rest)
-                                     (bvar-use attr v rest)))
-                    (bvar-use attr subterm suffix) prefix) t)))))
+(def (interact-descend-index idx cterm)
+  (begin/with-monad either-monad
+    key <- (hole-key idx (::.* cterm))
+    (pure (::@ cterm key))))
 
-(define/match (hole-make idx focus)
-  ((0 (pair l r))          (right (list (hole-pair-l r)         l)))
-  ((1 (pair l r))          (right (list (hole-pair-r l)         r)))
-  ((0 (lam attr body))     (right (list (hole-lam attr)         body)))
-  ((0 (value val))         (right (list (hole-value)            val)))
-  ((0 (produce tm))        (right (list (hole-produce)          tm)))
-  ((0 (pair-access v0 v1)) (right (list (hole-pair-access-0 v1) v0)))
-  ((1 (pair-access v0 v1)) (right (list (hole-pair-access-1 v0) v1)))
-  ((0 (lam-apply t0 t1))   (right (list (hole-lam-apply-0 t1)   t0)))
-  ((1 (lam-apply t0 t1))   (right (list (hole-lam-apply-1 t0)   t1)))
-  ((k (subst sub tm))
-   (match k
-     (0 (right (list (hole-subst-t sub)       tm)))
-     ((? (lambda (k) (and (< 0 k) (>= (subst-length sub) k))) k)
-      (match-let (((list attr val prefix suffix) (subst-hole-make (- idx 1) sub)))
-        (right (list (hole-subst-s attr prefix suffix tm) val))))
-     (_ (left (format "cannot select subterm ~a of: ~v" idx focus)))))
-  ((_ _) (left (format "cannot select subterm ~a of: ~v" idx focus))))
+(def (interact-with-focus f cterm)
+  (do either-monad
+    new-focus <- (f (::.* cterm))
+    (pure (::=* cterm new-focus))))
 
-(define (subst-length sub)
-  (match sub
-    ((bvar-lift _)    0)
-    ((bvar-use _ _ sub) (+ 1 (subst-length sub)))))
+(def (interact-context-present cterm)
+  trail =
+  (let loop ((cterm cterm))
+    (match (interact-ascend-index (::=* cterm (void)))
+      ((left _) '())
+      ((right (list _ void-cterm))
+       (list* (::.* void-cterm) (loop void-cterm)))))
+  (reverse (list* (::.* cterm) trail)))
 
-(define (subst-hole-make idx sub)
-  (let loop ((idx idx) (sub sub) (acc '()))
-    (match* (idx sub)
-      ((0 (bvar-use attr v sub)) (list attr v (reverse acc) sub))
-      ((k (bvar-use attr v sub)) (loop (- k 1) sub (cons (cons attr v) acc))))))
-
-(define/destruct (interact-ascend-index (interact-context holes focus))
-  (match holes
-    ((cons hole holes)
-     (match-let (((list idx new-focus) (hole-fill hole focus)))
-       (right (list idx (interact-context holes new-focus)))))
-    (_ (left "no hole to fill"))))
 (define (interact-ascend context)
   (do either-monad
     (list _ context) <- (interact-ascend-index context)
     (pure context)))
 
-(define/destruct (interact-descend-index idx (interact-context holes focus))
-  (do either-monad
-    (list hole new-focus) <- (hole-make idx focus)
-    (pure (interact-context (cons hole holes) new-focus))))
 (define interact-descend (curry interact-descend-index 0))
 
 (define ((interact-shift offset) context)
@@ -108,17 +88,8 @@
 (define interact-shift-left (interact-shift -1))
 (define interact-shift-right (interact-shift 1))
 
-(define/destruct (interact-with-focus f (interact-context holes focus))
-  (do either-monad
-    new-focus <- (f focus)
-    (pure (interact-context holes new-focus))))
-
 (define interact-step (curry interact-with-focus step-safe))
 (define interact-complete (curry interact-with-focus step-complete-safe))
-
-(define/destruct (interact-context-present (interact-context holes focus))
-  (define (hole-present hole) (list-ref (hole-fill hole (void)) 1))
-  (reverse (cons focus (map hole-present holes))))
 
 (record void-closure is-value upenv)
 (define (unparse-void-closure upe term)
@@ -167,8 +138,7 @@
            view-syntax-0 view-syntax-raw)))
 
 (record interact-state view context history)
-(define (interact-state-viewcontext st)
-  ((interact-state-view st) (interact-state-context st)))
+(def (interact-state-viewcontext (interact-state view ctx _)) (view ctx))
 
 (define ((left-display-default default) result)
   (either-fold (lambda (msg) (display msg) default) identity result))
@@ -209,4 +179,4 @@
 
 (define (interact-with term)
   (interact-loop
-    (interact-state view-syntax-0 (interact-context-init term) '())))
+    (interact-state view-syntax-0 (::0 term) '())))

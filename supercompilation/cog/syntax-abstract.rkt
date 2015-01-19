@@ -5,13 +5,13 @@
 
   uno
   bit
-  pair
+  (struct-out pair)
   bvar
   lam
 
   bvar-lift
   bvar-use
-
+  term-substitution?
 
   subst
   produce
