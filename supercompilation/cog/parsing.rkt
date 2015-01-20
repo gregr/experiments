@@ -42,7 +42,7 @@
     (match (penv-vars-get pe name)
       ((nothing) (right '()))
       ((just _) (left msg))))
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-vars old "cannot rename non-keyword")
     _ <- (check-vars new "rename-target already bound as a non-keyword")
     syn-old <- (maybe->either "cannot rename non-existent keyword"
@@ -87,23 +87,23 @@
     (right '())
     (left (format "expected symbol but found: ~s" form))))
 (define (parse-combination pe op form)
-  (do either-monad
+  (begin/with-monad either-monad
     proc <- (penv-syntax-op-get pe op)
     (proc pe form)))
 (define ((map-parse parse) pe form)
   (map-monad either-monad (curry parse pe) form))
 (define (((parse-apply map-parse) proc arity) pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity arity form)
     args <- (map-parse pe (cdr form))
     (pure (apply proc args))))
 (define ((parse-under parse) pe params body)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (map-monad either-monad check-symbol params)
     pe = (foldl (flip penv-vars-add) pe params)
     (parse pe body)))
 (define (parse-bvar pe name)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-symbol name)
     _ <- (if (equal? name '_) (left "unexpected reference to _") (right name))
     idx <- (maybe->either (format "unbound variable '~a'" name)

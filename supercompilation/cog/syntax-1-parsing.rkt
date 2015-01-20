@@ -9,7 +9,6 @@
   "parsing.rkt"
   "syntax-1-bootstrapping.rkt"
   "syntax-abstract.rkt"
-  "util.rkt"
   gregr-misc/either
   gregr-misc/monad
   )
@@ -32,7 +31,7 @@
     (value (lam (lattr-name arg-name) body))))
 
 (define (parse-lam-apply-1 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     form <- (map-parse-1 pe form)
     (cons proc args) = form
     (pure
@@ -41,7 +40,7 @@
           ('() proc)
           ((cons arg args) (loop (new-lam-apply-1 proc arg) args)))))))
 (define (parse-lam-1 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity 3 form)
     `(,_ ,names ,body) = form
     _ <- (if (>= (length names) 1) (right (void))

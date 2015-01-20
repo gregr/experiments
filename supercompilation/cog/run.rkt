@@ -3,14 +3,14 @@
   "interaction.rkt"
   "semantics-denotational.rkt"
   "syntax-0-parsing.rkt"
-  "util.rkt"
   gregr-misc/either
+  gregr-misc/monad
   )
 
 (define (interpret-port parse interpret return inp)
   (let ((form (read inp)))
     (if (eq? form eof) (right (void))
-      (do either-monad
+      (begin/with-monad either-monad
         term <- (parse form)
         (begin
           (return (interpret term))

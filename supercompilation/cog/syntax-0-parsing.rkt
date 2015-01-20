@@ -28,7 +28,7 @@
 
 (define parse-produce-0 (parse-apply-0 produce 2))
 (define (parse-subst-0 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity 4 form)
     `(,_ ,uses ,lift ,body) = form
     _ <- (if (and (integer? lift) (>= lift 0)) (right (void))
@@ -44,7 +44,7 @@
     (pure (subst (foldr (lambda (papp rest) (papp rest))
                         (bvar-lift lift) puses) body))))
 (define (parse-lam-apply-0 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     form <- (map-parse-0 pe form)
     (cons proc args) = form
     (pure
@@ -53,7 +53,7 @@
           ('() proc)
           ((cons arg args) (loop (new-lam-apply proc arg) args)))))))
 (define (parse-lam-0 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity 3 form)
     `(,_ ,names ,body) = form
     _ <- (if (>= (length names) 1) (right (void))
@@ -62,7 +62,7 @@
     (pure (foldr (lambda (name body) (value (lam (lattr-name name) body))) body names))))
 (define parse-pair-access-0 (parse-apply-0 new-pair-access 3))
 (define (parse-pair-0 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity 3 form)
     `(,_ ,fl ,fr) = form
     l <- (parse-0 pe fl)
@@ -73,7 +73,7 @@
   (define/match (tuple-value term)
     (((value val)) (right val))
     ((_)           (left (format "tuple elements must be values: ~v" form))))
-  (do either-monad
+  (begin/with-monad either-monad
     `(,_ . ,felems) = form
     velems <- (map-parse-0 pe felems)
     elems <- (map-monad either-monad tuple-value velems)
@@ -81,7 +81,7 @@
 
 ; derived syntax
 (define (parse-if-0-0 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity 4 form)
     `(,_ ,fcnd ,fzero ,fone) = form
     cnd <- (parse-0 pe fcnd)
@@ -100,7 +100,7 @@
     (_ (left (format "expected 0 or 1 but found: ~s" form)))))
 
 (define (parse-fixpoint-0 pe form)
-  (do either-monad
+  (begin/with-monad either-monad
     _ <- (check-arity 3 form)
     `(,_ ,names ,body) = form
     _ <- (if (>= (length names) 1) (right (void))

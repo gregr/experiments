@@ -61,7 +61,7 @@
     (pure (::@ cterm key))))
 
 (def (interact-with-focus f cterm)
-  (do either-monad
+  (begin/with-monad either-monad
     new-focus <- (f (::.* cterm))
     (pure (::=* cterm new-focus))))
 
@@ -75,14 +75,14 @@
   (reverse (list* (::.* cterm) trail)))
 
 (define (interact-ascend context)
-  (do either-monad
+  (begin/with-monad either-monad
     (list _ context) <- (interact-ascend-index context)
     (pure context)))
 
 (define interact-descend (curry interact-descend-index 0))
 
 (define ((interact-shift offset) context)
-  (do either-monad
+  (begin/with-monad either-monad
     (list idx context1) <- (interact-ascend-index context)
     (interact-descend-index (+ idx offset) context1)))
 (define interact-shift-left (interact-shift -1))
@@ -152,7 +152,7 @@
   (let loop ((st state))
     (printf "~a" (interact-state-viewcontext st))
     (display "[hjkl](movement),[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
-    (do either-monad
+    (begin/with-monad either-monad
       prev-st = st
       input = (read-line)
       st <- (match input

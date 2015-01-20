@@ -3,7 +3,6 @@
   dict-empty
   dict-add
   dict-get
-  do
   flip
   map-monad
   maybe->either
@@ -18,15 +17,11 @@
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
 
-(define-syntax do
-  (syntax-rules ()
-    ((_ body ...) (begin/with-monad body ...))))
-
 (define (map-monad monad proc xs)
   (match xs
-    ('() (do monad (pure '())))
+    ('() (begin/with-monad monad (pure '())))
     ((cons y ys)
-      (do monad
+      (begin/with-monad monad
         y0 <- (proc y)
         ys0 <- (map-monad monad proc ys)
         (pure (cons y0 ys0))))))
