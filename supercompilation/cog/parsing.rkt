@@ -22,6 +22,7 @@
   "syntax-abstract.rkt"
   "util.rkt"
   gregr-misc/cursor
+  gregr-misc/dict
   gregr-misc/either
   gregr-misc/list
   gregr-misc/match

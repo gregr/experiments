@@ -11,8 +11,8 @@
 
 (require
   "syntax-abstract.rkt"
-  "util.rkt"
   gregr-misc/cursor
+  gregr-misc/dict
   gregr-misc/either
   gregr-misc/list
   gregr-misc/match
@@ -216,7 +216,7 @@
                         (+ 1 next-uid)))
          (_ (error (format "symbol already added for key: ~v" key))))))))
 
-(define (symbol-table-lens key) `(mapping ,key x sub-table))
+(define (symbol-table-lens key) `(mapping ,key sub-table))
 (define (symbol-table-lens* keys) (:o (map symbol-table-lens keys)))
 
 (define ((symbol-table-decode-lens symbol) table)
