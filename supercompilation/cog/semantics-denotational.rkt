@@ -2,6 +2,7 @@
 (provide
   denote-eval
   noisy-consume
+  null-consume
   )
 
 (require
