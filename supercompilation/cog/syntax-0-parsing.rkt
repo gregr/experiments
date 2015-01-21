@@ -9,7 +9,6 @@
   "data-encoding.rkt"
   "parsing.rkt"
   "syntax-abstract.rkt"
-  "util.rkt"
   gregr-misc/either
   gregr-misc/monad
   )
@@ -76,7 +75,7 @@
   (begin/with-monad either-monad
     `(,_ . ,felems) = form
     velems <- (map-parse-0 pe felems)
-    elems <- (map-monad either-monad tuple-value velems)
+    elems <- (monad-map either-monad tuple-value velems)
     (pure (value (tuple-encode elems)))))
 
 ; derived syntax

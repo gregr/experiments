@@ -91,7 +91,7 @@
     proc <- (penv-syntax-op-get pe op)
     (proc pe form)))
 (define ((map-parse parse) pe form)
-  (map-monad either-monad (curry parse pe) form))
+  (monad-map either-monad (curry parse pe) form))
 (define (((parse-apply map-parse) proc arity) pe form)
   (begin/with-monad either-monad
     _ <- (check-arity arity form)
@@ -99,7 +99,7 @@
     (pure (apply proc args))))
 (define ((parse-under parse) pe params body)
   (begin/with-monad either-monad
-    _ <- (map-monad either-monad check-symbol params)
+    _ <- (monad-map either-monad check-symbol params)
     pe = (foldl (flip penv-vars-add) pe params)
     (parse pe body)))
 (define (parse-bvar pe name)

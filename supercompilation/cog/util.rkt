@@ -4,25 +4,14 @@
   dict-add
   dict-get
   flip
-  map-monad
   pretty-string
   )
 
 (require
   gregr-misc/maybe
-  gregr-misc/monad
   )
 
 (define (pretty-string x) (call-with-output-string (curry pretty-print x)))
-
-(define (map-monad monad proc xs)
-  (match xs
-    ('() (begin/with-monad monad (pure '())))
-    ((cons y ys)
-      (begin/with-monad monad
-        y0 <- (proc y)
-        ys0 <- (map-monad monad proc ys)
-        (pure (cons y0 ys0))))))
 
 (define ((flip proc) x y) (proc y x))
 
