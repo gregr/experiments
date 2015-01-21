@@ -46,8 +46,7 @@
     _ <- (if (>= (length names) 1) (right (void))
            (left (format "lam must include at least one parameter: ~v" form)))
     body <- (parse-under-1 pe names body)
-    (pure (foldr (lambda (arg-name body) (new-lam-1 arg-name body))
-                 body names))))
+    (pure (foldr new-lam-1 body names))))
 
 (define penv-init-1
   (foldr (lambda (keyval pe) (apply (curry penv-syntax-add pe) keyval))

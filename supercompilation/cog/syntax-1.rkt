@@ -7,6 +7,7 @@
   "syntax-1-bootstrapping.rkt"
   "syntax-1-parsing.rkt"
   gregr-misc/either
+  gregr-misc/function
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -19,5 +20,4 @@
                  sym-eq? 0b 1b pair pair-access
                  produce error gen-sym)
               ,prog)))))
-    (foldl (lambda (arg proc) (new-lam-apply-1 proc arg)) proc
-           std-1-input)))
+    (foldl (flip new-lam-apply-1) proc std-1-input)))
