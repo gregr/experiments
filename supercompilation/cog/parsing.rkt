@@ -20,10 +20,10 @@
 
 (require
   "syntax-abstract.rkt"
-  "util.rkt"
   gregr-misc/cursor
   gregr-misc/dict
   gregr-misc/either
+  gregr-misc/function
   gregr-misc/list
   gregr-misc/match
   gregr-misc/maybe
