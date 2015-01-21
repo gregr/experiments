@@ -5,12 +5,10 @@
   dict-get
   flip
   map-monad
-  maybe->either
   pretty-string
   )
 
 (require
-  gregr-misc/either
   gregr-misc/maybe
   gregr-misc/monad
   )
@@ -25,9 +23,6 @@
         y0 <- (proc y)
         ys0 <- (map-monad monad proc ys)
         (pure (cons y0 ys0))))))
-
-(define (maybe->either left-arg maybe)
-  (maybe-fold (left left-arg) right maybe))
 
 (define ((flip proc) x y) (proc y x))
 

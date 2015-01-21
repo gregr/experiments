@@ -8,7 +8,6 @@
 (require
   "substitution.rkt"
   "syntax-abstract.rkt"
-  "util.rkt"
   gregr-misc/cursor
   gregr-misc/either
   gregr-misc/list
