@@ -36,7 +36,3 @@
 (define (dict-get dct key) (dict-ref dct key (nothing)))
 (define (dict-get-default dct key default)
   (maybe-from default (dict-get dct key)))
-
-(define set-empty (set))
-(define (set-unions ss)
-  (match ss ('() set-empty) (_ (apply set-union ss))))
