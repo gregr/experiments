@@ -26,8 +26,6 @@
        (lets
          next = (list* 's prev)
          (list* next (loop next sub))))))
-  _ = (displayln "sub keys:")
-  _ = (displayln sub-keys)
   (list* '(t) sub-keys))
 
 (define (hole-keys focus)
