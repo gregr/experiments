@@ -8,10 +8,10 @@
   (struct-out pair)
   bvar
   lam
+  term-value?
 
-  bvar-lift
-  bvar-use
-  term-substitution?
+  (struct-out substitution-use)
+  (struct-out substitution)
 
   subst
   produce
@@ -44,9 +44,8 @@
   (bvar idx)
   (lam  attr body))
 
-(records term-substitution
-  (bvar-lift k)
-  (bvar-use  attr v s))
+(record substitution-use attr v)
+(record substitution uses lift)
 
 (records term
   (subst       s t)

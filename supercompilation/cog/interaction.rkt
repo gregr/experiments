@@ -13,20 +13,17 @@
   gregr-misc/list
   gregr-misc/match
   gregr-misc/monad
+  gregr-misc/navigator
   gregr-misc/record
   gregr-misc/sugar
   )
 
-(def (subst-keys sub)
-  sub-keys =
-  (let loop ((prev '(v)) (sub sub))
-    (match sub
-      ((bvar-lift _)      '())
-      ((bvar-use _ _ sub)
-       (lets
-         next = (list* 's prev)
-         (list* next (loop next sub))))))
-  (list* '(t) sub-keys))
+(def (subst-keys (substitution uses _))
+  use-keys =
+  (forl
+    use-list-key <- (list-navigator-keys uses)
+    (append use-list-key '(v)))
+  (list* '(t) use-keys))
 
 (define (hole-keys focus)
   (match focus
@@ -46,7 +43,7 @@
     (lets
       (list count new-cterm) =
       (let loop ((count 1) (cterm (::^ cterm)))
-        (if (term-substitution? (::.* cterm))
+        (if (substitution? (::.* cterm))
           (loop (+ count 1) (::^ cterm)) (list count cterm)))
       key = (reverse (take (cursor-trail cterm) count))
       keys = (hole-keys (::.* new-cterm))

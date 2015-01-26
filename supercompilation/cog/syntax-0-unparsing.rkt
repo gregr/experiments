@@ -12,6 +12,7 @@
   gregr-misc/list
   gregr-misc/match
   gregr-misc/record
+  gregr-misc/sugar
   )
 
 (record upenv vars)
@@ -68,12 +69,13 @@
        (match (unparse new-upe body)
          (`(lam ,names ,body) (list 'lam (cons new-name names) body))
          (body                (list 'lam (list new-name) body)))))))
-(define (unparse-subst unparse-value upe sub)
-  (let loop ((upe upe) (sub sub) (uses '()) (names '()))
-    (match sub
-      ((bvar-lift k) (list (reverse uses) (reverse names) k))
-      ((bvar-use (lattr name _ _) val sub)  ; TODO: use entire attr
-       (loop upe sub (cons (list name '= (unparse-value upe val)) uses) (cons name names))))))
+(def (unparse-subst unparse-value upe (substitution uses lift))
+  unparsed-uses =
+  (forl
+    (substitution-use (lattr name _ _) val) <- uses  ; TODO: use entire attr
+    (list (list name '= (unparse-value upe val)) name))
+  (list assignments names) = (zip-default unparsed-uses '(() ()))
+  (list assignments names lift))
 
 (define (unparse-value-bit vb)
   (match vb

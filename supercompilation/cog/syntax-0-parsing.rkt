@@ -39,9 +39,8 @@
            (left (format "subst 'uvals' must be values: ~v" form)))
     uvals = (map value-v uvals)
     body <- (parse-0 pe body)
-    puses = (map (curry bvar-use) uattrs uvals)
-    (pure (subst (foldr (lambda (papp rest) (papp rest))
-                        (bvar-lift lift) puses) body))))
+    uses = (map substitution-use uattrs uvals)
+    (pure (subst (substitution uses lift) body))))
 (define (parse-lam-apply-0 pe form)
   (begin/with-monad either-monad
     form <- (map-parse-0 pe form)

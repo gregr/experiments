@@ -62,7 +62,7 @@
        (just (value (match bt ((b-0) p0) ((b-1) p1)))))
       ((pair-access _ _) (nothing))
       ((lam-apply (value (lam attr body)) (value v1))
-       (just (subst (bvar-use attr v1 (bvar-lift 0)) body)))
+       (just (substitute-lam-apply attr body v1)))
       ((lam-apply (value _) (value _)) (nothing)))))
 
 (define (step-once cterm)
