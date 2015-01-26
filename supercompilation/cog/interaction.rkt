@@ -12,6 +12,7 @@
   gregr-misc/either
   gregr-misc/list
   gregr-misc/match
+  gregr-misc/maybe
   gregr-misc/monad
   gregr-misc/navigator
   gregr-misc/record
@@ -22,9 +23,8 @@
   use-keys =
   (forl
     use-list-key <- (list-navigator-keys uses)
-    (append use-list-key '(v)))
+    (append '(s uses) use-list-key '(v)))
   (list* '(t) use-keys))
-
 (define (hole-keys focus)
   (match focus
     ((subst sub _) (subst-keys sub))
@@ -32,59 +32,29 @@
     (_ (if (or (term? focus) (pair? focus))
          (map list (dict-keys focus)) '()))))
 
-(def (hole-key idx focus)
-  keys = (hole-keys focus)
-  (if (and (<= 0 idx) (< idx (length keys)))
-    (right (list-ref keys idx))
-    (left (format "cannot select subterm ~a of: ~v" idx focus))))
-
-(define (interact-ascend-index cterm)
-  (if (empty? (cursor-trail cterm)) (left "no hole to fill")
-    (lets
-      (list count new-cterm) =
-      (let loop ((count 1) (cterm (::^ cterm)))
-        (if (substitution? (::.* cterm))
-          (loop (+ count 1) (::^ cterm)) (list count cterm)))
-      key = (reverse (take (cursor-trail cterm) count))
-      keys = (hole-keys (::.* new-cterm))
-      idx = (list-index-equal keys key)
-      (right (list idx new-cterm)))))
-
-(def (interact-descend-index idx cterm)
-  (begin/with-monad either-monad
-    key <- (hole-key idx (::.* cterm))
-    (pure (::@ cterm key))))
-
-(def (interact-with-focus f cterm)
-  (begin/with-monad either-monad
-    new-focus <- (f (::.* cterm))
-    (pure (::=* cterm new-focus))))
-
-(def (interact-context-present cterm)
-  trail =
-  (let loop ((cterm cterm))
-    (match (interact-ascend-index (::=* cterm (void)))
-      ((left _) '())
-      ((right (list _ void-cterm))
-       (list* (::.* void-cterm) (loop void-cterm)))))
-  (reverse (list* (::.* cterm) trail)))
-
-(define (interact-ascend context)
-  (begin/with-monad either-monad
-    (list _ context) <- (interact-ascend-index context)
-    (pure context)))
-
-(define interact-descend (curry interact-descend-index 0))
-
-(define ((interact-shift offset) context)
-  (begin/with-monad either-monad
-    (list idx context1) <- (interact-ascend-index context)
-    (interact-descend-index (+ idx offset) context1)))
+(define (interact-ascend nav)
+  (maybe->either "no hole to fill" (navigator-ascend nav)))
+(define (interact-descend nav (idx 0))
+  (maybe->either
+    (format "cannot select subterm ~a of: ~v" idx (navigator-focus nav))
+    (navigator-descend nav idx)))
+(define ((interact-shift offset) nav)
+  (maybe->either (format "cannot shift by ~a" offset)
+                 (navigator-shift nav offset)))
 (define interact-shift-left (interact-shift -1))
 (define interact-shift-right (interact-shift 1))
-
+(define (interact-with-focus f nav)
+  (begin/with-monad either-monad
+    new-focus <- (f (navigator-focus nav))
+    (pure (navigator-focus-set nav new-focus))))
 (define interact-step (curry interact-with-focus step-safe))
 (define interact-complete (curry interact-with-focus step-complete-safe))
+(define (interact-context-present nav)
+  (forl
+    (list focus hole-pos) <- (navigator-path nav)
+    (match hole-pos
+      ((nothing) focus)
+      ((just (list _ key)) (:= focus (void) key)))))
 
 (record void-closure is-value upenv)
 (define (unparse-void-closure upe term)
@@ -174,4 +144,4 @@
 
 (define (interact-with term)
   (interact-loop
-    (interact-state view-syntax-0 (::0 term) '())))
+    (interact-state view-syntax-0 (navigator-new hole-keys term) '())))
