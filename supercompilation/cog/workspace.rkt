@@ -20,6 +20,30 @@
   gregr-misc/record
   )
 
+; metadata: misc junk, may include [tag], even under another tag
+; term: ...
+; tag (not the git tag kind): (uref metadata)
+; rev: root-rev | (uid parent-rev action (what was done to parent to produce this term) term)
+; rev-name (like a git tag): (uref rev metadata)
+; rev-branch (think of a better name): (uref rev metadata)
+; interaction: (uid nav-key rev forward-revs maybe(branch) metadata)
+; interaction-name (like git tag, except interactions themselves are mutable): (uref interaction metadata)
+; workspace: ([active] (ordered by viewport arrangement?) [stashed] (ordered by recency of stashing? stack?) interaction reflog)
+; git analogy
+  ;all revs have common root
+  ;branches and tags w/ preferred view info?
+  ;synch-able clones
+  ;shared editing w/ read/write capabilities
+  ;views are a separate concept
+    ;large granularity git commit analogy would be more like version control on views
+    ;projects/repos are indirect, only existing within hierarchical branch names for terms
+      ;ie. project-name/feature-branch-name/term-name
+      ;viewing a project is the same as filtering terms by project-name/
+
+
+;(record workspace motd-doc cviews)
+;(record viewer model-doc model)
+
 (record workspace-view tab-index ic-indices)
 (record workspace tabs interaction-db)
 (record tab layout interaction-uids)
