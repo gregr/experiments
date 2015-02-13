@@ -1,5 +1,19 @@
 #lang racket
 (provide
+  database-root
+  db-url-add
+  db-url-get
+  db-url-remove
+  db-url-trans
+  db-interaction-add
+  db-interaction-get
+  db-revision-add
+  db-revision-get
+  revision-root
+  url-branch
+  url-revision
+  url-interaction
+
   ;interaction
   ;interaction-db-empty
   ;present-workspace
@@ -15,10 +29,12 @@
   ;"syntax-abstract.rkt"
   ;"util.rkt"
   gregr-misc/cursor
+  gregr-misc/either
   ;gregr-misc/list
   ;gregr-misc/match
   gregr-misc/record
   gregr-misc/sugar
+  racket/control
   )
 
 (module+ test
@@ -81,6 +97,81 @@
       ;ie. project-name/feature-branch-name/term-name
       ;viewing a project is the same as filtering terms by project-name/
 
+(record revision uid parent action content)
+(record interaction uid nav-key rev forward-revs branch metadata)
+
+(record url-entry target metadata)
+(define (url-entry-new target) (url-entry target (hash)))
+(define (url-revision uref) (list* "revision" uref))
+(define (url-interaction uref) (list* "interaction" uref))
+(define (url-branch uref) (list* "branch" uref))
+
+(record database url-tree uid-next revisions interactions metadata-attrs)
+(define database-empty (database url-tree-empty 0 (hash) (hash) (hash)))
+(define (db-url-get-base db url)
+  (:.* (url-tree-get (:.* db 'url-tree) url) 'data))
+(def (db-url-get db url)
+  data = (db-url-get-base db url)
+  (if (void? data) (left "does not exist") (right data)))
+(define (db-url-trans-base db url trans)
+  (:~* db (lambda (tree) (url-tree-trans tree url trans)) 'url-tree))
+(define (db-url-trans db url trans)
+  (define tag (make-continuation-prompt-tag))
+  (define (inner-trans entry)
+    (if (void? entry)
+      (shift-at tag _ (left "does not exist"))
+      (trans entry)))
+  (reset-at tag (right (db-url-trans-base db url inner-trans))))
+(define (db-url-add db url target)
+  (define tag (make-continuation-prompt-tag))
+  (define (trans entry)
+    (if (void? entry)
+      (url-entry-new target)
+      (shift-at tag _ (left "already exists"))))
+  (reset-at tag (right (db-url-trans-base db url trans))))
+(define (db-url-remove db url)
+  (if (void? (db-url-get-base db url))
+    (left "does not exist")
+    (right (:~* db (lambda (tree) (url-tree-remove tree url)) 'url-tree))))
+(def (db-get db type uid)
+  result = (:%.* (const (void)) db type uid)
+  (if (void? result) (left "does not exist") (right result)))
+(define (db-revision-get db uid) (db-get db 'revisions uid))
+(define (db-interaction-get db uid) (db-get db 'interactions uid))
+(define (db-add type new db . args)
+  (lets
+    uid = (:.* db 'uid-next)
+    db = (:~* db (curry + 1) 'uid-next)
+    resource = (apply new uid args)
+    db = (:%=* (const (void)) db resource type uid)
+    (list db resource)))
+(define db-revision-add (curry db-add 'revisions revision))
+(define db-interaction-add (curry db-add 'interactions interaction))
+
+(match-define (list database-root revision-root)
+  (db-revision-add database-empty (void) (void) (void)))
+
+(module+ test
+  (lets
+    url = (url-revision (list "one" "two"))
+    db = database-root
+    _ = (check-equal? (db-revision-get db 0) (right revision-root))
+    _ = (check-equal? (db-revision-get db 1) (left "does not exist"))
+    _ = (check-equal?
+          (db-url-get db url)
+          (left "does not exist"))
+    _ = (check-equal?
+          (db-url-remove db url)
+          (left "does not exist"))
+    db = (right-x (db-url-add db url 2))
+    _ = (check-equal?
+          (db-url-get db url)
+          (right (url-entry 2 (hash))))
+    _ = (check-equal?
+          (db-url-add db url 2)
+          (left "already exists"))
+    _ = (check-equal? (right? (db-url-remove db url)) #t)
+    (void)))
 
 ;(record workspace motd-doc cviews)
 ;(record viewer model-doc model)
