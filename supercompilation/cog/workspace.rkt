@@ -18,7 +18,48 @@
   ;gregr-misc/list
   ;gregr-misc/match
   gregr-misc/record
+  gregr-misc/sugar
   )
+
+(module+ test
+  (require rackunit))
+
+(record url-tree data children)
+(define url-tree-empty (url-tree (void) (hash)))
+(define (new-url-tree . _) url-tree-empty)
+(define (url-path->cursor-path path)
+  (append* (map (lambda (segment) (list 'children segment)) path)))
+(define (url-tree-get tree path)
+  (:%. new-url-tree tree (url-path->cursor-path path)))
+(def (url-tree-trans tree path trans)
+  path = (url-path->cursor-path path)
+  path = (append path '(data))
+  (:%~ new-url-tree tree trans path))
+(def (url-tree-add tree path data)
+  (url-tree-trans tree path (const data)))
+(def (url-tree-remove tree path)
+  path = (url-path->cursor-path path)
+  (:%= new-url-tree tree url-tree-empty path))
+
+(module+ test
+  (lets
+    tree = url-tree-empty
+    tree = (url-tree-add tree '(one two three) 3)
+    tree = (url-tree-add tree '(one two) 2)
+    _ = (check-equal?
+          (:.* (url-tree-get tree '(one two)) 'data)
+          2)
+    _ = (check-equal?
+          (:.* (url-tree-get tree '(one two three)) 'data)
+          3)
+    _ = (check-equal?
+          (:.* (url-tree-get tree '(one)) 'data)
+          (void))
+    tree = (url-tree-remove tree '(one two))
+    _ = (check-equal?
+          (:.* (url-tree-get tree '(one two three)) 'data)
+          (void))
+    (void)))
 
 ; metadata: misc junk, may include [tag], even under another tag
 ; term: ...
