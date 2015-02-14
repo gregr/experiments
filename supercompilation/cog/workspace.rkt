@@ -10,6 +10,8 @@
   db-revision-add
   db-revision-get
   revision-root
+
+  url-attribute
   url-branch
   url-revision
   url-interaction
@@ -102,12 +104,14 @@
 
 (record url-entry target metadata)
 (define (url-entry-new target) (url-entry target (hash)))
+(define (url-attribute uref) (list* "attribute" uref))
 (define (url-revision uref) (list* "revision" uref))
 (define (url-interaction uref) (list* "interaction" uref))
 (define (url-branch uref) (list* "branch" uref))
 
-(record database url-tree uid-next revisions interactions metadata-attrs)
-(define database-empty (database url-tree-empty 0 (hash) (hash) (hash)))
+(record database url-tree uid-next revisions interactions)
+(define database-empty (database url-tree-empty 0 (hash) (hash)))
+
 (define (db-url-get-base db url)
   (:.* (url-tree-get (:.* db 'url-tree) url) 'data))
 (def (db-url-get db url)
@@ -133,6 +137,7 @@
   (if (void? (db-url-get-base db url))
     (left "does not exist")
     (right (:~* db (lambda (tree) (url-tree-remove tree url)) 'url-tree))))
+
 (def (db-get db type uid)
   result = (:%.* (const (void)) db type uid)
   (if (void? result) (left "does not exist") (right result)))
