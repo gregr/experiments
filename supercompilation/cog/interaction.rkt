@@ -138,6 +138,11 @@
                           (access-bracket blue)
                           (apply-bracket white))
     (:=* palette fgc field 'color-fg)))
+(define palette-selected-default
+  (forf
+    palette = palette-default
+    key <- (dict-keys palette-default)
+    (:=* palette #t key 'invert?)))
 
 (def (style-palette->doc-renderer
        render-other
@@ -226,14 +231,23 @@
     render))
 (define doc-render-empty
   (style-palette->doc-renderer (void) palette-empty))
+(define doc-render-selected-default
+  (style-palette->doc-renderer (void) palette-selected-default))
+(record selected x)
 (define doc-render-default
-  (style-palette->doc-renderer (void) palette-default))
+  (style-palette->doc-renderer
+    (fn ((selected x)) (doc-render-selected-default x))
+    palette-default))
 
 (def (interact-context->doc nav)
   doc-empty = (doc-atom style-empty "")
   parts =
   (forl
     (list focus hole-pos) <- (navigator-path nav)
+    focus =
+    (match hole-pos
+      ((nothing) focus)
+      ((just (list _ key)) (:~ focus selected key)))
     (doc-render-default focus))
   parts = (add-between parts doc-empty)
   (vertical-list style-empty parts))
