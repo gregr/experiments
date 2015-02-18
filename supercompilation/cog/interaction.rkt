@@ -115,10 +115,29 @@
   access-bracket
   apply-bracket
   )
-(define style-palette-empty
+(define palette-empty
   (style-palette style-empty style-empty style-empty style-empty style-empty
     style-empty style-empty style-empty style-empty style-empty style-empty
     style-empty style-empty style-empty style-empty style-empty))
+(define palette-default
+  (forf
+    palette = palette-empty
+    (list field fgc) <- '((unit red)
+                          (bit red)
+                          (bvar magenta)
+                          (pair-bracket yellow)
+                          (pair-separator yellow)
+                          (lam yellow)
+                          (lam-bracket green)
+                          (subst-lift cyan)
+                          (subst-use cyan)
+                          (subst-separator cyan)
+                          (subst-bracket cyan)
+                          (produce blue)
+                          (produce-bracket blue)
+                          (access-bracket blue)
+                          (apply-bracket white))
+    (:=* palette fgc field 'color-fg)))
 
 (def (style-palette->doc-renderer
        render-other
@@ -206,14 +225,16 @@
         (x (render-other x))))))
     render))
 (define doc-render-empty
-  (style-palette->doc-renderer (void) style-palette-empty))
+  (style-palette->doc-renderer (void) palette-empty))
+(define doc-render-default
+  (style-palette->doc-renderer (void) palette-default))
 
 (def (interact-context->doc nav)
   doc-empty = (doc-atom style-empty "")
   parts =
   (forl
     (list focus hole-pos) <- (navigator-path nav)
-    (doc-render-empty focus))
+    (doc-render-default focus))
   parts = (add-between parts doc-empty)
   (vertical-list style-empty parts))
 
