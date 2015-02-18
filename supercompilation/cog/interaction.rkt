@@ -297,4 +297,4 @@
 
 (define (interact-with term)
   (interact-loop
-    (interact-state view-syntax-0 (navigator-new hole-keys term) '())))
+    (interact-state view-syntax-doc (navigator-new hole-keys term) '())))
