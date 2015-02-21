@@ -94,7 +94,7 @@
   b-1-doc = (doc-atom style-bit "1")
   subst-prefix = (doc-atom style-subst-bracket "[")
   subst-suffix = (doc-atom style-subst-bracket "]")
-  subst-separator = (doc-atom style-subst-separator ",")
+  subst-separator = (doc-atom style-subst-separator ";")
   produce-prefix = (doc-atom style-produce-bracket "(")
   produce-suffix = (doc-atom style-produce-bracket ")")
   produce-doc = (doc-atom style-produce "produce")
