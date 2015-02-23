@@ -166,7 +166,7 @@
         ((lam-apply proc arg)
          (bracketed-chain apply-prefix apply-suffix attr-loose-aligned
                           style-default style-default
-                          (map (curry render env) (list proc arg))))
+                          (map (curry render env) (gather-applications t/v))))
         (x (render-other env x))))))
     render))
 (define doc-render-empty
@@ -183,7 +183,6 @@
   names = (forl (substitution-use (lattr name _ _) _) <- uses
                 name)
   (list names (binders-extend env names lift)))
-
 (define (gather-lams env t/v)
   (match t/v
     ((value (lam attr body))
@@ -192,6 +191,11 @@
        (list env names body) = (gather-lams new-env body)
        (list env (list* new-name names) body)))
     (body (list env '() body))))
+(define (gather-applications t/v)
+  (letsn loop (proc = t/v args = '())
+    (match proc
+      ((lam-apply proc arg) (loop proc (list* arg args)))
+      (proc (list* proc args)))))
 
 (def (nav-term->doc nav)
   doc-empty = (doc-atom style-empty "")
