@@ -185,14 +185,14 @@
     palette-default))
 
 (def (subst-binders env uses lift)
-  names = (forl (substitution-use (lattr name _ _) _) <- uses
-                name)
-  (list names (binders-extend env names lift)))
+  attrs = (forl (substitution-use attr _) <- uses
+                attr)
+  (binders-extend env attrs lift))
 (define (gather-lams env t/v)
   (match t/v
     ((value (lam attr body))
      (lets
-       (cons new-name new-env) = (binders-add env attr)
+       (list new-name new-env) = (binders-add env attr)
        (list env names body) = (gather-lams new-env body)
        (list env (list* new-name names) body)))
     (body (list env '() body))))
@@ -209,7 +209,7 @@
      (lets
        new-env =
        (match focus
-         ((lam attr body) (cdr (binders-add env attr)))
+         ((lam attr body) (second (binders-add env attr)))
          ((subst (substitution uses lift) t)
           (second (subst-binders env uses lift)))
          (_ env))
@@ -245,9 +245,14 @@
   (string->symbol (format "$free~a" (- idx (length (binders-names env))))))
 (define/destruct (binders-add (binders names) (lattr name _ _))
   (let ((next-name (if (equal? (void) name) (binders-next-name names) name)))
-    (cons next-name (binders (cons next-name names)))))
-(define/destruct (binders-extend (binders names) new-names lift)
-  (binders (append new-names (drop names (min (length names) lift)))))
+    (list next-name (binders (cons next-name names)))))
+(def (binders-extend (binders names) attrs lift)
+  env = (binders (drop names (min (length names) lift)))
+  (forf
+    (list names env) = (list '() env)
+    attr <- (reverse attrs)
+    (list next-name env) = (binders-add env attr)
+    (list (list* next-name names) env)))
 (define (binders-get env idx)
   (let ((names (binders-names env)))
     (if (< idx (length names)) (list-ref names idx) (binders-free-name env idx))))
