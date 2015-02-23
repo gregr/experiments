@@ -9,7 +9,6 @@
   gregr-misc/cursor
   gregr-misc/list
   gregr-misc/markout
-  gregr-misc/match
   gregr-misc/maybe
   gregr-misc/navigator
   gregr-misc/record
@@ -243,9 +242,9 @@
   (string->symbol (format "$x~a" (length names))))
 (define (binders-free-name env idx)
   (string->symbol (format "$free~a" (- idx (length (binders-names env))))))
-(define/destruct (binders-add (binders names) (lattr name _ _))
-  (let ((next-name (if (equal? (void) name) (binders-next-name names) name)))
-    (list next-name (binders (cons next-name names)))))
+(def (binders-add (binders names) (lattr name _ _))
+  next-name = (if (equal? (void) name) (binders-next-name names) name)
+  (list next-name (binders (cons next-name names))))
 (def (binders-extend (binders names) attrs lift)
   env = (binders (drop names (min (length names) lift)))
   (forf
@@ -253,6 +252,6 @@
     attr <- (reverse attrs)
     (list next-name env) = (binders-add env attr)
     (list (list* next-name names) env)))
-(define (binders-get env idx)
-  (let ((names (binders-names env)))
-    (if (< idx (length names)) (list-ref names idx) (binders-free-name env idx))))
+(def (binders-get env idx)
+  names = (binders-names env)
+  (if (< idx (length names)) (list-ref names idx) (binders-free-name env idx)))
