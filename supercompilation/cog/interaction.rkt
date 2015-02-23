@@ -109,7 +109,7 @@
 (def (interact-state-viewcontext (interact-state view ctx _)) (view ctx))
 
 (define ((left-display-default default) result)
-  (either-fold (lambda (msg) (display msg) default) identity result))
+  (either-fold (lambda (msg) (displayln msg) default) identity result))
 
 (define ((interact-safe path) trans st)
   (right (:~ st (compose1 (left-display-default (:. st path)) trans) path)))
