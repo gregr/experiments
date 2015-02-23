@@ -202,17 +202,32 @@
       ((lam-apply proc arg) (loop proc (list* arg args)))
       (proc (list* proc args)))))
 
+(define (nav-path-binders env focus path)
+  (match path
+    ('() env)
+    ((cons key path)
+     (lets
+       new-env =
+       (match focus
+         ((lam attr body) (cdr (binders-add env attr)))
+         ((subst (substitution uses lift) t)
+          (second (subst-binders env uses lift)))
+         (_ env))
+       (nav-path-binders new-env (:.* focus key) path)))))
+
 (def (nav-term->doc nav)
   doc-empty = (doc-atom style-empty "")
-  parts =
-  (forl
+  (list rparts _) =
+  (forf
+    (list rparts env) = (list '() binders-empty)
     (list focus hole-pos) <- (navigator-path nav)
-    focus =
+    (list env focus) =
     (match hole-pos
-      ((nothing) focus)
-      ((just (list _ key)) (:~ focus selected key)))
-    (doc-render-default binders-empty focus))
-  parts = (add-between parts doc-empty)
+      ((nothing) (list env focus))
+      ((just (list _ path))
+       (list (nav-path-binders env focus path) (:~ focus selected path))))
+    (list (list* (doc-render-default env focus) rparts) env))
+  parts = (add-between (reverse rparts) doc-empty)
   (vertical-list style-empty parts))
 
 (def (doc-show doc)
