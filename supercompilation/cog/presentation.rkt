@@ -214,6 +214,8 @@
          (_ env))
        (nav-path-binders new-env (:.* focus key) path)))))
 
+(define visible-context-levels-default 3)
+
 (def (nav-term->doc nav)
   doc-empty = (doc-atom style-empty "")
   (list rparts _) =
@@ -225,9 +227,16 @@
       ((nothing) (list env focus))
       ((just (list _ path))
        (list (nav-path-binders env focus path) (:~ focus selected path))))
-    (list (list* (doc-render-default env focus) rparts) env))
-  parts = (add-between (reverse rparts) doc-empty)
-  (vertical-list style-empty parts))
+    (list (list* (thunk (doc-render-default env focus)) rparts) env))
+  parts = (reverse rparts)
+  drop-count = (max 0 (- (length parts) visible-context-levels-default))
+  parts = (drop parts drop-count)
+  docs = (forl part <- parts
+               (part))
+  hidden = (doc-atom style-empty (format "~a levels hidden ..." drop-count))
+  docs = (list* hidden docs)
+  docs = (add-between docs doc-empty)
+  (vertical-list style-empty docs))
 
 (def (doc-show doc)
   (size width height) = (screen-size)
