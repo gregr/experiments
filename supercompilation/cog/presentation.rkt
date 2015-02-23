@@ -90,6 +90,8 @@
   pair-separator = (doc-atom style-pair-separator ",")
   lam-prefix = (doc-atom style-lam-bracket "(")
   lam-suffix = (doc-atom style-lam-bracket ")")
+  lam-arg-prefix = (doc-atom style-lam "(")
+  lam-arg-suffix = (doc-atom style-lam ")")
   lam-doc = (doc-atom style-lam "λ")
   unit-doc = (doc-atom style-unit "{}")
   b-0-doc = (doc-atom style-bit "0")
@@ -105,8 +107,6 @@
   access-suffix = (doc-atom style-access-bracket "]")
   apply-prefix = (doc-atom style-apply-bracket "(")
   apply-suffix = (doc-atom style-apply-bracket ")")
-  lam-chain = (curry bracketed-chain lam-prefix lam-suffix attr-loose-aligned
-                     style-default style-default)
 
   (letrec ((render
     (fn (env t/v)
@@ -130,8 +130,13 @@
            names = (forl
                      name <- (map symbol->string names)
                      (doc-atom style-bvar name))
-           names = (lam-chain names)
-           (lam-chain (list lam-doc names (render env body)))))
+           names = (bracketed-chain
+                     lam-arg-prefix lam-arg-suffix attr-loose-aligned
+                     style-default style-default names)
+           (bracketed-chain
+             lam-prefix lam-suffix attr-loose-aligned style-default
+             style-default (list (tight-pair style-lam lam-doc names)
+                                 (render env body)))))
         ((subst (substitution uses lift) t)
          (lets
            vals = (map (curry render env) (map substitution-use-v uses))
