@@ -96,6 +96,7 @@
   b-1-doc = (doc-atom style-bit "1")
   subst-prefix = (doc-atom style-subst-bracket "[")
   subst-suffix = (doc-atom style-subst-bracket "]")
+  subst-assignment = (doc-atom style-subst-use "=")
   subst-separator = (doc-atom style-subst-separator ";")
   produce-prefix = (doc-atom style-produce-bracket "(")
   produce-suffix = (doc-atom style-produce-bracket ")")
@@ -133,12 +134,21 @@
            (lam-chain (list lam-doc names (render env body)))))
         ((subst (substitution uses lift) t)
          (lets
-           bindings = (map (curry render env) (map substitution-use-v uses))
+           vals = (map (curry render env) (map substitution-use-v uses))
+           (list names env) = (subst-binders env uses lift)
+           names = (map symbol->string names)
+           names = (map (curry doc-atom style-bvar) names)
+           assignments =
+           (forl
+             name <- names
+             val <- vals
+             (doc-chain style-subst-use attr-loose-aligned
+                        (list name subst-assignment val)))
            lift = (doc-atom style-subst-lift (format "^~a" lift))
-           bindings = (separated subst-separator style-default
-                                 (list* lift bindings))
+           sub-inner = (separated subst-separator style-default
+                                  (list* lift assignments))
            sub = (bracketed-chain subst-prefix subst-suffix attr-loose-aligned
-                                  style-default style-default bindings)
+                                  style-default style-default sub-inner)
            body = (render env t)
            (tight-pair style-default sub body)))
         ((value v) (render env v))
@@ -168,6 +178,11 @@
   (style-palette->doc-renderer
     (fn (env (selected x)) (doc-render-selected-default env x))
     palette-default))
+
+(def (subst-binders env uses lift)
+  names = (forl (substitution-use (lattr name _ _) _) <- uses
+                name)
+  (list names (binders-extend env names lift)))
 
 (define (gather-lams env t/v)
   (match t/v
@@ -207,6 +222,8 @@
 (define/destruct (binders-add (binders names) (lattr name _ _))
   (let ((next-name (if (equal? (void) name) (binders-next-name names) name)))
     (cons next-name (binders (cons next-name names)))))
+(define/destruct (binders-extend (binders names) new-names lift)
+  (binders (append new-names (drop names (min (length names) lift)))))
 (define (binders-get env idx)
   (let ((names (binders-names env)))
     (if (< idx (length names)) (list-ref names idx) (binders-free-name env idx))))
