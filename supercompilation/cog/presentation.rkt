@@ -7,7 +7,9 @@
 (require
   "syntax-abstract.rkt"
   gregr-misc/cursor
+  gregr-misc/list
   gregr-misc/markout
+  gregr-misc/match
   gregr-misc/maybe
   gregr-misc/navigator
   gregr-misc/record
@@ -102,51 +104,60 @@
   access-suffix = (doc-atom style-access-bracket "]")
   apply-prefix = (doc-atom style-apply-bracket "(")
   apply-suffix = (doc-atom style-apply-bracket ")")
+  lam-chain = (curry bracketed-chain lam-prefix lam-suffix attr-loose-aligned
+                     style-default style-default)
 
   (letrec ((render
-    (fn (t/v)
+    (fn (env t/v)
       (match t/v
         ((uno)       unit-doc)
         ((bit (b-0)) b-0-doc)
         ((bit (b-1)) b-1-doc)
         ((pair l r)
          (lets
-           items = (map render (list l r))
+           items = (map (curry render env) (list l r))
            items = (separated pair-separator style-default items)
            (bracketed-chain pair-prefix pair-suffix attr-loose-aligned
                             style-default style-default items)))
-        ((bvar idx) (doc-atom style-bvar (format "$~a" idx)))
+        ((bvar idx)
+         (lets
+           name = (symbol->string (binders-get env idx))
+           (doc-atom style-bvar name)))
         ((lam attr body)
-         (bracketed-chain lam-prefix lam-suffix attr-loose-aligned
-                          style-default style-default
-                          (list lam-doc (render body))))
+         (lets
+           (list env names body) = (gather-lams env (value t/v))
+           names = (forl
+                     name <- (map symbol->string names)
+                     (doc-atom style-bvar name))
+           names = (lam-chain names)
+           (lam-chain (list lam-doc names (render env body)))))
         ((subst (substitution uses lift) t)
          (lets
-           bindings = (map render (map substitution-use-v uses))
+           bindings = (map (curry render env) (map substitution-use-v uses))
            lift = (doc-atom style-subst-lift (format "^~a" lift))
            bindings = (separated subst-separator style-default
                                  (list* lift bindings))
            sub = (bracketed-chain subst-prefix subst-suffix attr-loose-aligned
                                   style-default style-default bindings)
-           body = (render t)
+           body = (render env t)
            (tight-pair style-default sub body)))
-        ((value v) (render v))
+        ((value v) (render env v))
         ((produce t)
          (bracketed-chain produce-prefix produce-suffix attr-loose-aligned
                           style-default style-default
-                          (list produce-doc (render t))))
+                          (list produce-doc (render env t))))
         ((pair-access index pair)
          (lets
            index =
            (bracketed-chain access-prefix access-suffix attr-loose-aligned
                             style-default style-default
-                            (list (render index)))
-           (tight-pair style-default (render pair) index)))
+                            (list (render env index)))
+           (tight-pair style-default (render env pair) index)))
         ((lam-apply proc arg)
          (bracketed-chain apply-prefix apply-suffix attr-loose-aligned
                           style-default style-default
-                          (map render (list proc arg))))
-        (x (render-other x))))))
+                          (map (curry render env) (list proc arg))))
+        (x (render-other env x))))))
     render))
 (define doc-render-empty
   (style-palette->doc-renderer (void) palette-empty))
@@ -155,8 +166,17 @@
 (record selected x)
 (define doc-render-default
   (style-palette->doc-renderer
-    (fn ((selected x)) (doc-render-selected-default x))
+    (fn (env (selected x)) (doc-render-selected-default env x))
     palette-default))
+
+(define (gather-lams env t/v)
+  (match t/v
+    ((value (lam attr body))
+     (lets
+       (cons new-name new-env) = (binders-add env attr)
+       (list env names body) = (gather-lams new-env body)
+       (list env (list* new-name names) body)))
+    (body (list env '() body))))
 
 (def (nav-term->doc nav)
   doc-empty = (doc-atom style-empty "")
@@ -167,7 +187,7 @@
     (match hole-pos
       ((nothing) focus)
       ((just (list _ key)) (:~ focus selected key)))
-    (doc-render-default focus))
+    (doc-render-default binders-empty focus))
   parts = (add-between parts doc-empty)
   (vertical-list style-empty parts))
 
@@ -177,3 +197,16 @@
   block = (doc->styled-block ctx style-empty (min 80 width) doc)
   block-str = (styled-block->string block)
   (string-append block-str "\n"))
+
+(record binders names)
+(define binders-empty (binders '()))
+(define (binders-next-name names)
+  (string->symbol (format "$x~a" (length names))))
+(define (binders-free-name env idx)
+  (string->symbol (format "$free~a" (- idx (length (binders-names env))))))
+(define/destruct (binders-add (binders names) (lattr name _ _))
+  (let ((next-name (if (equal? (void) name) (binders-next-name names) name)))
+    (cons next-name (binders (cons next-name names)))))
+(define (binders-get env idx)
+  (let ((names (binders-names env)))
+    (if (< idx (length names)) (list-ref names idx) (binders-free-name env idx))))
