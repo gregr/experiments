@@ -214,29 +214,27 @@
          (_ env))
        (nav-path-binders new-env (:.* focus key) path)))))
 
-(define visible-context-levels-default 3)
+(define visible-context-levels-default 7)
 
 (def (nav-term->doc nav)
   doc-empty = (doc-atom style-empty "")
-  (list rparts _) =
-  (forf
-    (list rparts env) = (list '() binders-empty)
-    (list focus hole-pos) <- (navigator-path nav)
-    (list env focus) =
-    (match hole-pos
-      ((nothing) (list env focus))
-      ((just (list _ path))
-       (list (nav-path-binders env focus path) (:~ focus selected path))))
-    (list (list* (thunk (doc-render-default env focus)) rparts) env))
-  parts = (reverse rparts)
-  drop-count = (max 0 (- (length parts) visible-context-levels-default))
-  parts = (drop parts drop-count)
-  docs = (forl part <- parts
-               (part))
-  hidden = (doc-atom style-empty (format "~a levels hidden ..." drop-count))
-  docs = (list* hidden docs)
-  docs = (add-between docs doc-empty)
-  (vertical-list style-empty docs))
+  (list foci paths) =
+  (zip (forl
+         (list focus hole-pos) <- (navigator-path nav)
+         path = (match hole-pos
+                  ((nothing) '())
+                  ((just (list _ path)) path))
+         (list focus path)))
+  hidden-count = (max 0 (- (length foci) visible-context-levels-default))
+  term = (first foci)
+  focus = (first (drop foci hidden-count))
+  selected-path = (append* (drop paths hidden-count))
+  context-path = (append* (take paths hidden-count))
+  env = (nav-path-binders binders-empty term context-path)
+  focus = (if (empty? selected-path) focus (:~ focus selected selected-path))
+  hidden = (doc-atom style-empty (format "~a levels hidden ..." hidden-count))
+  focus-doc = (doc-render-default env focus)
+  (vertical-list style-empty (list hidden doc-empty focus-doc)))
 
 (def (doc-show doc)
   (size width height) = (screen-size)
