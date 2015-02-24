@@ -28,6 +28,7 @@
   (list* '(t) use-keys))
 (define (hole-keys focus)
   (match focus
+    ((value v)     (map (fn (key) (list* 'v key)) (hole-keys v)))
     ((subst sub _) (subst-keys sub))
     ((lam _ _)     '((body)))
     (_ (if (or (term? focus) (pair? focus))
