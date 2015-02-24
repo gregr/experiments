@@ -6,6 +6,7 @@
 (require
   "presentation.rkt"
   "semantics-operational.rkt"
+  "syntax.rkt"
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
   "util.rkt"
@@ -26,11 +27,19 @@
     use-list-key <- (list-navigator-keys uses)
     (append '(s uses) use-list-key '(v)))
   (list* '(t) use-keys))
+(def (app-keys app)
+  count = (- (length (gather-applications app)) 2)
+  rargs = (iterate (fn (path) (list* 'proc path)) '(arg) count)
+  args = (reverse rargs)
+  proc = (make-list (+ 1 count) 'proc)
+  (list* proc args))
+
 (define (hole-keys focus)
   (match focus
-    ((value v)     (map (fn (key) (list* 'v key)) (hole-keys v)))
-    ((subst sub _) (subst-keys sub))
-    ((lam _ _)     '((body)))
+    ((lam-apply _ _) (app-keys focus))
+    ((value v)       (map (fn (key) (list* 'v key)) (hole-keys v)))
+    ((subst sub _)   (subst-keys sub))
+    ((lam _ _)       '((body)))
     (_ (if (or (term? focus) (pair? focus))
          (map list (dict-keys focus)) '()))))
 
