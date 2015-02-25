@@ -6,6 +6,7 @@
 (require
   "presentation.rkt"
   "semantics-operational.rkt"
+  "substitution.rkt"
   "syntax.rkt"
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
@@ -60,6 +61,8 @@
     (pure (navigator-focus-set nav new-focus))))
 (define interact-step (curry interact-with-focus step-safe))
 (define interact-complete (curry interact-with-focus step-complete-safe))
+(define interact-substitute-full
+  (curry interact-with-focus (compose1 right substitute-full)))
 (define (interact-context-present nav)
   (forl
     (list focus hole-pos) <- (navigator-path nav)
@@ -129,7 +132,7 @@
 (define (interact-loop state)
   (let loop ((st state))
     (printf "~a" (interact-state-viewcontext st))
-    (display "[hjkl](movement),[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
+    (display "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
     (begin/with-monad either-monad
       prev-st = st
       input = (read-line)
@@ -138,6 +141,7 @@
               ("l" (interact-safe-context interact-shift-right st))
               ("j" (interact-safe-context interact-descend st))
               ("k" (interact-safe-context interact-ascend st))
+              ("S" (interact-safe-context interact-substitute-full st))
               ((pregexp #px"^\\s*s\\s*(\\d+)?\\s*$" (list _ count))
                (let ((count (if count (string->number count) 1)))
                  (last (iterate
