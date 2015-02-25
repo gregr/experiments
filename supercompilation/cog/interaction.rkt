@@ -20,6 +20,8 @@
   gregr-misc/navigator
   gregr-misc/record
   gregr-misc/sugar
+  gregr-misc/terminal
+  gregr-misc/ui
   )
 
 (def (subst-keys (substitution uses _))
@@ -129,35 +131,56 @@
 (define interact-safe-context (interact-safe '(context)))
 (define interact-safe-view (interact-safe '(view)))
 
+(define (interact-safe-context-count f st count)
+  (last (iterate
+          (compose1 (curry interact-safe-context f) right-x)
+          (right st) count)))
+
+(define (interact-controller st)
+  (define (done-ctrl result)
+    (lambda (_) (list (done-ctrl result) (list (note-terminated result)))))
+  (fn ((event-keycount char count))
+    prev-st = st
+    action =
+    (match char
+      (#\h (lambda (count) (interact-safe-context-count interact-shift-left st count)))
+      (#\l (lambda (count) (interact-safe-context-count interact-shift-right st count)))
+      (#\j (lambda (count) (interact-safe-context-count interact-descend st count)))
+      (#\k (lambda (count) (interact-safe-context-count interact-ascend st count)))
+      (#\S (lambda (_) (interact-safe-context interact-substitute-full st)))
+      (#\s (lambda (count) (interact-safe-context-count interact-step st count)))
+      (#\c (lambda (_) (interact-safe-context interact-complete st)))
+      (#\x (lambda (_) (interact-safe-view view-toggle st)))
+      (#\u (lambda (count) (match (:.* st 'history)
+                             ('() (displayln "nothing to undo!") (right st))
+                             ((cons prev-state hist) (right prev-state)))))
+      (#\q (lambda (_) (left "quitting")))
+      (_   (lambda (_) (displayln "invalid choice") (right st))))
+    (match (action count)
+      ((left result) ((done-ctrl result) (void)))
+      ((right st)
+       (lets
+         st = (if (equal? char #\u) st
+                (:~* st (curry cons prev-st) 'history))
+         (list (interact-controller st) (list (note-view st))))))))
+
 (define (interact-loop state)
-  (let loop ((st state))
-    (printf "~a" (interact-state-viewcontext st))
-    (display "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit> ")
-    (begin/with-monad either-monad
-      prev-st = st
-      input = (read-line)
-      st <- (match input
-              ("h" (interact-safe-context interact-shift-left st))
-              ("l" (interact-safe-context interact-shift-right st))
-              ("j" (interact-safe-context interact-descend st))
-              ("k" (interact-safe-context interact-ascend st))
-              ("S" (interact-safe-context interact-substitute-full st))
-              ((pregexp #px"^\\s*s\\s*(\\d+)?\\s*$" (list _ count))
-               (let ((count (if count (string->number count) 1)))
-                 (last (iterate
-                         (compose1 (curry interact-safe-context interact-step)
-                                   right-x)
-                         (right st) count))))
-              ("c" (interact-safe-context interact-complete st))
-              ("x" (interact-safe-view view-toggle st))
-              ("u" (match (:.* st 'history)
-                     ('() (displayln "nothing to undo!") (right st))
-                     ((cons prev-state hist) (right prev-state))))
-              ("q" (left "quitting"))
-              (_ (displayln "invalid choice") (right st)))
-      st = (if (equal? input "u") st
-             (:~* st (curry cons prev-st) 'history))
-      (loop st))))
+  (with-cursor-hidden (with-stty-direct
+    (let loop ((st state)
+               (ctrl (keycount-controller (interact-controller state))))
+      (screen-clear)
+      (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
+      (printf "~a" (interact-state-viewcontext st))
+      (begin/with-monad either-monad
+        char = (read-char)
+        (list ctrl notes) = (ctrl (event-keypress char))
+        st <- (monad-foldl either-monad
+                (lambda (_ note)
+                  (match note
+                    ((note-terminated result) (left result))
+                    ((note-view st)           (right st))))
+                st notes)
+        (loop st ctrl))))))
 
 (define (interact-with term)
   (interact-loop
