@@ -1,6 +1,7 @@
 #lang racket
 (provide
   substitute
+  substitute-full
   substitute-lam-apply
   )
 
@@ -42,6 +43,9 @@
        (lam attr (subst (substitution uses lift) body))))
     ((? term-value?) tv)))
 
+(define (substitute-lam-apply attr body arg)
+  (subst (substitution (list (substitution-use attr arg)) 0) body))
+
 (define (substitute sub term)
   (define sub-value (curry substitute-value sub))
   (match term
@@ -51,5 +55,13 @@
     ((pair-access idx pr) (apply-map* pair-access sub-value idx pr))
     ((lam-apply proc arg) (apply-map* lam-apply (curry subst sub) proc arg))))
 
-(define (substitute-lam-apply attr body arg)
-  (subst (substitution (list (substitution-use attr arg)) 0) body))
+(define (substitute-full t/v)
+  (match t/v
+    ((subst sub tm)       (substitute-full (substitute sub tm)))
+    ((value v)            (value (substitute-full v)))
+    ((produce tm)         (produce (substitute-full tm)))
+    ((pair-access idx pr) (apply-map* pair-access substitute-full idx pr))
+    ((lam-apply proc arg) (apply-map* lam-apply substitute-full proc arg))
+    ((pair l r)           (apply-map* pair substitute-full l r))
+    ((lam attr body)      (lam attr (substitute-full body)))
+    ((? term-value?)      t/v)))
