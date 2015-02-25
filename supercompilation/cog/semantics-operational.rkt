@@ -22,11 +22,11 @@
 
 (define (step-continuation-downward cterm)
   (match (::.* cterm)
-    ((subst sub tm)       (just cterm))
-    ((value _)            (nothing))
-    ((produce tm)         (step-continuation-downward (::@ cterm '(tm))))
-    ((pair-access (bit _) (pair _ _))    (just cterm))
-    ((pair-access _ _)    (nothing))
+    ((subst sub tm) (just cterm))
+    ((value _)      (nothing))
+    ((produce tm)   (step-continuation-downward (::@ cterm '(tm))))
+    ((pair-access (bit _) (pair _ _)) (just cterm))
+    ((pair-access _ _)                (nothing))
     ((lam-apply proc arg)
      (define (sub-cont choice)
        (step-continuation-downward (::@ cterm (list choice))))
@@ -63,7 +63,7 @@
       ((pair-access _ _) (nothing))
       ((lam-apply (value (lam attr body)) (value v1))
        (just (substitute-lam-apply attr body v1)))
-      ((lam-apply (value _) (value _)) (nothing)))))
+      ((lam-apply _ _) (nothing)))))
 
 (define (step-once cterm)
   (begin/with-monad
