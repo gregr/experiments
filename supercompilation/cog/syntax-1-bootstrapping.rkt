@@ -16,7 +16,9 @@
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
   gregr-misc/either
+  gregr-misc/list
   gregr-misc/match
+  gregr-misc/sugar
   )
 
 (define (syntax-0-le val)
@@ -39,108 +41,115 @@
 (define (sym name) `(tagged ,sym-tag ,(syntax-0-le (_sym name))))
 
 ;; bootstrapping
-(define (let-module defs body)
-  (foldr (lambda/destruct (`(,name ,expr) body)
-          `((lam (,name) ,body) ,expr))
-         body defs))
+(def (let-module defs body)
+  (list names args) = (zip-default defs '(() ()))
+  proc =
+  (forf
+    body = body
+    name <- (reverse names)
+    `(lam (,name) ,body))
+  (forf
+    proc = proc
+    arg <- args
+    `(,proc ,arg)))
+(def (let-modules modules body)
+  (foldr let-module body modules))
 
 (define (std prog)
-  (let-module `(
-    (tagged       (lam (tag datum) (pair tag datum)))
-    (tagged-tag   (lam (td) (pair-l td)))
-    (tagged-datum (lam (td) (pair-r td)))
+  (let-modules `(
+    ((tagged       (lam (tag datum) (pair tag datum)))
+     (tagged-tag   (lam (td) (pair-l td)))
+     (tagged-datum (lam (td) (pair-r td))))
 
-    (error        (lam (val) (produce (tagged ,error-effect-tag val))))
-    (gen-sym      (lam (sym-name parent)
-                    (produce (tagged ,gen-sym-effect-tag
-                                     (pair sym-name parent)))))
+    ((error        (lam (val) (produce (tagged ,error-effect-tag val))))
+     (gen-sym      (lam (sym-name parent)
+                        (produce (tagged ,gen-sym-effect-tag
+                                         (pair sym-name parent)))))
+     (pair-cons    (lam (l r) (pair l r)))
+     (size-empty   (pair 0 ()))
+     (size-inc     (lam (sz) (pair 1 sz)))
+     (size-dec     (lam (sz) (pair-r sz)))
+     (tuple-size   (lam (tup) (pair-l tup)))
+     (tuple-data   (lam (tup) (pair-r tup))))
+    ((tuple-empty  (pair size-empty ()))
+     (tuple-cons   (lam (val tup) (pair-cons (size-inc (tuple-size tup))
+                                             (pair-cons val (tuple-data tup)))))
+     (tuple-first  (lam (tup) (pair-l (tuple-data tup))))
+     (tuple-rest   (lam (tup) (pair-cons (size-dec (tuple-size tup))
+                                         (pair-r (tuple-data tup)))))
+     (bit-eq?              (lam (bta btb) (if-0 bta (if-0 btb 0 1) (if-0 btb 1 0)))))
+    ((size-eq?             (fix (size-eq? sa sb)
+                                (if-0 (bit-eq? (pair-l sa) (pair-l sb))
+                                      (if-0 (pair-l sa) 0
+                                            (size-eq? (pair-r sa) (pair-r sb)))
+                                      1)))
+     (bits-unsized-eq?     (fix (bits-unsized-eq? sz ba bb)
+                                (if-0 (pair-l sz)
+                                      0
+                                      (if-0 (bit-eq? (pair-l ba) (pair-l bb))
+                                            (bits-unsized-eq? (pair-r sz) (pair-r ba) (pair-r bb))
+                                            1)))))
+    ((bits-eq?             (lam (ba bb)
+                                (if-0 (size-eq? (tuple-size ba) (tuple-size bb))
+                                      (bits-unsized-eq? (tuple-size ba) (tuple-data ba) (tuple-data bb))
+                                      (error ,(sym 'bitsize-mismatch))))))
 
-    (pair-cons    (lam (l r) (pair l r)))
-    (size-empty   (pair 0 ()))
-    (size-inc     (lam (sz) (pair 1 sz)))
-    (size-dec     (lam (sz) (pair-r sz)))
-    (tuple-size   (lam (tup) (pair-l tup)))
-    (tuple-data   (lam (tup) (pair-r tup)))
-    (tuple-empty  (pair size-empty ()))
-    (tuple-cons   (lam (val tup) (pair-cons (size-inc (tuple-size tup))
-                                            (pair-cons val (tuple-data tup)))))
-    (tuple-first  (lam (tup) (pair-l (tuple-data tup))))
-    (tuple-rest   (lam (tup) (pair-cons (size-dec (tuple-size tup))
-                                        (pair-r (tuple-data tup)))))
+    ((bits-assoc   (fix (bits-assoc default assocs bits)
+                        (if-0 (size-eq? size-empty (tuple-size assocs)) default
+                              ((lam (assoc)
+                                    (if-0 (bits-eq? bits (pair-l assoc)) (pair-r assoc)
+                                          (bits-assoc default
+                                                      (tuple-rest assocs)
+                                                      bits)))
+                               (tuple-first assocs)))))
 
-    (bit-eq?              (lam (bta btb) (if-0 bta (if-0 btb 0 1) (if-0 btb 1 0))))
-    (size-eq?             (fix (size-eq? sa sb)
-                            (if-0 (bit-eq? (pair-l sa) (pair-l sb))
-                              (if-0 (pair-l sa) 0
-                                (size-eq? (pair-r sa) (pair-r sb)))
-                              1)))
-    (bits-unsized-eq?     (fix (bits-unsized-eq? sz ba bb)
-                            (if-0 (pair-l sz)
-                              0
-                              (if-0 (bit-eq? (pair-l ba) (pair-l bb))
-                                (bits-unsized-eq? (pair-r sz) (pair-r ba) (pair-r bb))
-                                1))))
-    (bits-eq?             (lam (ba bb)
-                            (if-0 (size-eq? (tuple-size ba) (tuple-size bb))
-                              (bits-unsized-eq? (tuple-size ba) (tuple-data ba) (tuple-data bb))
-                              (error ,(sym 'bitsize-mismatch)))))
+     (tagged-with? (lam (tag td) (bits-eq? tag (tagged-tag td)))))
 
-    (bits-assoc   (fix (bits-assoc default assocs bits)
-                    (if-0 (size-eq? size-empty (tuple-size assocs)) default
-                      ((lam (assoc)
-                        (if-0 (bits-eq? bits (pair-l assoc)) (pair-r assoc)
-                          (bits-assoc default
-                                      (tuple-rest assocs)
-                                      bits)))
-                       (tuple-first assocs)))))
+    ((sym?   (tagged-with? ,sym-tag))
+     (lam?   (tagged-with? ,lam-tag))
+     (bit?   (tagged-with? ,bit-tag))
+     (uno?   (tagged-with? ,uno-tag))
+     (pair?  (tagged-with? ,pair-tag)))
 
-    (tagged-with? (lam (tag td) (bits-eq? tag (tagged-tag td))))
+    ((pair-x      (lam (accessor p)
+                       (if-0 (pair? p) (accessor (tagged-datum p))
+                             (error ,(sym 'expected-pair)))))
+     (lam-wrap    (lam (arg-name lam) (tagged ,lam-tag (pair lam arg-name))))
+     (_lam-unwrap (lam (wrapped-lam) (pair-l (tagged-datum wrapped-lam)))))
 
-    (sym?   (tagged-with? ,sym-tag))
-    (lam?   (tagged-with? ,lam-tag))
-    (bit?   (tagged-with? ,bit-tag))
-    (uno?   (tagged-with? ,uno-tag))
-    (pair?  (tagged-with? ,pair-tag))
+    ((lam-unwrap  (lam (lm)
+                       (if-0 (lam? lm) (_lam-unwrap lm)
+                             (error ,(sym 'expected-lam)))))
+     (pred-wrap (lam (pred) (lam-wrap () (lam (val) (tagged ,bit-tag (pred val)))))))
 
-    (pair-x      (lam (accessor p)
-                   (if-0 (pair? p) (accessor (tagged-datum p))
-                     (error ,(sym 'expected-pair)))))
-    (lam-wrap    (lam (arg-name lam) (tagged ,lam-tag (pair lam arg-name))))
-    (_lam-unwrap (lam (wrapped-lam) (pair-l (tagged-datum wrapped-lam))))
-    (lam-unwrap  (lam (lm)
-                   (if-0 (lam? lm) (_lam-unwrap lm)
-                     (error ,(sym 'expected-lam)))))
+    ((1-sym?  (pred-wrap sym?))
+     (1-lam?  (pred-wrap lam?))
+     (1-bit?  (pred-wrap bit?))
+     (1-uno?  (pred-wrap uno?))
+     (1-pair? (pred-wrap pair?))
 
-    (pred-wrap (lam (pred) (lam-wrap () (lam (val) (tagged ,bit-tag (pred val))))))
+     (1-sym-eq?      (lam-wrap () (lam (sa) (lam-wrap () (lam (sb)
+                                                              (if-0 (sym? sa)
+                                                                    (if-0 (sym? sb)
+                                                                          (tagged ,bit-tag
+                                                                                  (bits-eq? (tagged-datum sa) (tagged-datum sb)))
+                                                                          (error ,(sym 'expected-sym-rhs)))
+                                                                    (error ,(sym 'expected-sym-lhs))))))))
+     (1-uno          (tagged ,uno-tag ()))
+     (1-0b           (tagged ,bit-tag 0))
+     (1-1b           (tagged ,bit-tag 1))
+     (1-pair         (lam-wrap () (lam (l) (lam-wrap () (lam (r)
+                                                             (tagged ,pair-tag (pair l r)))))))
+     (1-pair-access  (lam-wrap () (lam (bt) (lam-wrap () (lam (pr)
+                                                              (if-0 (bit? bt)
+                                                                    (pair-access (tagged-datum bt) (pair-x (lam (p) p)))
+                                                                    (error ,(sym 'expected-bit))))))))
 
-    (1-sym?  (pred-wrap sym?))
-    (1-lam?  (pred-wrap lam?))
-    (1-bit?  (pred-wrap bit?))
-    (1-uno?  (pred-wrap uno?))
-    (1-pair? (pred-wrap pair?))
+     (1-produce      (lam-wrap () (lam (val) (produce val))))
 
-    (1-sym-eq?      (lam-wrap () (lam (sa) (lam-wrap () (lam (sb)
-                      (if-0 (sym? sa)
-                        (if-0 (sym? sb)
-                          (tagged ,bit-tag
-                            (bits-eq? (tagged-datum sa) (tagged-datum sb)))
-                          (error ,(sym 'expected-sym-rhs)))
-                        (error ,(sym 'expected-sym-lhs))))))))
-    (1-uno          (tagged ,uno-tag ()))
-    (1-0b           (tagged ,bit-tag 0))
-    (1-1b           (tagged ,bit-tag 1))
-    (1-pair         (lam-wrap () (lam (l) (lam-wrap () (lam (r)
-                      (tagged ,pair-tag (pair l r)))))))
-    (1-pair-access  (lam-wrap () (lam (bt) (lam-wrap () (lam (pr)
-                      (if-0 (bit? bt)
-                        (pair-access (tagged-datum bt) (pair-x (lam (p) p)))
-                        (error ,(sym 'expected-bit))))))))
-
-    (1-produce      (lam-wrap () (lam (val) (produce val))))
-
-    (1-error        (lam-wrap () error))
-    (1-gen-sym      (lam-wrap () (lam (sym-name) (lam-wrap () (lam (parent)
-                      (gen-sym sym-name parent))))))
+     (1-error        (lam-wrap () error))
+     (1-gen-sym      (lam-wrap () (lam (sym-name) (lam-wrap () (lam (parent)
+                                                                    (gen-sym sym-name parent)))))))
     )
     prog))
 
