@@ -170,7 +170,7 @@
                (ctrl (keycount-controller (interact-controller state))))
       (screen-clear)
       (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
-      (printf "~a" (interact-state-viewcontext st))
+      (time (printf "~a\n" (interact-state-viewcontext st)))
       (begin/with-monad either-monad
         char = (read-char)
         (list ctrl notes) = (ctrl (event-keypress char))
