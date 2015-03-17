@@ -138,7 +138,7 @@
 
 (define (interact-controller st)
   (define (done-ctrl result)
-    (lambda (_) (list (done-ctrl result) (list (note-terminated result)))))
+    (lambda (_) (list (done-ctrl result) (list (note-terminated)))))
   (fn ((event-keycount char count))
     prev-st = st
     action =
@@ -154,7 +154,7 @@
       (#\u (lambda (count) (match (:.* st 'history)
                              ('() (displayln "nothing to undo!") (right st))
                              ((cons prev-state hist) (right prev-state)))))
-      (#\q (lambda (_) (left "quitting")))
+      (#\q (lambda (_) (left (void))))
       (_   (lambda (_) (displayln "invalid choice") (right st))))
     (match (action count)
       ((left result) ((done-ctrl result) (void)))
@@ -177,8 +177,8 @@
         st <- (monad-foldl either-monad
                 (lambda (_ note)
                   (match note
-                    ((note-terminated result) (left result))
-                    ((note-view st)           (right st))))
+                    ((note-terminated) (left "quitting"))
+                    ((note-view st)    (right st))))
                 st notes)
         (loop st ctrl))))))
 
