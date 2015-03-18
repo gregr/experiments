@@ -139,35 +139,41 @@
 (define (interact-controller st)
   (define (done-ctrl result)
     (lambda (_) (list (done-ctrl result) (list (note-terminated)))))
-  (fn ((event-keycount char count))
-    prev-st = st
-    action =
-    (match char
-      (#\h (lambda (count) (interact-safe-context-count interact-shift-left st count)))
-      (#\l (lambda (count) (interact-safe-context-count interact-shift-right st count)))
-      (#\j (lambda (count) (interact-safe-context-count interact-descend st count)))
-      (#\k (lambda (count) (interact-safe-context-count interact-ascend st count)))
-      (#\S (lambda (_) (interact-safe-context interact-substitute-full st)))
-      (#\s (lambda (count) (interact-safe-context-count interact-step st count)))
-      (#\c (lambda (_) (interact-safe-context interact-complete st)))
-      (#\x (lambda (_) (interact-safe-view view-toggle st)))
-      (#\u (lambda (count) (match (:.* st 'history)
-                             ('() (displayln "nothing to undo!") (right st))
-                             ((cons prev-state hist) (right prev-state)))))
-      (#\q (lambda (_) (left (void))))
-      (_   (lambda (_) (displayln "invalid choice") (right st))))
-    (match (action count)
-      ((left result) ((done-ctrl result) (void)))
-      ((right st)
+  (fn (event)
+    (match event
+      ((event-keycount char count)
        (lets
-         st = (if (equal? char #\u) st
-                (:~* st (curry cons prev-st) 'history))
-         (list (interact-controller st) (list (note-view st))))))))
+         prev-st = st
+         action =
+         (match char
+           (#\h (lambda (count) (interact-safe-context-count interact-shift-left st count)))
+           (#\l (lambda (count) (interact-safe-context-count interact-shift-right st count)))
+           (#\j (lambda (count) (interact-safe-context-count interact-descend st count)))
+           (#\k (lambda (count) (interact-safe-context-count interact-ascend st count)))
+           (#\S (lambda (_) (interact-safe-context interact-substitute-full st)))
+           (#\s (lambda (count) (interact-safe-context-count interact-step st count)))
+           (#\c (lambda (_) (interact-safe-context interact-complete st)))
+           (#\x (lambda (_) (interact-safe-view view-toggle st)))
+           (#\u (lambda (count) (match (:.* st 'history)
+                                  ('() (displayln "nothing to undo!") (right st))
+                                  ((cons prev-state hist) (right prev-state)))))
+           (#\q (lambda (_) (left (void))))
+           (_   (lambda (_) (displayln "invalid choice") (right st))))
+         (match (action count)
+           ((left result) ((done-ctrl result) (void)))
+           ((right st)
+            (lets
+              st = (if (equal? char #\u) st
+                     (:~* st (curry cons prev-st) 'history))
+              (list (interact-controller st) (list (note-view st))))))))
+      (_ (list (interact-controller st) '())))))
 
 (define (interact-loop state)
   (with-cursor-hidden (with-stty-direct
     (let loop ((st state)
-               (ctrl (keycount-controller (interact-controller state))))
+               (ctrl (compose-controller
+                       keycount-controller
+                       (maybe-controller '() (interact-controller state)))))
       (screen-clear)
       (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
       (time (printf "~a\n" (interact-state-viewcontext st)))
