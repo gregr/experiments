@@ -108,72 +108,70 @@
   apply-prefix = (doc-atom style-apply-bracket "(")
   apply-suffix = (doc-atom style-apply-bracket ")")
 
-  (letrec ((render
-    (fn (env t/v)
-      (match t/v
-        ((uno)       unit-doc)
-        ((bit (b-0)) b-0-doc)
-        ((bit (b-1)) b-1-doc)
-        ((pair l r)
-         (lets
-           items = (map (curry render env) (list l r))
-           items = (separated pair-separator style-default items)
-           (bracketed-chain pair-prefix pair-suffix attr-loose-aligned
-                            style-default style-default items)))
-        ((bvar idx)
-         (lets
-           name = (symbol->string (binders-get env idx))
-           (doc-atom style-bvar name)))
-        ((lam attr body)
-         (lets
-           (list env names body) = (gather-lams env (value t/v))
-           names = (forl
-                     name <- (map symbol->string names)
-                     (doc-atom style-bvar name))
-           names = (bracketed-chain
-                     lam-arg-prefix lam-arg-suffix attr-loose-aligned
-                     style-default style-default names)
-           (bracketed-chain
-             lam-prefix lam-suffix attr-loose-aligned style-default
-             style-default (list (tight-pair style-lam lam-doc names)
-                                 (render env body)))))
-        ((subst (substitution uses lift) t)
-         (lets
-           vals = (map (curry render env) (map substitution-use-v uses))
-           (list names env) = (subst-binders env uses lift)
-           names = (map symbol->string names)
-           names = (map (curry doc-atom style-bvar) names)
-           assignments =
-           (forl
-             name <- names
-             val <- vals
-             (doc-chain style-subst-use attr-loose-aligned
-                        (list name subst-assignment val)))
-           lift = (doc-atom style-subst-lift (format "^~a" lift))
-           sub-inner = (separated subst-separator style-default
-                                  (list* lift assignments))
-           sub = (bracketed-chain subst-prefix subst-suffix attr-loose-aligned
-                                  style-default style-default sub-inner)
-           body = (render env t)
-           (tight-pair style-default sub body)))
-        ((value v) (render env v))
-        ((produce t)
-         (bracketed-chain produce-prefix produce-suffix attr-loose-aligned
+  (fnr (render env t/v)
+    (match t/v
+      ((uno)       unit-doc)
+      ((bit (b-0)) b-0-doc)
+      ((bit (b-1)) b-1-doc)
+      ((pair l r)
+       (lets
+         items = (map (curry render env) (list l r))
+         items = (separated pair-separator style-default items)
+         (bracketed-chain pair-prefix pair-suffix attr-loose-aligned
+                          style-default style-default items)))
+      ((bvar idx)
+       (lets
+         name = (symbol->string (binders-get env idx))
+         (doc-atom style-bvar name)))
+      ((lam attr body)
+       (lets
+         (list env names body) = (gather-lams env (value t/v))
+         names = (forl
+                   name <- (map symbol->string names)
+                   (doc-atom style-bvar name))
+         names = (bracketed-chain
+                   lam-arg-prefix lam-arg-suffix attr-loose-aligned
+                   style-default style-default names)
+         (bracketed-chain
+           lam-prefix lam-suffix attr-loose-aligned style-default
+           style-default (list (tight-pair style-lam lam-doc names)
+                               (render env body)))))
+      ((subst (substitution uses lift) t)
+       (lets
+         vals = (map (curry render env) (map substitution-use-v uses))
+         (list names env) = (subst-binders env uses lift)
+         names = (map symbol->string names)
+         names = (map (curry doc-atom style-bvar) names)
+         assignments =
+         (forl
+           name <- names
+           val <- vals
+           (doc-chain style-subst-use attr-loose-aligned
+                      (list name subst-assignment val)))
+         lift = (doc-atom style-subst-lift (format "^~a" lift))
+         sub-inner = (separated subst-separator style-default
+                                (list* lift assignments))
+         sub = (bracketed-chain subst-prefix subst-suffix attr-loose-aligned
+                                style-default style-default sub-inner)
+         body = (render env t)
+         (tight-pair style-default sub body)))
+      ((value v) (render env v))
+      ((produce t)
+       (bracketed-chain produce-prefix produce-suffix attr-loose-aligned
+                        style-default style-default
+                        (list produce-doc (render env t))))
+      ((pair-access index pair)
+       (lets
+         index =
+         (bracketed-chain access-prefix access-suffix attr-loose-aligned
                           style-default style-default
-                          (list produce-doc (render env t))))
-        ((pair-access index pair)
-         (lets
-           index =
-           (bracketed-chain access-prefix access-suffix attr-loose-aligned
-                            style-default style-default
-                            (list (render env index)))
-           (tight-pair style-default (render env pair) index)))
-        ((lam-apply proc arg)
-         (bracketed-chain apply-prefix apply-suffix attr-loose-aligned
-                          style-default style-default
-                          (map (curry render env) (gather-applications t/v))))
-        (x (render-other env x))))))
-    render))
+                          (list (render env index)))
+         (tight-pair style-default (render env pair) index)))
+      ((lam-apply proc arg)
+       (bracketed-chain apply-prefix apply-suffix attr-loose-aligned
+                        style-default style-default
+                        (map (curry render env) (gather-applications t/v))))
+      (x (render-other env x)))))
 (define doc-render-empty
   (style-palette->doc-renderer (void) palette-empty))
 (define doc-render-selected-default
