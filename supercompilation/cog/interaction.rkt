@@ -13,6 +13,7 @@
   "util.rkt"
   gregr-misc/cursor
   gregr-misc/either
+  gregr-misc/generator
   gregr-misc/list
   gregr-misc/match
   gregr-misc/maybe
@@ -138,7 +139,7 @@
 
 (define (interact-controller st)
   (define (done-ctrl result)
-    (lambda (_) (list (done-ctrl result) (list (note-terminated)))))
+    (lambda (_) (gen-susp (list (note-terminated)) (done-ctrl result))))
   (fn (event)
     (match event
       ((event-keycount char count)
@@ -165,21 +166,21 @@
             (lets
               st = (if (equal? char #\u) st
                      (:~* st (curry cons prev-st) 'history))
-              (list (interact-controller st) (list (note-view st))))))))
-      (_ (list (interact-controller st) '())))))
+              (gen-susp (list (note-view st)) (interact-controller st)))))))
+      (_ (gen-susp '() (interact-controller st))))))
 
 (define (interact-loop state)
   (with-cursor-hidden (with-stty-direct
     (let loop ((st state)
-               (ctrl (compose-controller
-                       keycount-controller
-                       (maybe-controller '() (interact-controller state)))))
+               (ctrl (gen-compose
+                       (maybe-gen '() (interact-controller state))
+                       keycount-controller)))
       (screen-clear)
       (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
       (time (printf "~a\n" (interact-state-viewcontext st)))
       (begin/with-monad either-monad
         char = (read-char)
-        (list ctrl notes) = (ctrl (event-keypress char))
+        (gen-susp notes ctrl) = (ctrl (event-keypress char))
         st <- (monad-foldl either-monad
                 (lambda (_ note)
                   (match note
