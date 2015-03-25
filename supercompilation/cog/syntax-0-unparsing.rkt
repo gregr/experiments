@@ -74,7 +74,7 @@
   (forl
     (substitution-use (lattr name _ _) val) <- uses  ; TODO: use entire attr
     (list (list name '= (unparse-value upe val)) name))
-  (list assignments names) = (zip-default unparsed-uses '(() ()))
+  (list assignments names) = (zip-default '(() ()) unparsed-uses)
   (list assignments names lift))
 
 (define (unparse-value-bit vb)

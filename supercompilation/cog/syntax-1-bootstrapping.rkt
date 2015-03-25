@@ -42,7 +42,7 @@
 
 ;; bootstrapping
 (def (let-module defs body)
-  (list names args) = (zip-default defs '(() ()))
+  (list names args) = (zip-default '(() ()) defs)
   proc =
   (forf
     body = body
