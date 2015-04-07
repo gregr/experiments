@@ -201,7 +201,7 @@
         (list msg st-view) =
         (match input
           ((left msg) (list msg st-view))
-          ((right st) (list "" (delay (interact-state-viewcontext st)))))
+          ((right st-view) (list "" st-view)))
         full-view =
         (thunk (with-output-to-string (thunk (time (printf "~a\n"
           (string-append command-str "\n" msg "\n\n" (force st-view)))))))
@@ -220,7 +220,9 @@
         (gen-compose* ctrl
                       (fn->gen (lambda (_) (channel-get event-chan)))
                       (fn->gen (curry channel-put display-chan))
-                      build-view)
+                      build-view
+                      (fn->gen (curry either-map
+                        (lambda (st) (delay (interact-state-viewcontext st))))))
         (right state))
       _ = (for-each kill-thread threads)
       result))))
