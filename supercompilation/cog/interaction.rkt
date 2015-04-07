@@ -200,7 +200,8 @@
       threads = (list (keypress-thread event-chan)
                       (display-view-thread 0.1 display-chan))
       result =
-      (let loop ((st state)
+      (let loop ((message "")
+                 (st state)
                  (ctrl (gen-compose
                          (maybe-gen (left "counting...")
                                     (interact-controller state))
@@ -208,16 +209,18 @@
         (channel-put display-chan (thunk
           (string-append
             command-str "\n\n"
+            message "\n\n"
             (with-output-to-string
               (thunk (time (printf "~a\n" (interact-state-viewcontext st))))))))
         (match (ctrl (channel-get event-chan))
           ((gen-result final) final)
           ((gen-susp result ctrl)
            (lets
-             st = (match result
-                    ((left err) (displayln err) st)
-                    ((right st) st))
-             (loop st ctrl)))))
+             (list message st) =
+             (match result
+               ((left err) (list err st))
+               ((right st) (list "" st)))
+             (loop message st ctrl)))))
       _ = (for-each kill-thread threads)
       result))))
 
