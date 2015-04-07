@@ -202,9 +202,11 @@
       result =
       (let loop ((message "")
                  (st state)
-                 (ctrl (gen-compose
-                         (maybe-gen (left "counting...")
-                                    (interact-controller state))
+                 (ctrl (gen-compose*
+                         (fn->gen
+                           (curry either-fold (compose1 left number->string)
+                                  identity))
+                         (either-gen (interact-controller state))
                          keycount-controller)))
         (channel-put display-chan (thunk
           (string-append
