@@ -195,34 +195,36 @@
   (define command-str "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit")
   (define event-chan (make-channel))
   (define display-chan (make-channel))
+  (def (put-view (list message st))
+    (channel-put display-chan
+      (thunk (string-append
+        command-str "\n\n" message "\n\n"
+        (with-output-to-string
+          (thunk (time (printf "~a\n" (interact-state-viewcontext st)))))))))
+  (define ctrl (gen-compose*
+                 (fn->gen
+                   (curry either-fold (compose1 left number->string) identity))
+                 (either-gen (interact-controller state))
+                 keycount-controller))
+  (define view-prep
+    (generator* yield (input)
+      (letn loop (list st input) = (list state input)
+        output =
+        (match input
+          ((left err) (list err st))
+          ((right st) (list "" st)))
+        (list _ st) = output
+        (loop (list st (yield output))))))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
                       (display-view-thread 0.1 display-chan))
       result =
-      (let loop ((message "")
-                 (st state)
-                 (ctrl (gen-compose*
-                         (fn->gen
-                           (curry either-fold (compose1 left number->string)
-                                  identity))
-                         (either-gen (interact-controller state))
-                         keycount-controller)))
-        (channel-put display-chan (thunk
-          (string-append
-            command-str "\n\n"
-            message "\n\n"
-            (with-output-to-string
-              (thunk (time (printf "~a\n" (interact-state-viewcontext st))))))))
-        (match (ctrl (channel-get event-chan))
-          ((gen-result final) final)
-          ((gen-susp result ctrl)
-           (lets
-             (list message st) =
-             (match result
-               ((left err) (list err st))
-               ((right st) (list "" st)))
-             (loop message st ctrl)))))
+      (gen-loop
+        (gen-compose* view-prep ctrl
+                      (fn->gen (lambda (_) (channel-get event-chan)))
+                      (fn->gen put-view))
+        (list "" state))
       _ = (for-each kill-thread threads)
       result))))
 
