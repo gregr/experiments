@@ -195,36 +195,33 @@
   (define command-str "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit")
   (define event-chan (make-channel))
   (define display-chan (make-channel))
-  (def (put-view (list message st))
-    (channel-put display-chan
-      (thunk (string-append
-        command-str "\n\n" message "\n\n"
-        (with-output-to-string
-          (thunk (time (printf "~a\n" (interact-state-viewcontext st)))))))))
+  (define build-view
+    (generator* yield (input)
+      (letn loop (list st-view input) = (list (void) input)
+        (list msg st-view) =
+        (match input
+          ((left msg) (list msg st-view))
+          ((right st) (list "" (delay (interact-state-viewcontext st)))))
+        full-view =
+        (thunk (with-output-to-string (thunk (time (printf "~a\n"
+          (string-append command-str "\n" msg "\n\n" (force st-view)))))))
+        (loop (list st-view (yield full-view))))))
   (define ctrl (gen-compose*
                  (fn->gen
                    (curry either-fold (compose1 left number->string) identity))
                  (either-gen (interact-controller state))
                  keycount-controller))
-  (define view-prep
-    (generator* yield (input)
-      (letn loop (list st input) = (list state input)
-        output =
-        (match input
-          ((left err) (list err st))
-          ((right st) (list "" st)))
-        (list _ st) = output
-        (loop (list st (yield output))))))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
                       (display-view-thread 0.1 display-chan))
       result =
       (gen-loop
-        (gen-compose* view-prep ctrl
+        (gen-compose* ctrl
                       (fn->gen (lambda (_) (channel-get event-chan)))
-                      (fn->gen put-view))
-        (list "" state))
+                      (fn->gen (curry channel-put display-chan))
+                      build-view)
+        (right state))
       _ = (for-each kill-thread threads)
       result))))
 
