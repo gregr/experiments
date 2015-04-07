@@ -163,24 +163,36 @@
        (gen-susp result (interact-controller
                           (either-from current-st result)))))))
 
+(define (keypress-thread chan)
+  (thread
+    (thunk (gen-loop (apply gen-compose* (map fn->gen
+      (list (curry channel-put chan) event-keypress (lambda (_) (read-char)))))
+      (void)))))
+
 (define (interact-loop state)
+  (define event-chan (make-channel))
   (with-cursor-hidden (with-stty-direct
-    (let loop ((st state)
-               (ctrl (gen-compose
-                       (maybe-gen (left "counting...")
-                                  (interact-controller state))
-                       keycount-controller)))
-      (screen-clear)
-      (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
-      (time (printf "~a\n" (interact-state-viewcontext st)))
-      (match (ctrl (event-keypress (read-char)))
-        ((gen-result final) final)
-        ((gen-susp result ctrl)
-         (lets
-           st = (match result
-                  ((left err) (displayln err) st)
-                  ((right st) st))
-           (loop st ctrl))))))))
+    (lets
+      kp-thread = (keypress-thread event-chan)
+      result =
+      (let loop ((st state)
+                 (ctrl (gen-compose
+                         (maybe-gen (left "counting...")
+                                    (interact-controller state))
+                         keycount-controller)))
+        (screen-clear)
+        (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
+        (time (printf "~a\n" (interact-state-viewcontext st)))
+        (match (ctrl (channel-get event-chan))
+          ((gen-result final) final)
+          ((gen-susp result ctrl)
+           (lets
+             st = (match result
+                    ((left err) (displayln err) st)
+                    ((right st) st))
+             (loop st ctrl)))))
+      _ = (kill-thread kp-thread)
+      result))))
 
 (define (interact-with term)
   (interact-loop
