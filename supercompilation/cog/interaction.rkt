@@ -171,10 +171,9 @@
 
 (define (display-view-thread latency chan)
   (define fetch-chan (make-channel))
-  (define (display-view st)
+  (define (display-view view)
     (screen-clear)
-    (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
-    (time (printf "~a\n" (interact-state-viewcontext st))))
+    (displayln (view)))
   (define (display-loop timer)
     (display-view (channel-get fetch-chan))
     (sleep-remaining latency timer)
@@ -192,6 +191,7 @@
   fetch-thread)
 
 (define (interact-loop state)
+  (define command-str "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit")
   (define event-chan (make-channel))
   (define display-chan (make-channel))
   (with-cursor-hidden (with-stty-direct
@@ -204,7 +204,11 @@
                          (maybe-gen (left "counting...")
                                     (interact-controller state))
                          keycount-controller)))
-        (channel-put display-chan st)
+        (channel-put display-chan (thunk
+          (string-append
+            command-str "\n\n"
+            (with-output-to-string
+              (thunk (time (printf "~a\n" (interact-state-viewcontext st))))))))
         (match (ctrl (channel-get event-chan))
           ((gen-result final) final)
           ((gen-susp result ctrl)
