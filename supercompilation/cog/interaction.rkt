@@ -171,9 +171,10 @@
 
 (define (display-view-thread latency chan)
   (define fetch-chan (make-channel))
-  (define (display-view view)
-    (screen-clear)
-    (displayln (view)))
+  (def (display-view view)
+    view-str = (view)
+    _ = (screen-clear)
+    (displayln view-str))
   (define (display-loop timer)
     (display-view (channel-get fetch-chan))
     (sleep-remaining latency timer)
