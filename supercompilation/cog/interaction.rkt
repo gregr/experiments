@@ -124,70 +124,63 @@
 (record interact-state view context history)
 (def (interact-state-viewcontext (interact-state view ctx _)) (view ctx))
 
-(define ((left-display-default default) result)
-  (either-fold (lambda (msg) (displayln msg) default) identity result))
-
-(define ((interact-safe path) trans st)
-  (right (:~ st (compose1 (left-display-default (:. st path)) trans) path)))
-(define interact-safe-context (interact-safe '(context)))
-(define interact-safe-view (interact-safe '(view)))
-
-(define (interact-safe-context-count f st count)
-  (last (iterate
-          (compose1 (curry interact-safe-context f) right-x)
-          (right st) count)))
+(define ((interact-state-trans path) trans st)
+  (begin/with-monad either-monad
+    component = (:. st path)
+    result <- (trans component)
+    (pure (:= st result path))))
+(define interact-context (interact-state-trans '(context)))
+(define interact-view (interact-state-trans '(view)))
+(define (interact-context-count f st count)
+  (right (let loop ((est (right st)) (count count))
+    (if (= count 0) est
+      (match est
+        ((left _)   est)
+        ((right st) (loop (interact-context f st) (- count 1))))))))
 
 (define (interact-controller st)
-  (define (done-ctrl result)
-    (lambda (_) (gen-susp (list (note-terminated)) (done-ctrl result))))
-  (fn (event)
-    (match event
-      ((event-keycount char count)
-       (lets
-         prev-st = st
-         action =
-         (match char
-           (#\h (lambda (count) (interact-safe-context-count interact-shift-left st count)))
-           (#\l (lambda (count) (interact-safe-context-count interact-shift-right st count)))
-           (#\j (lambda (count) (interact-safe-context-count interact-descend st count)))
-           (#\k (lambda (count) (interact-safe-context-count interact-ascend st count)))
-           (#\S (lambda (_) (interact-safe-context interact-substitute-full st)))
-           (#\s (lambda (count) (interact-safe-context-count interact-step st count)))
-           (#\c (lambda (_) (interact-safe-context interact-complete st)))
-           (#\x (lambda (_) (interact-safe-view view-toggle st)))
-           (#\u (lambda (count) (match (:.* st 'history)
-                                  ('() (displayln "nothing to undo!") (right st))
-                                  ((cons prev-state hist) (right prev-state)))))
-           (#\q (lambda (_) (left (void))))
-           (_   (lambda (_) (displayln "invalid choice") (right st))))
-         (match (action count)
-           ((left result) ((done-ctrl result) (void)))
-           ((right st)
-            (lets
-              st = (if (equal? char #\u) st
-                     (:~* st (curry cons prev-st) 'history))
-              (gen-susp (list (note-view st)) (interact-controller st)))))))
-      (_ (gen-susp '() (interact-controller st))))))
+  (fn ((event-keycount char count))
+    current-st = st
+    st = (:~* st (curry cons st) 'history)
+    action =
+    (match char
+      (#\h (thunk (interact-context-count interact-shift-left st count)))
+      (#\l (thunk (interact-context-count interact-shift-right st count)))
+      (#\j (thunk (interact-context-count interact-descend st count)))
+      (#\k (thunk (interact-context-count interact-ascend st count)))
+      (#\S (thunk (right (interact-context interact-substitute-full st))))
+      (#\s (thunk (interact-context-count interact-step st count)))
+      (#\c (thunk (right (interact-context interact-complete st))))
+      (#\x (thunk (right (interact-view view-toggle st))))
+      (#\u (thunk (right (match (:.* current-st 'history)
+                           ('() (left "nothing to undo!"))
+                           ((cons prev-state hist) (right prev-state))))))
+      (#\q (thunk (left "quitting")))
+      (_   (thunk (right (left "invalid choice")))))
+    (match (action)
+      ((left final) (gen-result final))
+      ((right result)
+       (gen-susp result (interact-controller
+                          (either-from current-st result)))))))
 
 (define (interact-loop state)
   (with-cursor-hidden (with-stty-direct
     (let loop ((st state)
                (ctrl (gen-compose
-                       (maybe-gen '() (interact-controller state))
+                       (maybe-gen (left "counting...")
+                                  (interact-controller state))
                        keycount-controller)))
       (screen-clear)
       (displayln "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit\n")
       (time (printf "~a\n" (interact-state-viewcontext st)))
-      (begin/with-monad either-monad
-        char = (read-char)
-        (gen-susp notes ctrl) = (ctrl (event-keypress char))
-        st <- (monad-foldl either-monad
-                (lambda (_ note)
-                  (match note
-                    ((note-terminated) (left "quitting"))
-                    ((note-view st)    (right st))))
-                st notes)
-        (loop st ctrl))))))
+      (match (ctrl (event-keypress (read-char)))
+        ((gen-result final) final)
+        ((gen-susp result ctrl)
+         (lets
+           st = (match result
+                  ((left err) (displayln err) st)
+                  ((right st) st))
+           (loop st ctrl))))))))
 
 (define (interact-with term)
   (interact-loop
