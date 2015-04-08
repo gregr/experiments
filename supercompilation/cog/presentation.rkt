@@ -2,6 +2,7 @@
 (provide
   doc-show
   nav-term->doc
+  string->doc
   )
 
 (require
@@ -203,6 +204,8 @@
   hidden = (doc-atom style-empty (format "~a levels hidden ..." hidden-count))
   focus-doc = (doc-render-default env focus)
   (vertical-list style-empty (list hidden doc-empty focus-doc)))
+
+(define string->doc (compose1 doc-preformatted string->styled-block))
 
 (def (doc-show doc)
   (size width height) = (screen-size)

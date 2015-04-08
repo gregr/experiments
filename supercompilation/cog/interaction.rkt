@@ -111,18 +111,19 @@
           "")
     "\n================================\n\n"))
 
-(define view-syntax-doc
-  (compose1 doc-show nav-term->doc))
+(define view-syntax-doc nav-term->doc)
 (define view-syntax-raw
-  (compose1 chain-show interact-context-present))
+  (compose1 string->doc chain-show interact-context-present))
 (define view-syntax-0
-  (compose1 chain-show chain-unparse-void interact-context-present))
+  (compose1 string->doc chain-show chain-unparse-void
+            interact-context-present))
 (define (view-toggle current-view)
   (right (if (eq? view-syntax-doc current-view)
            view-syntax-0 view-syntax-doc)))
 
 (record interact-state view context history)
-(def (interact-state-viewcontext (interact-state view ctx _)) (view ctx))
+(def (interact-state-viewcontext (interact-state view ctx _))
+  (doc-show (view ctx)))
 
 (define ((interact-state-trans path) trans st)
   (begin/with-monad either-monad
