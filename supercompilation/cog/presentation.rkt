@@ -1,6 +1,7 @@
 #lang racket
 (provide
   doc-show
+  full-view->doc
   nav-term->doc
   string->doc
   )
@@ -213,3 +214,28 @@
   block = (doc->styled-block ctx style-empty (size (min 80 width) height) doc)
   block-str = (styled-block->string block)
   (string-append block-str "\n"))
+
+(define (full-view->doc commands message d-inner-doc)
+  (define-values (inner-doc-list cpu-time real-time gc-time)
+    (time-apply (thunk (force d-inner-doc)) '()))
+  (define inner-doc (first inner-doc-list))
+  (define time-str (format "cpu time: ~a real time: ~a gc time: ~a"
+                           cpu-time real-time gc-time))
+  (define (doc-str str) (doc-atom style-empty str))
+  (define time-doc (doc-str time-str))
+  (define msg-doc (doc-str message))
+  (define notification-doc
+    (vertical-list style-empty (list msg-doc time-doc)))
+  (define command-doc
+    (vertical-list style-empty
+                   (forl
+                     (list cmd desc) <- commands
+                     (doc-chain style-empty attr-loose-aligned
+                                (list (doc-str cmd) (doc-str desc))))))
+  (define border-style (:=* style-empty #t 'invert?))
+  (define content-table
+    (bordered-table style-empty border-style
+                    (size 0 0) (size 1 1) (make-list 15 #\space)
+                    (list (list command-doc inner-doc))))
+  (simple-bordered-table style-empty border-style #\space
+                         (list (list content-table) (list notification-doc))))

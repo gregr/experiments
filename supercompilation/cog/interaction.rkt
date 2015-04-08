@@ -192,7 +192,17 @@
   fetch-thread)
 
 (define (interact-loop state)
-  (define command-str "[hjkl](movement),[S]ubstitute,[s]tep(count),[c]omplete,toggle-synta[x],[u]ndo,[q]uit")
+  (define commands
+    `(("h" "traverse left")
+      ("j" "traverse down")
+      ("k" "traverse up")
+      ("l" "traverse right")
+      ("S" "substitute")
+      ("s" "step")
+      ("c" "complete")
+      ("x" "toggle-syntax")
+      ("u" "undo")
+      ("q" "quit")))
   (define event-chan (make-channel))
   (define display-chan (make-channel))
   (define build-view
@@ -202,10 +212,7 @@
         (match input
           ((left msg) (list msg st-view))
           ((right st-view) (list "" st-view)))
-        full-view =
-        (thunk (with-output-to-string (thunk (time (printf "~a\n"
-          (string-append command-str "\n" msg "\n\n"
-                         (doc-show (force st-view))))))))
+        full-view = (thunk (doc-show (full-view->doc commands msg st-view)))
         (loop (list st-view (yield full-view))))))
   (define ctrl (gen-compose*
                  (fn->gen
