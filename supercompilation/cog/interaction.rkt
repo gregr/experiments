@@ -109,7 +109,7 @@
     (list ""
           (string-join (map pretty-string chain) "\n----------------\n\n")
           "")
-    "\n================================\n\n"))
+    "================================\n"))
 
 (define view-syntax-doc nav-term->doc)
 (define view-syntax-raw
