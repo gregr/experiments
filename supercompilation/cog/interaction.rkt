@@ -122,8 +122,7 @@
            view-syntax-0 view-syntax-doc)))
 
 (record interact-state view context history)
-(def (interact-state-viewcontext (interact-state view ctx _))
-  (doc-show (view ctx)))
+(def (interact-state-viewcontext (interact-state view ctx _)) (view ctx))
 
 (define ((interact-state-trans path) trans st)
   (begin/with-monad either-monad
@@ -205,7 +204,8 @@
           ((right st-view) (list "" st-view)))
         full-view =
         (thunk (with-output-to-string (thunk (time (printf "~a\n"
-          (string-append command-str "\n" msg "\n\n" (force st-view)))))))
+          (string-append command-str "\n" msg "\n\n"
+                         (doc-show (force st-view))))))))
         (loop (list st-view (yield full-view))))))
   (define ctrl (gen-compose*
                  (fn->gen
