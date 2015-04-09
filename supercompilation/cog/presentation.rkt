@@ -210,11 +210,10 @@
   (compose1 doc-preformatted (curry string->styled-block style-empty #\space)))
 
 (def (doc-show doc)
-  (size width height) = (screen-size)
+  sz = (screen-size)
   ctx = (sizing-context-new-default)
-  block = (doc->styled-block ctx style-empty (size width height) doc)
-  block-str = (styled-block->string block)
-  (string-append block-str "\n"))
+  block = (doc->styled-block ctx style-empty sz doc)
+  (styled-block->string block))
 
 (define (full-view->doc commands message d-inner-doc)
   (define-values (inner-doc-list cpu-time real-time gc-time)
