@@ -201,15 +201,15 @@
       ("q" "quit")))
   (define event-chan (make-channel))
   (define display-chan (make-channel))
-  (define build-view
+  (define build-display-str
     (generator* yield (input)
       (letn loop (list st-view input) = (list (void) input)
         (list msg st-view) =
         (match input
           ((left msg) (list msg st-view))
           ((right st-view) (list "" st-view)))
-        full-view = (thunk (doc-show (full-view->doc commands msg st-view)))
-        (loop (list st-view (yield full-view))))))
+        display-str = (thunk (view->string (tabular-view commands msg st-view)))
+        (loop (list st-view (yield display-str))))))
   (define ctrl (gen-compose*
                  (fn->gen
                    (curry either-fold (compose1 left number->string) identity))
@@ -224,7 +224,7 @@
         (gen-compose* ctrl
                       (fn->gen (lambda (_) (channel-get event-chan)))
                       (fn->gen (curry channel-put display-chan))
-                      build-view
+                      build-display-str
                       (fn->gen (curry either-map
                         (lambda (st) (delay (interact-state-viewcontext st))))))
         (right state))

@@ -1,9 +1,9 @@
 #lang racket
 (provide
-  doc-show
-  full-view->doc
   nav-term->doc
   string->doc
+  tabular-view
+  view->string
   )
 
 (require
@@ -209,13 +209,13 @@
 (define string->doc
   (compose1 doc-preformatted (curry string->styled-block style-empty #\space)))
 
-(def (doc-show doc)
+(def (view->string view)
   sz = (screen-size)
   ctx = (sizing-context-new-default)
-  block = (doc->styled-block ctx style-empty sz doc)
+  block = (doc->styled-block ctx style-empty sz (view sz))
   (styled-block->string block))
 
-(define (full-view->doc commands message d-inner-doc)
+(define ((tabular-view commands message d-inner-doc) sz)
   (define-values (inner-doc-list cpu-time real-time gc-time)
     (time-apply (thunk (force d-inner-doc)) '()))
   (define inner-doc (first inner-doc-list))
