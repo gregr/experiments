@@ -206,7 +206,8 @@
   focus-doc = (doc-render-default env focus)
   (vertical-list style-empty (list hidden doc-empty focus-doc)))
 
-(define string->doc (compose1 doc-preformatted string->styled-block))
+(define string->doc
+  (compose1 doc-preformatted (curry string->styled-block style-empty #\space)))
 
 (def (doc-show doc)
   (size width height) = (screen-size)
