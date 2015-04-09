@@ -212,7 +212,7 @@
 (def (doc-show doc)
   (size width height) = (screen-size)
   ctx = (sizing-context-new-default)
-  block = (doc->styled-block ctx style-empty (size (min 80 width) height) doc)
+  block = (doc->styled-block ctx style-empty (size width height) doc)
   block-str = (styled-block->string block)
   (string-append block-str "\n"))
 
