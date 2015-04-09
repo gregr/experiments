@@ -105,11 +105,7 @@
   (map (curry holed-substitute void-closure? (void)) (chain-unparse chain)))
 
 (define (chain-show chain)
-  (string-join
-    (list ""
-          (string-join (map pretty-string chain) "\n----------------\n\n")
-          "")
-    "================================\n"))
+  (string-join (map pretty-string chain) "\n----------------\n\n"))
 
 (define view-syntax-doc nav-term->doc)
 (define view-syntax-raw
