@@ -238,5 +238,6 @@
     (bordered-table style-empty border-style
                     (size 0 0) (size 1 1) (make-list 15 #\space)
                     (list (list command-doc inner-doc))))
-  (simple-bordered-table style-empty border-style #\space
-                         (list (list content-table) (list notification-doc))))
+  (bordered-table style-empty border-style
+                  (size 0 0) (size 1 1) (make-list 15 #\space)
+                  (list (list content-table) (list notification-doc))))
