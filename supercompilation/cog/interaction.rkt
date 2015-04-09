@@ -170,7 +170,7 @@
   (def (display-view view)
     view-str = (view)
     _ = (screen-clear)
-    (displayln view-str))
+    (display view-str))
   (define (display-loop timer)
     (display-view (channel-get fetch-chan))
     (sleep-remaining latency timer)

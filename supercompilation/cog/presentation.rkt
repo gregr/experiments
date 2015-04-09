@@ -233,10 +233,26 @@
                      (doc-chain style-empty attr-loose-aligned
                                 (list (doc-str cmd) (doc-str desc))))))
   (define border-style (:=* style-empty #t 'invert?))
-  (define content-table
-    (bordered-table style-empty border-style
-                    (size 0 0) (size 1 1) (make-list 15 #\space)
-                    (list (list command-doc inner-doc))))
-  (bordered-table style-empty border-style
-                  (size 0 0) (size 1 1) (make-list 15 #\space)
-                  (list (list content-table) (list notification-doc))))
+  (lets
+    (size full-width full-height) = sz
+    div-w = 1
+    div-h = 1
+    div-size = (size div-w div-h)
+    notification-height = 2
+    ctx = (sizing-context-new-default)
+    (list _ command-width _ _) = (widths ctx command-doc)
+    content-height = (- full-height (+ notification-height div-h))
+    inner-width = (- full-width (+ command-width div-w))
+    fixed-size =
+    (lambda (doc sz)
+      (doc-frame style-empty (frame-fixed (rect (coord 0 0) sz)) doc))
+    inner-doc = (fixed-size inner-doc (size inner-width content-height))
+    notification-doc = (fixed-size notification-doc
+                                   (size full-width notification-height))
+    div-table =
+    (lambda (rows)
+      (bordered-table
+        style-empty border-style (size 0 0) div-size (make-list 15 #\space)
+        rows))
+    content-table = (div-table (list (list command-doc inner-doc)))
+    (div-table (list (list content-table) (list notification-doc)))))
