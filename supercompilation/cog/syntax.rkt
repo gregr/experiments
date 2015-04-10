@@ -4,13 +4,14 @@
   binders-empty
   gather-applications
   gather-lams
-  nav-path-binders
+  nav-paths->binders
   subst-binders
   )
 
 (require
   "syntax-abstract.rkt"
   gregr-misc/cursor
+  gregr-misc/generator
   gregr-misc/record
   gregr-misc/sugar
   )
@@ -53,15 +54,23 @@
       ((lam-apply proc arg) (loop proc (list* arg args)))
       (proc (list* proc args)))))
 
-(define (nav-path-binders env focus path)
-  (match path
-    ('() env)
-    ((cons key path)
-     (lets
-       new-env =
-       (match focus
-         ((lam attr body) (second (binders-add env attr)))
-         ((subst (substitution uses lift) t)
-          (second (subst-binders env uses lift)))
-         (_ env))
-       (nav-path-binders new-env (:.* focus key) path)))))
+(define (nav-paths->binders env focus paths)
+  (gen->list
+    (gn yield (_)
+      _ = (yield env)
+      (forf
+        (list focus env) = (list focus env)
+        path <- paths
+        (list focus env) =
+        (forf
+          (list focus env) = (list focus env)
+          key <- path
+          new-env =
+          (match focus
+            ((lam attr body) (second (binders-add env attr)))
+            ((subst (substitution uses lift) t)
+             (second (subst-binders env uses lift)))
+            (_ env))
+          (list (:.* focus key) new-env))
+        _ = (yield env)
+        (list focus env)))))

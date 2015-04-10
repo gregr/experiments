@@ -107,7 +107,7 @@
 (define (chain-show chain)
   (string-join (map pretty-string chain) "\n----------------\n\n"))
 
-(define view-syntax-doc nav-term->doc)
+(define view-syntax-doc nav-term-flat->doc)
 (define view-syntax-raw
   (compose1 string->doc chain-show interact-context-present))
 (define view-syntax-0

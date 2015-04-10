@@ -1,6 +1,6 @@
 #lang racket
 (provide
-  nav-term->doc
+  nav-term-flat->doc
   string->doc
   tabular-view
   view->string
@@ -186,7 +186,7 @@
 
 (define visible-context-levels-default 7)
 
-(def (nav-term->doc nav)
+(def (nav-term-flat->doc nav)
   doc-empty = (doc-atom style-empty "")
   (list foci paths) =
   (zip (forl
@@ -200,7 +200,7 @@
   focus = (first (drop foci hidden-count))
   selected-path = (append* (drop paths hidden-count))
   context-path = (append* (take paths hidden-count))
-  env = (nav-path-binders binders-empty term context-path)
+  env = (last (nav-paths->binders binders-empty term (list context-path)))
   focus = (if (empty? selected-path) focus (:~ focus selected selected-path))
   hidden = (doc-atom style-empty (format "~a levels hidden ..." hidden-count))
   focus-doc = (doc-render-default env focus)
