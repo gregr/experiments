@@ -1,6 +1,7 @@
 #lang racket
 (provide
   nav-term-flat->doc
+  nav-term-lifted->doc
   string->doc
   tabular-view
   view->string
@@ -179,10 +180,16 @@
 (define doc-render-selected-default
   (style-palette->doc-renderer (void) palette-selected-default))
 (record selected x)
+(record hole)
 (define doc-render-default
-  (style-palette->doc-renderer
-    (fn (env (selected x)) (doc-render-selected-default env x))
-    palette-default))
+  ((thunk
+     (define hole-doc (doc-atom (:=* style-empty #t 'invert?) "[]"))
+     (style-palette->doc-renderer
+       (lambda (env x)
+         (match x
+           ((selected x) (doc-render-selected-default env x))
+           ((hole) hole-doc)))
+       palette-default))))
 
 (define visible-context-levels-default 7)
 
@@ -205,6 +212,26 @@
   hidden = (doc-atom style-empty (format "~a levels hidden ..." hidden-count))
   focus-doc = (doc-render-default env focus)
   (vertical-list style-empty (list hidden doc-empty focus-doc)))
+
+(def (nav-term-lifted->doc nav)
+  hole-term = (hole)
+  (list foci paths holed-foci) =
+  (zip (forl
+         (list focus hole-pos) <- (navigator-path nav)
+         (list path holed-focus) =
+         (match hole-pos
+           ((nothing) (list '() focus))
+           ((just (list _ path)) (list path (:= focus hole-term path))))
+         (list focus path holed-focus)))
+  envs = (nav-paths->binders binders-empty (first foci) paths)
+  focus-docs =
+  (forl
+    focus <- holed-foci
+    env <- envs
+    (doc-render-default env focus))
+  divider-doc = (doc-atom style-empty "----")
+  docs = (add-between (reverse focus-docs) divider-doc)
+  (vertical-list style-empty docs))
 
 (define string->doc
   (compose1 doc-preformatted (curry string->styled-block style-empty #\space)))
