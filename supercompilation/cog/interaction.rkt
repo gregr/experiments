@@ -105,13 +105,13 @@
   (map (curry holed-substitute void-closure? (void)) (chain-unparse chain)))
 
 (define (chain-show chain)
-  (string-join (map pretty-string chain) "\n----------------\n\n"))
+  (string-join (map pretty-string chain) "----\n"))
 
 (define view-syntax-doc nav-term-lifted->doc)
 (define view-syntax-raw
   (compose1 string->doc chain-show interact-context-present))
 (define view-syntax-0
-  (compose1 string->doc chain-show chain-unparse-void
+  (compose1 string->doc chain-show reverse chain-unparse-void
             interact-context-present))
 (define (view-toggle current-view)
   (right (if (eq? view-syntax-doc current-view)
