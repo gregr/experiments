@@ -162,21 +162,25 @@
      ,(lambda (count) (left "quitting"))))
   common-commands)
 
-(def (interact-controller st)
-  commands = (state->commands st)
-  current-st = st
-  (fn ((event-keycount char count))
-    keymap = (make-immutable-hash
-               (forl
-                 (list char desc action) <- commands
-                 (cons char action)))
-    action = (dict-ref
-               keymap char (lambda (count) (right (left "invalid choice"))))
-    (match (action count)
-      ((left final) (gen-result final))
-      ((right result)
-       (gen-susp result (interact-controller
-                          (either-from current-st result)))))))
+(define interact-controller
+  (gn yield (st)
+    (letn loop (list st next-st) = (list st (right st))
+      st = (either-from st next-st)
+      commands = (state->commands st)
+      command-desc = (forl
+                       (list char desc action) <- commands
+                       (list (list->string (list char)) desc))
+      result = (either-map (lambda (st) (list command-desc st)) next-st)
+      (event-keycount char count) = (yield result)
+      keymap = (make-immutable-hash
+                 (forl
+                   (list char desc action) <- commands
+                   (cons char action)))
+      action = (dict-ref
+                 keymap char (lambda (count) (right (left "invalid choice"))))
+      (match (action count)
+        ((left final) final)
+        ((right next-st) (loop (list st next-st)))))))
 
 (define (keypress-thread chan)
   (thread
@@ -207,45 +211,37 @@
   fetch-thread)
 
 (define (interact-loop state)
-  (define commands
-    `(("h" "traverse left")
-      ("j" "traverse down")
-      ("k" "traverse up")
-      ("l" "traverse right")
-      ("S" "substitute")
-      ("s" "step")
-      ("c" "complete")
-      ("x" "toggle-syntax")
-      ("u" "undo")
-      ("q" "quit")))
   (define event-chan (make-channel))
   (define display-chan (make-channel))
   (define build-display-str
     (generator* yield (input)
-      (letn loop (list st-view input) = (list (void) input)
-        (list msg st-view) =
+      (letn loop (list command-desc st-view input) = (list (void) (void) input)
+        (list msg command-desc st-view) =
         (match input
-          ((left msg) (list msg st-view))
-          ((right st-view) (list "" st-view)))
-        display-str = (thunk (view->string (tabular-view commands msg st-view)))
-        (loop (list st-view (yield display-str))))))
+          ((left msg)                          (list msg command-desc st-view))
+          ((right (list command-desc st-view)) (list "" command-desc st-view)))
+        display-str =
+        (thunk (view->string (tabular-view command-desc msg st-view)))
+        (loop (list command-desc st-view (yield display-str))))))
   (define ctrl (gen-compose*
                  (fn->gen
                    (curry either-fold (compose1 left number->string) identity))
-                 (either-gen (interact-controller state))
-                 keycount-controller))
+                 (either-gen interact-controller)))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
                       (display-view-thread 0.1 display-chan))
       result =
       (gen-loop
-        (gen-compose* ctrl
-                      (fn->gen (lambda (_) (channel-get event-chan)))
-                      (fn->gen (curry channel-put display-chan))
-                      build-display-str
-                      (fn->gen (curry either-map
-                        (lambda (st) (delay (interact-state-viewcontext st))))))
+        (gen-compose*
+          keycount-controller
+          (fn->gen (lambda (_) (channel-get event-chan)))
+          (fn->gen (curry channel-put display-chan))
+          build-display-str
+          (fn->gen (curry either-map
+            (fn ((list cmd-desc st))
+              (list cmd-desc (delay (interact-state-viewcontext st))))))
+          ctrl)
         (right state))
       _ = (for-each kill-thread threads)
       result))))
