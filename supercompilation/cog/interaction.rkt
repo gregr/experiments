@@ -134,26 +134,45 @@
         ((left _)   est)
         ((right st) (loop (interact-context f st) (- count 1))))))))
 
-(define (interact-controller st)
+(def (state->commands st)
+  (interact-state _ nav history) = st
+  st = (:~* st (curry cons st) 'history)
+  common-commands =
+  `((#\h "traverse left"
+     ,(lambda (count) (interact-context-count interact-shift-left st count)))
+    (#\j "traverse down"
+     ,(lambda (count) (interact-context-count interact-descend st count)))
+    (#\k "traverse up"
+     ,(lambda (count) (interact-context-count interact-ascend st count)))
+    (#\l "traverse right"
+     ,(lambda (count) (interact-context-count interact-shift-right st count)))
+    (#\S "substitute"
+     ,(lambda (count) (right (interact-context interact-substitute-full st))))
+    (#\s "step"
+     ,(lambda (count) (interact-context-count interact-step st count)))
+    (#\c "complete"
+     ,(lambda (count) (right (interact-context interact-complete st))))
+    (#\x "toggle-syntax"
+     ,(lambda (count) (right (interact-view view-toggle st))))
+    (#\u "undo"
+     ,(lambda (count) (right (match history
+                               ('() (left "nothing to undo!"))
+                               ((cons prev-state hist) (right prev-state))))))
+    (#\q "quit"
+     ,(lambda (count) (left "quitting"))))
+  common-commands)
+
+(def (interact-controller st)
+  commands = (state->commands st)
+  current-st = st
   (fn ((event-keycount char count))
-    current-st = st
-    st = (:~* st (curry cons st) 'history)
-    action =
-    (match char
-      (#\h (thunk (interact-context-count interact-shift-left st count)))
-      (#\l (thunk (interact-context-count interact-shift-right st count)))
-      (#\j (thunk (interact-context-count interact-descend st count)))
-      (#\k (thunk (interact-context-count interact-ascend st count)))
-      (#\S (thunk (right (interact-context interact-substitute-full st))))
-      (#\s (thunk (interact-context-count interact-step st count)))
-      (#\c (thunk (right (interact-context interact-complete st))))
-      (#\x (thunk (right (interact-view view-toggle st))))
-      (#\u (thunk (right (match (:.* current-st 'history)
-                           ('() (left "nothing to undo!"))
-                           ((cons prev-state hist) (right prev-state))))))
-      (#\q (thunk (left "quitting")))
-      (_   (thunk (right (left "invalid choice")))))
-    (match (action)
+    keymap = (make-immutable-hash
+               (forl
+                 (list char desc action) <- commands
+                 (cons char action)))
+    action = (dict-ref
+               keymap char (lambda (count) (right (left "invalid choice"))))
+    (match (action count)
       ((left final) (gen-result final))
       ((right result)
        (gen-susp result (interact-controller
