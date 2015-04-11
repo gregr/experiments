@@ -1,5 +1,6 @@
 #lang racket
 (provide
+  composite->doc
   nav-term-flat->doc
   nav-term-lifted->doc
   string->doc
@@ -241,6 +242,12 @@
   ctx = (sizing-context-new-default)
   block = (doc->styled-block ctx style-empty sz (view sz))
   (styled-block->string block))
+
+(define (composite->doc docs)
+  (define border-style (:=* style-empty #t 'invert?))
+  (bordered-table
+    style-empty border-style (size 0 0) (size 1 1) (make-list 15 #\|)
+    (list docs)))
 
 (define ((tabular-view commands message d-inner-doc) sz)
   (define-values (inner-doc-list cpu-time real-time gc-time)

@@ -185,6 +185,90 @@
            ((left final) final)
            ((right next-st) (loop (list #t st next-st)))))))))
 
+(records composite-event
+  (composite-add key view ctrl)
+  (composite-remove key)
+  (composite-send key event))
+
+(define composite-controller
+  (gn yield (event)
+    (let loop ((views (hash)) (ctrls (hash)) (event event))
+      (match event
+        ((composite-add key view ctrl)
+         (lets
+           views = (dict-set views key view)
+           ctrls = (dict-set ctrls key ctrl)
+           (loop views ctrls (yield views))))
+        ((composite-remove key)
+         (lets
+           views = (dict-remove views key)
+           ctrls = (dict-remove ctrls key)
+           (loop views ctrls (yield views))))
+        ((composite-send key event)
+         (match ((dict-ref ctrls key) event)
+           ((gen-result final)
+            (lets
+              views = (dict-remove views key)
+              ctrls = (dict-remove ctrls key)
+              (loop views ctrls (yield (just (list (just final) views))))))
+           ((gen-susp result ctrl)
+            (match result
+              ((nothing) (loop views ctrls (yield (nothing))))
+              ((just view)
+               (lets
+                 views = (dict-set views key view)
+                 ctrls = (dict-set ctrls key ctrl)
+                 (loop views ctrls
+                       (yield (just (list (nothing) views))))))))))))))
+
+(define composite-interact-controller
+  (lets
+    views->composite-view = (fn (layout focus-index views)
+      (list msgs command-descs st-views) =
+      (zip-default '(() () ())
+        (forl
+          key <- layout
+          (list msg command-desc st) = (dict-ref views key)
+          st-view = (delay (interact-state-viewcontext st))
+          (list msg command-desc st-view)))
+      msg = (list-ref-default msgs focus-index "")
+      command-desc = (list-ref-default command-descs focus-index '())
+      (list msg command-desc (delay (composite->doc (map force st-views)))))
+    (gn yield (init-sts)
+      focus-index = 0
+      layout = (range (length init-sts))
+      (gen-susp views composite) =
+      (forf
+        (gen-susp _ composite) = (gen-susp (hash) composite-controller)
+        st <- init-sts
+        key <- layout
+        (gen-susp (just view) ctrl) = (interact-controller st)
+        (composite (composite-add key view ctrl)))
+      composite-view = (views->composite-view layout focus-index views)
+      event = (yield (just composite-view))
+      (letn loop (list composite composite-view layout focus-index event) =
+                 (list composite composite-view layout focus-index event)
+        (event-keycount char count) = event
+        (gen-susp result composite) =
+        (match (list-get layout focus-index)
+          ((nothing) (gen-susp (nothing) composite))
+          ((just key) (composite (composite-send key event))))
+        (list layout new-composite-view) =
+        (match result
+          ((nothing)
+           (list layout (nothing)))
+          ((just (list final views))
+           (lets
+             layout = (if (nothing? final) layout
+                        (list-remove layout focus-index))
+             (list layout
+                   (just (views->composite-view layout focus-index views))))))
+        focus-index = (min focus-index (length layout))
+        composite-view = (maybe-from composite-view new-composite-view)
+        (if (empty? layout) "quitting: all interactions closed"
+          (loop (list composite composite-view layout focus-index
+                      (yield new-composite-view))))))))
+
 (define (keypress-thread chan)
   (thread
     (thunk (gen-loop (apply gen-compose* (map fn->gen
@@ -225,8 +309,7 @@
           ((right result)
            (match result
              ((nothing) (list "invalid choice" command-desc st-view))
-             ((just (list msg cmd-desc st))
-              (list msg cmd-desc (delay (interact-state-viewcontext st)))))))
+             ((just view) view))))
         display-str =
         (thunk (view->string (tabular-view command-desc msg st-view)))
         (loop (list command-desc st-view (yield display-str))))))
@@ -241,8 +324,8 @@
           (fn->gen (lambda (_) (channel-get event-chan)))
           (fn->gen (curry channel-put display-chan))
           build-display-str
-          (either-gen interact-controller))
-        (right state))
+          (either-gen composite-interact-controller))
+        (right (list state)))
       _ = (for-each kill-thread threads)
       result))))
 
