@@ -12,6 +12,7 @@
   "syntax-abstract.rkt"
   "util.rkt"
   gregr-misc/cursor
+  gregr-misc/dict
   gregr-misc/either
   gregr-misc/generator
   gregr-misc/list
@@ -164,23 +165,25 @@
 
 (define interact-controller
   (gn yield (st)
-    (letn loop (list st next-st) = (list st (right st))
+    (letn loop (list handled? st next-st) = (list #t st (right st))
       st = (either-from st next-st)
+      msg = (either-fold identity (const "") next-st)
       commands = (state->commands st)
       command-desc = (forl
                        (list char desc action) <- commands
                        (list (list->string (list char)) desc))
-      result = (either-map (lambda (st) (list command-desc st)) next-st)
+      result = (if handled? (just (list msg command-desc st)) (nothing))
       (event-keycount char count) = (yield result)
       keymap = (make-immutable-hash
                  (forl
                    (list char desc action) <- commands
                    (cons char action)))
-      action = (dict-ref
-                 keymap char (lambda (count) (right (left "invalid choice"))))
-      (match (action count)
-        ((left final) final)
-        ((right next-st) (loop (list st next-st)))))))
+      (match (dict-get keymap char)
+        ((nothing) (loop (list #f st (right st))))
+        ((just action)
+         (match (action count)
+           ((left final) final)
+           ((right next-st) (loop (list #t st next-st)))))))))
 
 (define (keypress-thread chan)
   (thread
@@ -218,15 +221,15 @@
       (letn loop (list command-desc st-view input) = (list (void) (void) input)
         (list msg command-desc st-view) =
         (match input
-          ((left msg)                          (list msg command-desc st-view))
-          ((right (list command-desc st-view)) (list "" command-desc st-view)))
+          ((left count) (list (number->string count) command-desc st-view))
+          ((right result)
+           (match result
+             ((nothing) (list "invalid choice" command-desc st-view))
+             ((just (list msg cmd-desc st))
+              (list msg cmd-desc (delay (interact-state-viewcontext st)))))))
         display-str =
         (thunk (view->string (tabular-view command-desc msg st-view)))
         (loop (list command-desc st-view (yield display-str))))))
-  (define ctrl (gen-compose*
-                 (fn->gen
-                   (curry either-fold (compose1 left number->string) identity))
-                 (either-gen interact-controller)))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
@@ -238,10 +241,7 @@
           (fn->gen (lambda (_) (channel-get event-chan)))
           (fn->gen (curry channel-put display-chan))
           build-display-str
-          (fn->gen (curry either-map
-            (fn ((list cmd-desc st))
-              (list cmd-desc (delay (interact-state-viewcontext st))))))
-          ctrl)
+          (either-gen interact-controller))
         (right state))
       _ = (for-each kill-thread threads)
       result))))
