@@ -140,8 +140,7 @@
   )
 
 (module+ main
-  (interact-with test-term-6)
-  (interact-with test-term-7)
+  (interact-with (list test-term-6 test-term-7))
   ;(interact-with-0 (std `(
     ;(bits-unsized-eq? (tuple 1 1 1 1 1 0)
       ;(tuple 0 0 1 0 1) (tuple 0 0 1 0 1)))))

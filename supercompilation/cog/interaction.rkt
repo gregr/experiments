@@ -299,7 +299,7 @@
     (kill-thread display-thread)))
   fetch-thread)
 
-(define (interact-loop state)
+(define (interact-loop states)
   (define event-chan (make-channel))
   (define display-chan (make-channel))
   (define build-display-str
@@ -327,10 +327,12 @@
           (fn->gen (curry channel-put display-chan))
           build-display-str
           (either-gen composite-interact-controller))
-        (right (list state)))
+        (right states))
       _ = (for-each kill-thread threads)
       result))))
 
-(define (interact-with term)
+(define (interact-with terms)
   (interact-loop
-    (interact-state view-syntax-doc (navigator-new hole-keys term) '())))
+    (forl
+      term <- terms
+      (interact-state view-syntax-doc (navigator-new hole-keys term) '()))))
