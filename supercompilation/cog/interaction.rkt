@@ -135,6 +135,17 @@
         ((left _)   est)
         ((right st) (loop (interact-context f st) (- count 1))))))))
 
+(define (commands->desc commands)
+  (forl
+    (list char desc action) <- commands
+    (list (list->string (list char)) desc)))
+
+(define (commands->keymap commands)
+  (make-immutable-hash
+    (forl
+      (list char desc action) <- commands
+      (cons char action))))
+
 (def (state->commands st)
   (interact-state _ nav history) = st
   st = (:~* st (curry cons st) 'history)
@@ -169,15 +180,10 @@
       st = (either-from st next-st)
       msg = (either-fold identity (const "") next-st)
       commands = (state->commands st)
-      command-desc = (forl
-                       (list char desc action) <- commands
-                       (list (list->string (list char)) desc))
+      command-desc = (commands->desc commands)
       result = (if handled? (just (list msg command-desc st)) (nothing))
       (event-keycount char count) = (yield result)
-      keymap = (make-immutable-hash
-                 (forl
-                   (list char desc action) <- commands
-                   (cons char action)))
+      keymap = (commands->keymap commands)
       (match (dict-get keymap char)
         ((nothing) (loop (list #f st (right st))))
         ((just action)
