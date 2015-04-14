@@ -242,6 +242,7 @@
                   layout focus-index
                   (min (- (length layout) 1) (+ focus-index count)))
                 focus-index))))
+    composite-command-desc = (commands->desc composite-commands)
     views->composite-view = (fn (layout focus-index views)
       (list msgs command-descs st-views) =
       (zip-default '(() () ())
@@ -252,6 +253,7 @@
           (list msg command-desc st-view)))
       msg = (list-ref-default msgs focus-index "")
       command-desc = (list-ref-default command-descs focus-index '())
+      command-desc = (append composite-command-desc command-desc)
       (list msg command-desc (delay (composite->doc (map force st-views)))))
     (gn yield (init-sts)
       focus-index = 0
