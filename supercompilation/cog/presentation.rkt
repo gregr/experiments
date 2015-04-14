@@ -247,7 +247,7 @@
   (define border-style (:=* style-empty #t 'invert?))
   (bordered-table
     style-empty border-style (size 0 0) (size 1 1) (make-list 15 #\|)
-    (list docs)))
+    (list (map (curry doc-expander expander-both) docs))))
 
 (define ((tabular-view commands message d-inner-doc) sz)
   (define-values (inner-doc-list cpu-time real-time gc-time)
@@ -274,7 +274,7 @@
     div-size = (size div-w div-h)
     notification-height = 2
     ctx = (sizing-context-new-default)
-    (list _ command-width _ _) = (widths ctx command-doc)
+    (list _ command-width _ _ _ _) = (widths ctx command-doc)
     content-height = (- full-height (+ notification-height div-h))
     inner-width = (- full-width (+ command-width div-w))
     fixed-size =
