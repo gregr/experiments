@@ -249,6 +249,7 @@
       (letn loop (list composite composite-view layout focus-index event) =
                  (list composite composite-view layout focus-index event)
         (event-keycount char count) = event
+        ; TODO: first try checking for char in top-level actions
         (gen-susp result composite) =
         (match (list-get layout focus-index)
           ((nothing) (gen-susp (nothing) composite))
@@ -256,6 +257,7 @@
         (list layout new-composite-view) =
         (match result
           ((nothing)
+           ; TODO: try backup commands first
            (list layout (nothing)))
           ((just (list final views))
            (lets
