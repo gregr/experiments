@@ -229,6 +229,19 @@
 
 (define composite-interact-controller
   (lets
+    composite-commands =
+    `((#\H "pane left"
+       ,(lambda (layout focus-index count)
+          (list layout (- focus-index count))))
+      (#\L "pane right"
+       ,(lambda (layout focus-index count)
+          (list layout (+ focus-index count))))
+      (#\R "pane reverse"
+       ,(lambda (layout focus-index count)
+          (list (reverse-range
+                  layout focus-index
+                  (min (- (length layout) 1) (+ focus-index count)))
+                focus-index))))
     views->composite-view = (fn (layout focus-index views)
       (list msgs command-descs st-views) =
       (zip-default '(() () ())
@@ -252,30 +265,51 @@
         (composite (composite-add key view ctrl)))
       composite-view = (views->composite-view layout focus-index views)
       event = (yield (just composite-view))
-      (letn loop (list composite composite-view layout focus-index event) =
-                 (list composite composite-view layout focus-index event)
+      (letn loop
+          (list
+            (list composite composite-view views layout focus-index) event) =
+          (list
+            (list composite composite-view views layout focus-index) event)
         (event-keycount char count) = event
-        ; TODO: first try checking for char in top-level actions
-        (gen-susp result composite) =
-        (match (list-get layout focus-index)
-          ((nothing) (gen-susp (nothing) composite))
-          ((just key) (composite (composite-send key event))))
-        (list layout new-composite-view) =
-        (match result
+        keymap = (commands->keymap composite-commands)
+        (list composite mresult) =
+        (match (dict-get keymap char)
+          ((just action)
+           (list composite
+                 (just (list* views (action layout focus-index count)))))
           ((nothing)
-           ; TODO: try backup commands first
-           (list layout (nothing)))
-          ((just (list final views))
            (lets
-             layout = (if (nothing? final) layout
-                        (list-remove layout focus-index))
-             (list layout
-                   (just (views->composite-view layout focus-index views))))))
-        focus-index = (min focus-index (length layout))
-        composite-view = (maybe-from composite-view new-composite-view)
+             (gen-susp result composite) =
+             (match (list-get layout focus-index)
+               ((nothing) (gen-susp (nothing) composite))
+               ((just key) (composite (composite-send key event))))
+             mresult =
+             (match result
+               ((nothing)
+                ; TODO: try backup commands first
+                (nothing))
+               ((just (list final views))
+                (lets
+                  layout = (if (nothing? final) layout
+                             (list-remove layout focus-index))
+                  (just (list views layout focus-index)))))
+             (list composite mresult))))
+        mresult =
+        (begin/with-monad maybe-monad
+          (list views layout focus-index) <- mresult
+          focus-index = (max 0 (min (- (length layout) 1) focus-index))
+          composite-view = (views->composite-view layout focus-index views)
+          (pure (list (views->composite-view layout focus-index views)
+                      views layout focus-index)))
+        result = (list* composite
+                        (maybe-from
+                          (list composite-view views layout focus-index)
+                          mresult))
+        (list _ _ _ layout _) = result
+        new-composite-view =
+        (maybe-map (fn ((list composite-view _ _ _)) composite-view) mresult)
         (if (empty? layout) "quitting: all interactions closed"
-          (loop (list composite composite-view layout focus-index
-                      (yield new-composite-view))))))))
+          (loop (list result (yield new-composite-view))))))))
 
 (define (keypress-thread chan)
   (thread
