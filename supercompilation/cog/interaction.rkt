@@ -121,6 +121,11 @@
 (record interact-state view context history)
 (def (interact-state-viewcontext (interact-state view ctx _)) (view ctx))
 
+(records interact-resp
+  (interact-resp-done msg)
+  (interact-resp-error msg)
+  (interact-resp-next st))
+
 (define ((interact-state-trans path) trans st)
   (begin/with-monad either-monad
     component = (:. st path)
@@ -129,11 +134,12 @@
 (define interact-context (interact-state-trans '(context)))
 (define interact-view (interact-state-trans '(view)))
 (define (interact-context-count f st count)
-  (right (let loop ((est (right st)) (count count))
-    (if (= count 0) est
-      (match est
-        ((left _)   est)
-        ((right st) (loop (interact-context f st) (- count 1))))))))
+  (either-fold interact-resp-error interact-resp-next
+    (let loop ((est (right st)) (count count))
+      (if (= count 0) est
+        (match est
+          ((left _) est)
+          ((right st) (loop (interact-context f st) (- count 1))))))))
 
 (define (commands->desc commands)
   (forl
@@ -159,37 +165,52 @@
     (#\l "traverse right"
      ,(lambda (count) (interact-context-count interact-shift-right st count)))
     (#\S "substitute"
-     ,(lambda (count) (right (interact-context interact-substitute-full st))))
+     ,(lambda (count) (interact-context-count interact-substitute-full st 1)))
     (#\s "step"
      ,(lambda (count) (interact-context-count interact-step st count)))
     (#\c "complete"
-     ,(lambda (count) (right (interact-context interact-complete st))))
+     ,(lambda (count) (interact-context-count interact-complete st 1)))
     (#\x "toggle-syntax"
-     ,(lambda (count) (right (interact-view view-toggle st))))
+     ,(lambda (count) (interact-resp-next
+                        (right-x (interact-view view-toggle st)))))
     (#\u "undo"
-     ,(lambda (count) (right (match history
-                               ('() (left "nothing to undo!"))
-                               ((cons prev-state hist) (right prev-state))))))
+     ,(lambda (count) (match history
+                        ('() (interact-resp-error "nothing to undo!"))
+                        ((cons prev-state hist)
+                         (interact-resp-next prev-state)))))
     (#\q "quit"
-     ,(lambda (count) (left "quitting"))))
+     ,(lambda (count) (interact-resp-done "quitting"))))
   common-commands)
 
 (define interact-controller
   (gn yield (st)
-    (letn loop (list handled? st next-st) = (list #t st (right st))
-      st = (either-from st next-st)
-      msg = (either-fold identity (const "") next-st)
-      commands = (state->commands st)
-      command-desc = (commands->desc commands)
-      result = (if handled? (just (list msg command-desc st)) (nothing))
-      (event-keycount char count) = (yield result)
-      keymap = (commands->keymap commands)
-      (match (dict-get keymap char)
-        ((nothing) (loop (list #f st (right st))))
-        ((just action)
-         (match (action count)
-           ((left final) final)
-           ((right next-st) (loop (list #t st next-st)))))))))
+    (letn loop (list keymap resp) =
+               (list (void) (just (interact-resp-next st)))
+      (match resp
+        ((just (interact-resp-done final)) final)
+        (_ (lets
+          (list keymap output) =
+          (match resp
+            ((nothing) (list keymap (nothing)))
+            ((just (interact-resp-error msg)) (list keymap (just (left msg))))
+            ((just (interact-resp-next st))
+             (lets commands = (state->commands st)
+                   command-desc = (commands->desc commands)
+                   keymap = (commands->keymap commands)
+                   (list keymap (just (right (list command-desc st)))))))
+          (event-keycount char count) = (yield output)
+          (loop (list keymap (maybe-map (lambda (action) (action count))
+                                        (dict-get keymap char))))))))))
+
+(define interact-view-controller
+  (gn yield (input)
+    (letn loop (list (list msg cmd-desc st) input) =
+               (list (list "" (void) (void)) input)
+      result =
+      (match input
+        ((left msg)                 (list msg cmd-desc st))
+        ((right (list cmd-desc st)) (list "" cmd-desc st)))
+      (loop (list result (yield result))))))
 
 (records composite-event
   (composite-add key view ctrl)
@@ -263,7 +284,9 @@
         (forl
           st <- init-sts
           key <- layout
-          (gen-susp (just view) ctrl) = (interact-controller st)
+          (gen-susp (just view) ctrl) = ((gen-compose
+                                           (maybe-gen interact-view-controller)
+                                           interact-controller) st)
           (composite-add key view ctrl)))
       composite-view = (views->composite-view layout focus-index views)
       event = (yield (just composite-view))
