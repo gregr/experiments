@@ -259,12 +259,12 @@
       focus-index = 0
       layout = (range (length init-sts))
       (gen-susp views composite) =
-      (forf
-        (gen-susp _ composite) = (gen-susp (hash) composite-controller)
-        st <- init-sts
-        key <- layout
-        (gen-susp (just view) ctrl) = (interact-controller st)
-        (composite (composite-add key view ctrl)))
+      (gen-fold (fn (a b) a) (hash) composite-controller
+        (forl
+          st <- init-sts
+          key <- layout
+          (gen-susp (just view) ctrl) = (interact-controller st)
+          (composite-add key view ctrl)))
       composite-view = (views->composite-view layout focus-index views)
       event = (yield (just composite-view))
       (letn loop
