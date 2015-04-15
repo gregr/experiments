@@ -1,6 +1,5 @@
 #lang racket
 (provide
-  composite->doc
   nav-term-flat->doc
   nav-term-lifted->doc
   string->doc
@@ -243,16 +242,14 @@
   block = (doc->styled-block ctx style-empty sz (view sz))
   (styled-block->string block))
 
-(define (composite->doc docs)
-  (define border-style (:=* style-empty #t 'invert?))
-  (bordered-table
-    style-empty border-style (size 0 0) (size 1 1) (make-list 15 #\|)
-    (list (map (curry doc-expander expander-both) docs))))
-
-(define ((tabular-view commands message d-inner-doc) sz)
+(define ((tabular-view message commands focus-index d-inner-docs) sz)
   (define-values (inner-doc-list cpu-time real-time gc-time)
-    (time-apply (thunk (force d-inner-doc)) '()))
-  (define inner-doc (first inner-doc-list))
+    (time-apply (thunk (map force d-inner-docs)) '()))
+  (define border-style (:=* style-empty #t 'invert?))
+  (define active-border-style (:=* border-style 'red 'color-fg))
+  (define normal-footer (filler-h border-style #\space 1))
+  (define active-footer (filler-h active-border-style #\space 1))
+  (define inner-docs (first inner-doc-list))
   (define time-str (format "cpu time: ~a real time: ~a gc time: ~a"
                            cpu-time real-time gc-time))
   (define (doc-str str) (doc-atom style-empty str))
@@ -260,27 +257,39 @@
   (define msg-doc (doc-str message))
   (define notification-doc
     (vertical-list style-empty (list msg-doc time-doc)))
-  (define command-doc
-    (vertical-list style-empty
-                   (forl
-                     (list cmd desc) <- commands
-                     (doc-chain style-empty attr-loose-aligned
-                                (list (doc-str cmd) (doc-str desc))))))
-  (define border-style (:=* style-empty #t 'invert?))
   (lets
     (size full-width full-height) = sz
     div-w = 1
     div-h = 1
     div-size = (size div-w div-h)
     notification-height = 2
-    ctx = (sizing-context-new-default)
-    (list _ command-width _ _ _ _) = (widths ctx command-doc)
     content-height = (- full-height (+ notification-height div-h))
-    inner-width = (- full-width (+ command-width div-w))
     fixed-size =
     (lambda (doc sz)
       (doc-frame style-empty (frame-fixed (rect (coord 0 0) sz)) doc))
-    inner-doc = (fixed-size inner-doc (size inner-width content-height))
+    fixed-content =
+    (lambda (doc)
+      (doc-frame
+        style-empty
+        (frame-fixed-height (coord 0 0) content-height) doc))
+    command-doc =
+    (vertical-list style-empty
+      (list
+        (fixed-content
+          (doc-expander expander-height
+            (vertical-list style-empty
+              (forl
+                (list cmd desc) <- commands
+                (doc-chain style-empty attr-loose-aligned
+                           (list (doc-str cmd) (doc-str desc)))))))
+        (filler-h border-style #\space div-h)))
+    inner-docs =
+    (forl
+      idx <- (range (length inner-docs))
+      doc <- inner-docs
+      footer = (if (= idx focus-index) active-footer normal-footer)
+      (vertical-list style-empty
+        (list (fixed-content (doc-expander expander-both doc)) footer)))
     notification-doc = (fixed-size notification-doc
                                    (size full-width notification-height))
     div-table =
@@ -288,5 +297,5 @@
       (bordered-table
         style-empty border-style (size 0 0) div-size (make-list 15 #\space)
         rows))
-    content-table = (div-table (list (list command-doc inner-doc)))
-    (div-table (list (list content-table) (list notification-doc)))))
+    content-table = (div-table (list (list* command-doc inner-docs)))
+    (vertical-list style-empty (list content-table notification-doc))))

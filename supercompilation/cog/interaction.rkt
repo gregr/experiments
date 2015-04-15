@@ -254,7 +254,7 @@
       msg = (list-ref-default msgs focus-index "")
       command-desc = (list-ref-default command-descs focus-index '())
       command-desc = (append composite-command-desc command-desc)
-      (list msg command-desc (delay (composite->doc (map force st-views)))))
+      (list msg command-desc focus-index st-views))
     (gn yield (init-sts)
       focus-index = 0
       layout = (range (length init-sts))
@@ -346,17 +346,20 @@
   (define display-chan (make-channel))
   (define build-display-str
     (generator* yield (input)
-      (letn loop (list command-desc st-view input) = (list (void) (void) input)
-        (list msg command-desc st-view) =
+      (letn loop (list command-desc focus-idx st-views input) =
+                 (list (void) (void) (void) input)
+        (list msg command-desc focus-idx st-views) =
         (match input
-          ((left count) (list (number->string count) command-desc st-view))
+          ((left count)
+           (list (number->string count) command-desc focus-idx st-views))
           ((right result)
            (match result
-             ((nothing) (list "invalid choice" command-desc st-view))
+             ((nothing) (list "invalid choice" command-desc focus-idx st-views))
              ((just view) view))))
         display-str =
-        (thunk (view->string (tabular-view command-desc msg st-view)))
-        (loop (list command-desc st-view (yield display-str))))))
+        (thunk (view->string
+                 (tabular-view msg command-desc focus-idx st-views)))
+        (loop (list command-desc focus-idx st-views (yield display-str))))))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
