@@ -8,13 +8,10 @@
   )
 
 (record database workspaces interactions) ; {workspaces: {name => workspace}, interactions: {name => interaction}, ...}
-(record workspace panel panes) ; {panel: panel, panes: {name => pane}}
-(record panel layout focus-index notification) ; {layout: [name], focus-index: nat, notification: string}
+(record workspace layout focus-index panes notification) ; {layout: [name], focus-index: nat, panes: {name => pane}, notification: string}
 (record pane db->commands db->doc)
 
-;workspace->doc ; workspace -> db -> doc; uses panel-focus->commands
-  ;panel-focus->commands ; panel -> panes -> db -> commands
-;panel->commands ; panel -> commands
+;workspace->doc ; workspace -> db -> doc
 
 ; TODO
 (define (interaction->commands interaction) (void))
