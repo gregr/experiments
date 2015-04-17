@@ -8,8 +8,8 @@
   )
 
 (record database workspaces interactions) ; {workspaces: {name => workspace}, interactions: {name => interaction}, ...}
-(record workspace layout focus-index panes notification) ; {layout: [name], focus-index: nat, panes: {name => pane}, notification: string}
-(record pane db->commands db->doc)
+(record workspace layout focus-index widgets notification) ; {layout: [name], focus-index: nat, widgets: {name => widget}, notification: string}
+(record widget db->commands db->doc)
 
 ;workspace->doc ; workspace -> db -> doc
 
@@ -17,8 +17,8 @@
 (define (interaction->commands interaction) (void))
 (define (interaction->doc interaction) (void))
 
-(define (interaction-pane name)
+(define (interaction-widget name)
   (define ((with-interaction f) db)
     (f (:.* db 'interactions name)))
-  (pane (with-interaction interaction->commands)
-        (with-interaction interaction->doc)))
+  (widget (with-interaction interaction->commands)
+          (with-interaction interaction->doc)))
