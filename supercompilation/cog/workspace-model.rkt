@@ -3,6 +3,7 @@
   )
 
 (require
+  gregr-misc/cursor
   gregr-misc/record
   )
 
