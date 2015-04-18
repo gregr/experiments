@@ -62,22 +62,22 @@
   (cmds-merge1 ws-top-cmds widget-cmds))
 
 (module+ test
-  (lets
-    test-db-0 = (:=* database-empty (hash 'one workspace-empty) 'workspaces)
-    test-ws-0 = (workspace
-                  (range 3) 1
-                  (list->index-dict (map interaction-widget (range 3)))
-                  "")
-    test-db-1 = (:=* (:=* test-db-0 test-ws-0 'workspaces 'one)
-                     (list->index-dict (range 3)) 'interactions)
-    _ = (check-equal?
-      (map list-init (db->workspace-commands 'one test-db-0))
-      (map list-init (db->workspace-commands-top 'one test-db-0))
-      )
-    (check-equal?
-      (list->string (map car (db->workspace-commands 'one test-db-1)))
-      "HLRhjklSscxuq"
-      )
+  (define test-db-0
+    (:=* database-empty (hash 'one workspace-empty) 'workspaces))
+  (define test-ws-0
+    (workspace (range 3) 1
+               (list->index-dict (map interaction-widget (range 3))) ""))
+  (define test-db-1 (:=* (:=* test-db-0 test-ws-0 'workspaces 'one)
+                         (list->index-dict (range 3)) 'interactions)))
+
+(module+ test
+  (check-equal?
+    (map list-init (db->workspace-commands 'one test-db-0))
+    (map list-init (db->workspace-commands-top 'one test-db-0))
+    )
+  (check-equal?
+    (list->string (map car (db->workspace-commands 'one test-db-1)))
+    "HLRhjklSscxuq"
     ))
 
 (record interaction-command name instr)
