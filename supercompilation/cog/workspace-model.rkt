@@ -3,6 +3,7 @@
   )
 
 (require
+  "interaction-model.rkt"
   gregr-misc/cursor
   gregr-misc/dict
   gregr-misc/list
@@ -114,16 +115,6 @@
       )))
 
 (record interaction-command name instr)
-(records interaction-instruction
-  (ici-traverse-up count)
-  (ici-traverse-down count)
-  (ici-traverse-left count)
-  (ici-traverse-right count)
-  (ici-substitute-complete)
-  (ici-step count)
-  (ici-step-complete)
-  (ici-toggle-syntax)
-  (ici-undo count))
 (define ((interaction->commands name) interaction)
   ; TODO: specialized commands based on interaction state
   (define (cmd-new instr) (interaction-command name instr))
