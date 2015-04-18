@@ -10,6 +10,7 @@
   gregr-misc/monad
   gregr-misc/record
   gregr-misc/sugar
+  gregr-misc/ui
   )
 
 (module+ test
@@ -82,6 +83,35 @@
     (list->string (map car (db->workspace-commands 'one test-db-1)))
     "qHLRhjklSscxu"
     ))
+
+(define (commands->keymap commands)
+  (make-immutable-hash
+    (forl
+      (list char desc cmd) <- commands
+      (cons char cmd))))
+
+(define (event->workspace-command ws-name)
+  (fn (db (event-keycount char count))
+    cmds = (db->workspace-commands ws-name db)
+    keymap = (commands->keymap cmds)
+    (begin/with-monad maybe-monad
+      cmd-new <- (dict-get keymap char)
+      (pure (cmd-new count)))))
+
+(module+ test
+  (check-equal?
+    (lets
+      event->cmd = (event->workspace-command 'one)
+      (list
+        (event->cmd test-db-0 (event-keycount #\j 3))
+        (event->cmd test-db-1 (event-keycount #\j 3))
+        (event->cmd test-db-0 (event-keycount #\q 2))
+        ))
+    (list
+      (nothing)
+      (just (interaction-command 1 (ici-traverse-down 3)))
+      (just (workspace-command 'one (wci-widget-close 2)))
+      )))
 
 (record interaction-command name instr)
 (records interaction-instruction
