@@ -33,17 +33,19 @@
   (maybe-fold '() (fn ((widget db->cmds _)) (db->cmds db))
               (workspace->focus-widget ws)))
 
-(records workspace-command
-  (workspace-widget-left name count)
-  (workspace-widget-right name count)
-  (workspace-widget-reverse name count))
+(record workspace-command name instr)
+(records workspace-instruction
+  (wci-widget-left count)
+  (wci-widget-right count)
+  (wci-widget-reverse count))
 (define (db->workspace-commands-top name db)
   ; TODO: specialized commands based on workspace state
   ;ws = (:.* db 'workspaces name)
-  `((#\H "pane left" ,(lambda (count) (workspace-widget-left name count)))
-    (#\L "pane right" ,(lambda (count) (workspace-widget-right name count)))
+  (define (cmd-new instr) (workspace-command name instr))
+  `((#\H "pane left" ,(lambda (count) (cmd-new (wci-widget-left count))))
+    (#\L "pane right" ,(lambda (count) (cmd-new (wci-widget-right count))))
     (#\R "pane reverse" ,(lambda (count)
-                           (workspace-widget-reverse name count)))))
+                           (cmd-new (wci-widget-reverse count))))))
 (def (db->workspace-commands name db)
   ws = (:.* db 'workspaces name)
   ws-top-cmds = (db->workspace-commands-top name db)
@@ -78,34 +80,36 @@
       )
     ))
 
-(records interaction-command
-  (interaction-traverse-up name count)
-  (interaction-traverse-down name count)
-  (interaction-traverse-left name count)
-  (interaction-traverse-right name count)
-  (interaction-substitute-complete name)
-  (interaction-step name count)
-  (interaction-step-complete name)
-  (interaction-toggle-syntax name)
-  (interaction-undo name count)
-  (interaction-quit name))
+(record interaction-command name instr)
+(records interaction-instruction
+  (ici-traverse-up count)
+  (ici-traverse-down count)
+  (ici-traverse-left count)
+  (ici-traverse-right count)
+  (ici-substitute-complete)
+  (ici-step count)
+  (ici-step-complete)
+  (ici-toggle-syntax)
+  (ici-undo count)
+  (ici-quit))
 (define ((interaction->commands name) interaction)
   ; TODO: specialized commands based on interaction state
+  (define (cmd-new instr) (interaction-command name instr))
   `((#\h "traverse left"
-     ,(lambda (count) (interaction-traverse-left name count)))
+     ,(lambda (count) (cmd-new (ici-traverse-left count))))
     (#\j "traverse down"
-     ,(lambda (count) (interaction-traverse-down name count)))
+     ,(lambda (count) (cmd-new (ici-traverse-down count))))
     (#\k "traverse up"
-     ,(lambda (count) (interaction-traverse-up name count)))
+     ,(lambda (count) (cmd-new (ici-traverse-up count))))
     (#\l "traverse right"
-     ,(lambda (count) (interaction-traverse-right name count)))
+     ,(lambda (count) (cmd-new (ici-traverse-right count))))
     (#\S "substitute completely"
-     ,(lambda (count) (interaction-substitute-complete name)))
-    (#\s "step" ,(lambda (count) (interaction-step name count)))
-    (#\c "step completely" ,(lambda (count) (interaction-step-complete name)))
-    (#\x "toggle-syntax" ,(lambda (count) (interaction-toggle-syntax name)))
-    (#\u "undo" ,(lambda (count) (interaction-undo name count)))
-    (#\q "quit" ,(lambda (count) (interaction-quit name)))))
+     ,(lambda (count) (cmd-new (ici-substitute-complete))))
+    (#\s "step" ,(lambda (count) (cmd-new (ici-step count))))
+    (#\c "step completely" ,(lambda (count) (cmd-new (ici-step-complete))))
+    (#\x "toggle-syntax" ,(lambda (count) (cmd-new (ici-toggle-syntax))))
+    (#\u "undo" ,(lambda (count) (cmd-new (ici-undo count))))
+    (#\q "quit" ,(lambda (count) (cmd-new (ici-quit))))))
 
 (define (interaction->doc interaction) (void))
 
