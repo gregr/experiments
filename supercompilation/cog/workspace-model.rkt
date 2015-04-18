@@ -128,13 +128,18 @@
     layout = (:.* ws 'layout)
     (:~* ws (curry focus-index-valid layout) 'focus-index))
   (lets
-    (workspace layout fidx _ _) = ws
+    (workspace layout fidx widgets _) = ws
     (workspace-valid
       (match cmd
         ((wci-widget-close count)
-         (:=* ws (list-range-remove
-                   layout fidx (end-index-valid layout (+ fidx count)))
-              'layout))
+         (lets
+           end = (end-index-valid layout (+ fidx count))
+           closed = (list-range layout fidx end)
+           widgets = (forf widgets = widgets
+                           name <- closed
+                           (dict-remove widgets name))
+           ws = (:=* ws (list-range-remove layout fidx end) 'layout)
+           (:=* ws widgets 'widgets)))
         ((wci-widget-left count) (:=* ws (- fidx count) 'focus-index))
         ((wci-widget-right count) (:=* ws (+ fidx count) 'focus-index))
         ((wci-widget-reverse count)
@@ -163,13 +168,17 @@
       updaters = (map (fn (instr) (database-update
                                     (workspace-command 'one instr))) instrs)
       dbs = (list* test-db-1 (map (fn (upd) (upd test-db-1)) updaters))
-      (zip* (map (fn (db) (:.* db 'workspaces 'one 'focus-index)) dbs)
-            (map (fn (db) (:.* db 'workspaces 'one 'layout)) dbs)))
-    (zip* (list 1 0 1 3 6 1 1 1 0)
-          (append (make-list 5 test-ws-range-0)
-                  (list (append (list 0)
-                                (rest (reverse (rest test-ws-range-0)))
-                                (list 6))
-                        (list* 0 (reverse (rest test-ws-range-0))))
-                  '((0 4 5 6) (0))))
+      (forl db <- dbs
+            ws = (:.* db 'workspaces 'one)
+            (list fidx layout widgets) =
+            (map (curry :.* ws) '(focus-index layout widgets))
+            (list fidx layout (sort (dict-keys widgets) <))))
+    (lets
+      layouts = (append (make-list 5 test-ws-range-0)
+                        (list (append (list 0)
+                                      (rest (reverse (rest test-ws-range-0)))
+                                      (list 6))
+                              (list* 0 (reverse (rest test-ws-range-0))))
+                        '((0 4 5 6) (0)))
+      (zip* (list 1 0 1 3 6 1 1 1 0) layouts (forl l <- layouts (sort l <))))
     ))
