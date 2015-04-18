@@ -259,9 +259,9 @@
           (list layout (+ focus-index count))))
       (#\R "pane reverse"
        ,(lambda (layout focus-index count)
-          (list (reverse-range
+          (list (list-range-reverse
                   layout focus-index
-                  (min (- (length layout) 1) (+ focus-index count)))
+                  (min (length layout) (+ focus-index count 1)))
                 focus-index))))
     composite-command-desc = (commands->desc composite-commands)
     views->composite-view = (fn (layout focus-index views)
