@@ -37,12 +37,14 @@
 (records workspace-instruction
   (wci-widget-left count)
   (wci-widget-right count)
-  (wci-widget-reverse count))
+  (wci-widget-reverse count)
+  (wci-widget-close count))
 (define (db->workspace-commands-top name db)
   ; TODO: specialized commands based on workspace state
   ;ws = (:.* db 'workspaces name)
   (define (cmd-new instr) (workspace-command name instr))
-  `((#\H "pane left" ,(lambda (count) (cmd-new (wci-widget-left count))))
+  `((#\q "pane close" ,(lambda (count) (cmd-new (wci-widget-close count))))
+    (#\H "pane left" ,(lambda (count) (cmd-new (wci-widget-left count))))
     (#\L "pane right" ,(lambda (count) (cmd-new (wci-widget-right count))))
     (#\R "pane reverse" ,(lambda (count)
                            (cmd-new (wci-widget-reverse count))))))
@@ -78,7 +80,7 @@
     )
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "HLRhjklSscxuq"
+    "qHLRhjklSscxu"
     ))
 
 (record interaction-command name instr)
@@ -91,8 +93,7 @@
   (ici-step count)
   (ici-step-complete)
   (ici-toggle-syntax)
-  (ici-undo count)
-  (ici-quit))
+  (ici-undo count))
 (define ((interaction->commands name) interaction)
   ; TODO: specialized commands based on interaction state
   (define (cmd-new instr) (interaction-command name instr))
@@ -109,8 +110,7 @@
     (#\s "step" ,(lambda (count) (cmd-new (ici-step count))))
     (#\c "step completely" ,(lambda (count) (cmd-new (ici-step-complete))))
     (#\x "toggle-syntax" ,(lambda (count) (cmd-new (ici-toggle-syntax))))
-    (#\u "undo" ,(lambda (count) (cmd-new (ici-undo count))))
-    (#\q "quit" ,(lambda (count) (cmd-new (ici-quit))))))
+    (#\u "undo" ,(lambda (count) (cmd-new (ici-undo count))))))
 
 (define (interaction->doc interaction) (void))
 
@@ -131,6 +131,10 @@
     (workspace layout fidx _ _) = ws
     (workspace-valid
       (match cmd
+        ((wci-widget-close count)
+         (:=* ws (list-range-remove
+                   layout fidx (end-index-valid layout (+ fidx count)))
+              'layout))
         ((wci-widget-left count) (:=* ws (- fidx count) 'focus-index))
         ((wci-widget-right count) (:=* ws (+ fidx count) 'focus-index))
         ((wci-widget-reverse count)
@@ -154,16 +158,18 @@
     (lets
       instrs = (list (wci-widget-left 10) (wci-widget-left 0)
                      (wci-widget-right 2) (wci-widget-right 10)
-                     (wci-widget-reverse 4) (wci-widget-reverse 20))
+                     (wci-widget-reverse 4) (wci-widget-reverse 20)
+                     (wci-widget-close 3) (wci-widget-close 20))
       updaters = (map (fn (instr) (database-update
                                     (workspace-command 'one instr))) instrs)
       dbs = (list* test-db-1 (map (fn (upd) (upd test-db-1)) updaters))
       (zip* (map (fn (db) (:.* db 'workspaces 'one 'focus-index)) dbs)
             (map (fn (db) (:.* db 'workspaces 'one 'layout)) dbs)))
-    (zip* (list 1 0 1 3 6 1 1)
+    (zip* (list 1 0 1 3 6 1 1 1 0)
           (append (make-list 5 test-ws-range-0)
                   (list (append (list 0)
                                 (rest (reverse (rest test-ws-range-0)))
                                 (list 6))
-                        (list* 0 (reverse (rest test-ws-range-0))))))
+                        (list* 0 (reverse (rest test-ws-range-0))))
+                  '((0 4 5 6) (0))))
     ))
