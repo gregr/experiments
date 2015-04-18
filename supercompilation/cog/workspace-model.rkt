@@ -64,11 +64,12 @@
 (module+ test
   (define test-db-0
     (:=* database-empty (hash 'one workspace-empty) 'workspaces))
+  (define test-ws-range-0 (range 7))
   (define test-ws-0
-    (workspace (range 3) 1
-               (list->index-dict (map interaction-widget (range 3))) ""))
+    (workspace test-ws-range-0 1
+               (list->index-dict (map interaction-widget test-ws-range-0)) ""))
   (define test-db-1 (:=* (:=* test-db-0 test-ws-0 'workspaces 'one)
-                         (list->index-dict (range 3)) 'interactions)))
+                         (list->index-dict test-ws-range-0) 'interactions)))
 
 (module+ test
   (check-equal?
@@ -118,3 +119,50 @@
     (f (:.* db 'interactions name)))
   (widget (with-interaction (interaction->commands name))
           (with-interaction (interaction->doc name))))
+
+(define ((workspace-update cmd) ws)
+  (define (focus-index-valid layout idx)
+    (max 0 (min (- (length layout) 1) idx)))
+  (def (workspace-valid ws)
+    layout = (:.* ws 'layout)
+    (:~* ws (curry focus-index-valid layout) 'focus-index))
+  (lets
+    (workspace layout fidx _ _) = ws
+    (workspace-valid
+      (match cmd
+        ((wci-widget-left count) (:=* ws (- fidx count) 'focus-index))
+        ((wci-widget-right count) (:=* ws (+ fidx count) 'focus-index))
+        ((wci-widget-reverse count)
+         (:=* ws (reverse-range
+                   layout fidx (focus-index-valid layout (+ fidx count)))
+              'layout))))))
+
+(define ((database-update cmd) db)
+  (lets
+    (list path trans) =
+    (match cmd
+      ((workspace-command name instr)
+       (list (list 'workspaces name) (workspace-update instr))))
+    (:~ db trans path)))
+
+(module+ test
+  (check-equal?
+    ((database-update (workspace-command 'one (wci-widget-right 2))) test-db-0)
+    test-db-0)
+  (check-equal?
+    (lets
+      instrs = (list (wci-widget-left 10) (wci-widget-left 0)
+                     (wci-widget-right 2) (wci-widget-right 10)
+                     (wci-widget-reverse 4) (wci-widget-reverse 20))
+      updaters = (map (fn (instr) (database-update
+                                    (workspace-command 'one instr))) instrs)
+      dbs = (list* test-db-1 (map (fn (upd) (upd test-db-1)) updaters))
+      (zip* (map (fn (db) (:.* db 'workspaces 'one 'focus-index)) dbs)
+            (map (fn (db) (:.* db 'workspaces 'one 'layout)) dbs)))
+    (zip* (list 1 0 1 3 6 1 1)
+          (append (make-list 5 test-ws-range-0)
+                  (list (append (list 0)
+                                (rest (reverse (rest test-ws-range-0)))
+                                (list 6))
+                        (list* 0 (reverse (rest test-ws-range-0))))))
+    ))
