@@ -32,7 +32,8 @@
     name <- (list-get layout fidx)
     (dict-get widgets name)))
 (define (workspace->focus-commands ws db)
-  (maybe-fold '() (fn ((widget db->cmds _)) (db->cmds db))
+  (maybe-fold '() (fn ((interaction-widget name))
+                      (interaction->commands name db))
               (workspace->focus-widget ws)))
 
 (record workspace-command name instr)
@@ -117,7 +118,7 @@
       )))
 
 (record interaction-command name instr)
-(define ((interaction->commands name) interaction)
+(define (interaction->commands name db)
   ; TODO: specialized commands based on interaction state
   (forl
     (list char desc instr) <-
@@ -132,13 +133,7 @@
       (#\u "undo" ,ici-undo))
     (list char desc (compose1 (curry interaction-command name) instr))))
 
-(define (interaction->doc interaction) (void))
-
-(define (interaction-widget name)
-  (define ((with-interaction f) db)
-    (f (:.* db 'interactions name)))
-  (widget (with-interaction (interaction->commands name))
-          (with-interaction (interaction->doc name))))
+(record interaction-widget name)
 
 (define ((workspace-update cmd) ws)
   (define (focus-index-valid layout idx)
