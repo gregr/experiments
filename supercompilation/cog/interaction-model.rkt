@@ -108,7 +108,7 @@
       ((ici-substitute-complete)
        (trans-nav (trans-focus (compose1 right substitute-full)) iaction 1))
       ((ici-step count) (trans-nav (trans-focus step-safe) iaction count))
-      ((ici-step-complete) (trans-nav (trans-focus step-complete) iaction 1))
+      ((ici-step-complete) (trans-nav (trans-focus step-complete-safe) iaction 1))
       ((ici-toggle-syntax)
        (list "" (:=* iaction (match syntax
                                ((isyntax-raw) (isyntax-pretty))
