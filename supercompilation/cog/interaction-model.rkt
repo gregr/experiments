@@ -9,14 +9,18 @@
   ici-step-complete
   ici-toggle-syntax
   ici-undo
+  interaction-new
   interaction-update
   )
 
 (require
   "substitution.rkt"
   "semantics-operational.rkt"
+  "syntax.rkt"
+  "syntax-abstract.rkt"
   gregr-misc/cursor
   gregr-misc/either
+  gregr-misc/list
   gregr-misc/monad
   gregr-misc/navigator
   gregr-misc/record
@@ -34,10 +38,33 @@
   (ici-toggle-syntax)
   (ici-undo count))
 
+(def (subst-keys (substitution uses _))
+  use-keys =
+  (forl
+    use-list-key <- (list-navigator-keys uses)
+    (append '(s uses) use-list-key '(v)))
+  (list* '(t) use-keys))
+(def (app-keys app)
+  count = (- (length (gather-applications app)) 2)
+  rargs = (iterate (fn (path) (list* 'proc path)) '(arg) count)
+  args = (reverse rargs)
+  proc = (make-list (+ 1 count) 'proc)
+  (list* proc args))
+(define (hole-keys focus)
+  (match focus
+    ((lam-apply _ _) (app-keys focus))
+    ((value v)       (map (fn (key) (list* 'v key)) (hole-keys v)))
+    ((subst sub _)   (subst-keys sub))
+    ((lam _ _)       '((body)))
+    (_ (if (or (term? focus) (pair? focus))
+         (map list (dict-keys focus)) '()))))
+
 (record interaction syntax history nav)
 (records interaction-syntax
   (isyntax-raw)
   (isyntax-pretty))
+(define (interaction-new term)
+  (interaction (isyntax-pretty) '() (navigator-new hole-keys term)))
 
 (define ((interaction-update instr) iaction)
   (def (trans f seed count)
