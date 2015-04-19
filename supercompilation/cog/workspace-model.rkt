@@ -23,7 +23,6 @@
 
 (record database workspaces interactions) ; {workspaces: {name => workspace}, interactions: {name => interaction}, ...}
 (record workspace layout focus-index widgets notification) ; {layout: [name], focus-index: nat, widgets: {name => widget}, notification: string}
-(record widget db->commands db->doc)
 (define database-empty (database (hash) (hash)))
 (define workspace-empty (workspace '() 0 (hash) ""))
 
