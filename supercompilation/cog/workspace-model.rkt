@@ -31,9 +31,9 @@
   (begin/with-monad maybe-monad
     name <- (list-get layout fidx)
     (dict-get widgets name)))
-(define (workspace->focus-commands ws db)
+(define (workspace->focus-commands ws-name ws db)
   (maybe-fold '() (fn ((interaction-widget name))
-                      (interaction->commands name db))
+                      (interaction->commands ws-name name db))
               (workspace->focus-widget ws)))
 
 (record workspace-command name instr)
@@ -56,7 +56,7 @@
 (def (db->workspace-commands name db)
   ws = (:.* db 'workspaces name)
   ws-top-cmds = (db->workspace-commands-top name db)
-  widget-cmds = (workspace->focus-commands ws db)
+  widget-cmds = (workspace->focus-commands name ws db)
   cmds->char-assoc = (lambda (cmds)
                        (forl
                          cmd <- cmds
@@ -113,12 +113,12 @@
         ))
     (list
       (nothing)
-      (just (interaction-command 1 (ici-traverse-down 3)))
+      (just (interaction-command 'one 1 (ici-traverse-down 3)))
       (just (workspace-command 'one (wci-widget-close 2)))
       )))
 
-(record interaction-command name instr)
-(define (interaction->commands name db)
+(record interaction-command ws-name name instr)
+(define (interaction->commands ws-name name db)
   ; TODO: specialized commands based on interaction state
   (forl
     (list char desc instr) <-
@@ -131,7 +131,8 @@
       (#\c "step completely" ,(lambda (_) (ici-step-complete)))
       (#\x "toggle-syntax" ,(lambda (_) (ici-toggle-syntax)))
       (#\u "undo" ,ici-undo))
-    (list char desc (compose1 (curry interaction-command name) instr))))
+    (list char desc
+          (compose1 (curry interaction-command ws-name name) instr))))
 
 (record interaction-widget name)
 
