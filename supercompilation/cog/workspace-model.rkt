@@ -15,7 +15,11 @@
   )
 
 (module+ test
-  (require rackunit))
+  (require
+    "syntax-abstract.rkt"
+    gregr-misc/navigator
+    rackunit
+    ))
 
 (record database workspaces interactions) ; {workspaces: {name => workspace}, interactions: {name => interaction}, ...}
 (record workspace layout focus-index widgets notification) ; {layout: [name], focus-index: nat, widgets: {name => widget}, notification: string}
@@ -69,14 +73,24 @@
   (cmds-merge1 ws-top-cmds widget-cmds))
 
 (module+ test
+  (define test-term-0 (value (uno)))
+  (define test-term-1 (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
+                                 (value (bit (b-1)))))
+  (define test-iaction-0 (interaction-new test-term-0))
+  (define test-iaction-1 (interaction-new test-term-1))
   (define test-db-0
     (:=* database-empty (hash 'one workspace-empty) 'workspaces))
-  (define test-ws-range-0 (range 7))
+  (define test-ws-range-len 7)
+  (define test-ws-range-0 (range test-ws-range-len))
   (define test-ws-0
     (workspace test-ws-range-0 1
                (list->index-dict (map interaction-widget test-ws-range-0)) ""))
   (define test-db-1 (:=* (:=* test-db-0 test-ws-0 'workspaces 'one)
-                         (list->index-dict test-ws-range-0) 'interactions)))
+                         (:=* (make-immutable-hash
+                                (forl idx <- test-ws-range-0
+                                      (cons idx test-iaction-0)))
+                              test-iaction-1 1)
+                         'interactions)))
 
 (module+ test
   (check-equal?
@@ -201,4 +215,20 @@
                               (list* 0 (reverse (rest test-ws-range-0))))
                         '((0 4 5 6) (0)))
       (zip* (list 1 0 1 3 6 1 1 1 0) layouts (forl l <- layouts (sort l <))))
+    )
+  (check-equal?
+    (lets
+      cmds = (list (interaction-command 'one 1 (ici-step-complete))
+                   (interaction-command 'one 2 (ici-traverse-down 1)))
+      updaters = (map database-update cmds)
+      dbs = (map (fn (upd) (upd test-db-1)) updaters)
+      (forl db <- dbs
+            (list (:.* db 'workspaces 'one 'notification)
+                  (forl
+                    name <- '(1 2)
+                    iaction = (:.* db 'interactions name)
+                    nav = (:.* iaction 'nav)
+                    (navigator-focus nav)))))
+    (list (list "" (list (value (bit (b-1))) test-term-0))
+          (list "cannot traverse down" (list test-term-1 test-term-0)))
     ))
