@@ -41,15 +41,17 @@
   (wci-widget-right count)
   (wci-widget-reverse count)
   (wci-widget-close count))
-(define (db->workspace-commands-top name db)
+(def (db->workspace-commands-top name db)
   ; TODO: specialized commands based on workspace state
   ;ws = (:.* db 'workspaces name)
-  (define (cmd-new instr) (workspace-command name instr))
-  `((#\q "pane close" ,(lambda (count) (cmd-new (wci-widget-close count))))
-    (#\H "pane left" ,(lambda (count) (cmd-new (wci-widget-left count))))
-    (#\L "pane right" ,(lambda (count) (cmd-new (wci-widget-right count))))
-    (#\R "pane reverse" ,(lambda (count)
-                           (cmd-new (wci-widget-reverse count))))))
+  cmd-table =
+  `((#\q "pane close" ,wci-widget-close)
+    (#\H "pane left" ,wci-widget-left)
+    (#\L "pane right" ,wci-widget-right)
+    (#\R "pane reverse" ,wci-widget-reverse))
+  (forl
+    (list char desc instr) <- cmd-table
+    (list char desc (compose1 (curry workspace-command name) instr))))
 (def (db->workspace-commands name db)
   ws = (:.* db 'workspaces name)
   ws-top-cmds = (db->workspace-commands-top name db)
@@ -117,21 +119,18 @@
 (record interaction-command name instr)
 (define ((interaction->commands name) interaction)
   ; TODO: specialized commands based on interaction state
-  (define (cmd-new instr) (interaction-command name instr))
-  `((#\h "traverse left"
-     ,(lambda (count) (cmd-new (ici-traverse-left count))))
-    (#\j "traverse down"
-     ,(lambda (count) (cmd-new (ici-traverse-down count))))
-    (#\k "traverse up"
-     ,(lambda (count) (cmd-new (ici-traverse-up count))))
-    (#\l "traverse right"
-     ,(lambda (count) (cmd-new (ici-traverse-right count))))
-    (#\S "substitute completely"
-     ,(lambda (count) (cmd-new (ici-substitute-complete))))
-    (#\s "step" ,(lambda (count) (cmd-new (ici-step count))))
-    (#\c "step completely" ,(lambda (count) (cmd-new (ici-step-complete))))
-    (#\x "toggle-syntax" ,(lambda (count) (cmd-new (ici-toggle-syntax))))
-    (#\u "undo" ,(lambda (count) (cmd-new (ici-undo count))))))
+  (forl
+    (list char desc instr) <-
+    `((#\h "traverse left" ,ici-traverse-left)
+      (#\j "traverse down" ,ici-traverse-down)
+      (#\k "traverse up" ,ici-traverse-up)
+      (#\l "traverse right" ,ici-traverse-right)
+      (#\S "substitute completely" ,(lambda (_) (ici-substitute-complete)))
+      (#\s "step" ,ici-step)
+      (#\c "step completely" ,(lambda (_) (ici-step-complete)))
+      (#\x "toggle-syntax" ,(lambda (_) (ici-toggle-syntax)))
+      (#\u "undo" ,ici-undo))
+    (list char desc (compose1 (curry interaction-command name) instr))))
 
 (define (interaction->doc interaction) (void))
 
