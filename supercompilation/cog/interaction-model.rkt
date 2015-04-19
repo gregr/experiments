@@ -66,7 +66,7 @@
 (define (interaction-new term)
   (interaction (isyntax-pretty) '() (navigator-new hole-keys term)))
 
-(define ((interaction-update instr) iaction)
+(define (interaction-update instr iaction)
   (def (trans f seed count)
     (list prev final) =
     (forf

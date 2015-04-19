@@ -164,12 +164,16 @@
               'layout))))))
 
 (define ((database-update cmd) db)
-  (lets
-    (list path trans) =
-    (match cmd
-      ((workspace-command name instr)
-       (list (list 'workspaces name) (workspace-update instr))))
-    (:~ db trans path)))
+  (match cmd
+    ((workspace-command name instr)
+     (:~* db (workspace-update instr) 'workspaces name))
+    ((interaction-command ws-name name instr)
+     (lets
+       iaction = (:.* db 'interactions name)
+       (list msg iaction) = (interaction-update instr iaction)
+       db = (:=* db iaction 'interactions name)
+       ws = (:=* (:.* db 'workspaces ws-name) msg 'notification)
+       (:=* db ws 'workspaces ws-name)))))
 
 (module+ test
   (check-equal?
