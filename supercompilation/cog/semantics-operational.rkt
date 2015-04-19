@@ -1,5 +1,6 @@
 #lang racket
 (provide
+  step
   step-complete
   step-complete-safe
   step-safe
