@@ -27,21 +27,15 @@
     rackunit
     ))
 
-(record workspace layout focus-index widgets notification) ; {layout: [name], focus-index: nat, widgets: {name => widget}, notification: string}
+(record workspace layout focus-index notification) ; {layout: [widget], focus-index: nat, notification: string}
 (define (workspace-new widgets (fidx 0) (msg ""))
-  (define named-widgets (list->index-list widgets))
-  (workspace (map car named-widgets) fidx
-             (make-immutable-hash named-widgets) msg))
+  (workspace widgets fidx msg))
 (define workspace-empty (workspace-new '() 0))
 
 ;workspace->doc ; workspace -> db -> doc
 
-(def (workspace->focus-widget ws)
-  (list layout fidx widgets) =
-  (map (curry :.* ws) '(layout focus-index widgets))
-  (begin/with-monad maybe-monad
-    name <- (list-get layout fidx)
-    (dict-get widgets name)))
+(def (workspace->focus-widget (workspace layout fidx _))
+  (list-get layout fidx))
 
 (records workspace-instruction
   (wci-widget-left count)
@@ -57,18 +51,12 @@
     layout = (:.* ws 'layout)
     (:~* ws (curry focus-index-valid layout) 'focus-index))
   (lets
-    (workspace layout fidx widgets _) = ws
+    (workspace layout fidx _) = ws
     (workspace-valid
       (match instr
         ((wci-widget-close count)
-         (lets
-           end = (end-index-valid layout (+ fidx count))
-           closed = (list-range layout fidx end)
-           widgets = (forf widgets = widgets
-                           name <- closed
-                           (dict-remove widgets name))
-           ws = (:=* ws (list-range-remove layout fidx end) 'layout)
-           (:=* ws widgets 'widgets)))
+         (lets end = (end-index-valid layout (+ fidx count))
+               (:=* ws (list-range-remove layout fidx end) 'layout)))
         ((wci-widget-left count) (:=* ws (- fidx count) 'focus-index))
         ((wci-widget-right count) (:=* ws (+ fidx count) 'focus-index))
         ((wci-widget-reverse count)

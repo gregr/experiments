@@ -146,9 +146,9 @@
       dbs = (list* test-db-1 (map (fn (upd) (upd test-db-1)) updaters))
       (forl db <- dbs
             ws = (:.* db 'workspaces 'one)
-            (list fidx layout widgets) =
-            (map (curry :.* ws) '(focus-index layout widgets))
-            (list fidx layout (sort (dict-keys widgets) <))))
+            (list fidx layout) =
+            (map (curry :.* ws) '(focus-index layout))
+            (list fidx (map interaction-widget-name layout))))
     (lets
       layouts = (append (make-list 5 test-ws-range-0)
                         (list (append (list 0)
@@ -156,8 +156,7 @@
                                       (list 6))
                               (list* 0 (reverse (rest test-ws-range-0))))
                         '((0 4 5 6) (0)))
-      (zip* (list 1 0 1 3 6 1 1 1 0) layouts (forl l <- layouts (sort l <))))
-    )
+      (zip* (list 1 0 1 3 6 1 1 1 0) layouts)))
   (check-equal?
     (lets
       cmds = (list (interaction-command 'one 1 (ici-step-complete))
