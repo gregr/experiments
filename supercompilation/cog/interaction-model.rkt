@@ -79,15 +79,15 @@
 
 (define (interaction-update instr iaction)
   (def (trans f seed count)
-    (list prev final) =
+    (list prev final success?) =
     (forf
-      (list prev final) = (list (right seed) seed)
-      _ <- (range count)
+      (list prev final success?) = (list (right seed) seed #f)
+      idx <- (range count)
       #:break (left? prev)
       current = (right-x prev)
-      (list (f current) current))
-    (either-fold (fn (msg) (list #f msg final))
-                 (fn (ia) (list #t "" ia)) prev))
+      (list (f current) current (> idx 0)))
+    (either-fold (fn (msg) (list success? msg final))
+                 (fn (ia)  (list success? "" ia)) prev))
   (define (mtrans msg f seed count)
     (define (g arg) (maybe->either msg (f arg)))
     (trans g seed count))
