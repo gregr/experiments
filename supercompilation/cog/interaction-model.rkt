@@ -66,6 +66,17 @@
 (define (interaction-new term)
   (interaction (isyntax-pretty) '() (navigator-new hole-keys term)))
 
+(module+ test-support
+  (provide
+    test-iactions
+    )
+  (define test-terms
+    (list
+      (value (uno))
+      (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
+                 (value (bit (b-1))))))
+  (define test-iactions (map interaction-new test-terms)))
+
 (define (interaction-update instr iaction)
   (def (trans f seed count)
     (list prev final) =

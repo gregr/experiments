@@ -88,11 +88,12 @@
           (compose1 (curry interaction-command ws-name name) instr))))
 
 (module+ test
-  (define test-term-0 (value (uno)))
-  (define test-term-1 (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
-                                 (value (bit (b-1)))))
-  (define test-iaction-0 (interaction-new test-term-0))
-  (define test-iaction-1 (interaction-new test-term-1))
+  (require (submod "interaction-model.rkt" test-support))
+  ;(define test-term-0 (value (uno)))
+  ;(define test-term-1 (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
+                                 ;(value (bit (b-1)))))
+  (define test-iaction-0 (list-ref test-iactions 0))
+  (define test-iaction-1 (list-ref test-iactions 1))
   (define test-db-0
     (:=* database-empty (hash 'one workspace-empty) 'workspaces))
   (define test-ws-range-len 7)
@@ -170,6 +171,6 @@
                     iaction = (:.* db 'interactions name)
                     nav = (:.* iaction 'nav)
                     (navigator-focus nav)))))
-    (list (list "" (list (value (bit (b-1))) test-term-0))
-          (list "cannot traverse down" (list test-term-1 test-term-0)))
+    (list (list "" (list (value (bit (b-1))) (navigator-focus (:.* test-iaction-0 'nav))))
+          (list "cannot traverse down" (map (compose1 navigator-focus (fn (ia) (:.* ia 'nav))) (reverse test-iactions))))
     ))
