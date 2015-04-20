@@ -4,9 +4,9 @@
   wci-widget-right
   wci-widget-reverse
   wci-widget-close
-  workspace
   workspace->focus-widget
   workspace-empty
+  workspace-new
   workspace-update
   )
 
@@ -28,7 +28,11 @@
     ))
 
 (record workspace layout focus-index widgets notification) ; {layout: [name], focus-index: nat, widgets: {name => widget}, notification: string}
-(define workspace-empty (workspace '() 0 (hash) ""))
+(define (workspace-new widgets (fidx 0) (msg ""))
+  (define named-widgets (list->index-list widgets))
+  (workspace (map car named-widgets) fidx
+             (make-immutable-hash named-widgets) msg))
+(define workspace-empty (workspace-new '() 0))
 
 ;workspace->doc ; workspace -> db -> doc
 

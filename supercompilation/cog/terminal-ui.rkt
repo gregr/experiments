@@ -98,8 +98,7 @@
   (define test-ws-range-len 7)
   (define test-ws-range-0 (range test-ws-range-len))
   (define test-ws-0
-    (workspace test-ws-range-0 1
-               (list->index-dict (map interaction-widget test-ws-range-0)) ""))
+    (workspace-new (map interaction-widget test-ws-range-0) 1))
   (define test-db-1 (:=* (:=* test-db-0 test-ws-0 'workspaces 'one)
                          (:=* (make-immutable-hash
                                 (forl idx <- test-ws-range-0
