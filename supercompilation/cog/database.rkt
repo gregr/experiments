@@ -23,7 +23,7 @@
 (define ((database-update cmd) db)
   (match cmd
     ((workspace-command name instr)
-     (:~* db (workspace-update instr) 'workspaces name))
+     (:~* db (curry workspace-update instr) 'workspaces name))
     ((interaction-command ws-name name instr)
      (lets
        iaction = (:.* db 'interactions name)
