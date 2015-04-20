@@ -86,16 +86,18 @@
       #:break (left? prev)
       current = (right-x prev)
       (list (f current) current))
-    (either-fold (fn (msg) (list msg final)) (fn (ia) (list "" ia)) prev))
+    (either-fold (fn (msg) (list #f msg final))
+                 (fn (ia) (list #t "" ia)) prev))
   (define (mtrans msg f seed count)
     (define (g arg) (maybe->either msg (f arg)))
     (trans g seed count))
-  (def (ttrans-nav tt f iaction count)
-    (list msg nav) = (tt f (interaction-nav iaction) count)
-    (list msg (:=* iaction nav 'nav)))
+  (def (ttrans-nav tt history f iaction count)
+    (list success? msg nav) = (tt f (interaction-nav iaction) count)
+    iaction = (:=* iaction nav 'nav)
+    (list msg (if success? iaction (:=* iaction history 'history))))
   (define trans-nav (curry ttrans-nav trans))
-  (define (mtrans-nav msg f iaction count)
-    (ttrans-nav (curry mtrans msg) f iaction count))
+  (define (mtrans-nav msg history f iaction count)
+    (ttrans-nav (curry mtrans msg) history f iaction count))
   (define ((trans-focus f) nav)
     (begin/with-monad either-monad
       new-focus <- (f (navigator-focus nav))
@@ -106,20 +108,24 @@
     iaction = (:~* iaction (curry cons iaction) 'history)
     (match instr
       ((ici-traverse-down count)
-       (mtrans-nav "cannot traverse down"
+       (mtrans-nav "cannot traverse down" history
                    (fn (nav) (navigator-descend nav 0)) iaction count))
       ((ici-traverse-left count)
-       (mtrans-nav "cannot traverse left"
+       (mtrans-nav "cannot traverse left" history
                    (fn (nav) (navigator-shift nav (- 1))) iaction count))
       ((ici-traverse-right count)
-       (mtrans-nav "cannot traverse right"
+       (mtrans-nav "cannot traverse right" history
                    (fn (nav) (navigator-shift nav 1)) iaction count))
       ((ici-traverse-up count)
-       (mtrans-nav "cannot traverse up" navigator-ascend iaction count))
+       (mtrans-nav "cannot traverse up" history
+                   navigator-ascend iaction count))
       ((ici-substitute-complete)
-       (trans-nav (trans-focus (compose1 right substitute-full)) iaction 1))
-      ((ici-step count) (trans-nav (trans-focus step-safe) iaction count))
-      ((ici-step-complete) (trans-nav (trans-focus step-complete-safe) iaction 1))
+       (trans-nav history (trans-focus (compose1 right substitute-full))
+                  iaction 1))
+      ((ici-step count)
+       (trans-nav history (trans-focus step-safe) iaction count))
+      ((ici-step-complete)
+       (trans-nav history (trans-focus step-complete-safe) iaction 1))
       ((ici-toggle-syntax)
        (list "" (:=* iaction (match syntax
                                ((isyntax-raw) (isyntax-pretty))
