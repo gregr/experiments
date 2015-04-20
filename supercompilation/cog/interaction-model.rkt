@@ -27,6 +27,12 @@
   gregr-misc/sugar
   )
 
+(module+ test
+  (require
+    gregr-misc/maybe
+    rackunit
+    ))
+
 (records interaction-instruction
   (ici-traverse-down count)
   (ici-traverse-left count)
@@ -66,16 +72,33 @@
 (define (interaction-new term)
   (interaction (isyntax-pretty) '() (navigator-new hole-keys term)))
 
+(define test-terms
+  (list
+    (value (uno))
+    (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
+               (value (bit (b-1))))))
+(define test-iactions (map interaction-new test-terms))
+
 (module+ test-support
   (provide
     test-iactions
-    )
-  (define test-terms
-    (list
-      (value (uno))
-      (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
-                 (value (bit (b-1))))))
-  (define test-iactions (map interaction-new test-terms)))
+    ))
+
+(module+ test
+  (lets
+    ia-term = (fn (ia) (navigator-focus (:.* ia 'nav)))
+    (void (forl
+      ia <- test-iactions
+      (begin
+        (check-equal?
+          (ia-term (second (interaction-update (ici-step-complete) ia)))
+          (step-complete (ia-term ia)))
+        (check-equal?
+          (lets
+            (list msg ia) = (interaction-update (ici-traverse-down 1) ia)
+            (if (equal? msg "") (just (ia-term ia)) (nothing)))
+          (maybe-map navigator-focus (navigator-descend (:.* ia 'nav)))))))
+    ))
 
 (define (interaction-update instr iaction)
   (def (trans f seed count)
