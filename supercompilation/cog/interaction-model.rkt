@@ -9,6 +9,8 @@
   ici-step-complete
   ici-toggle-syntax
   ici-undo
+  isyntax-raw
+  isyntax-pretty
   interaction-new
   interaction-update
   )

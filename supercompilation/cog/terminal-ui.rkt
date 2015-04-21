@@ -5,9 +5,11 @@
 (require
   "database.rkt"
   "interaction-model.rkt"
+  "presentation.rkt"
   "workspace-model.rkt"
   gregr-misc/cursor
   gregr-misc/dict
+  gregr-misc/either
   gregr-misc/list
   gregr-misc/maybe
   gregr-misc/monad
@@ -113,3 +115,34 @@
       (just (interaction-command 'one 1 (ici-traverse-down 3)))
       (just (workspace-command 'one (wci-widget-close 2)))
       )))
+
+(define (commands->desc commands)
+  (forl
+    (list char desc action) <- commands
+    (list (list->string (list char)) desc)))
+(def (workspace-preview name db)
+  ws = (:.* db 'workspaces name)
+  (list widgets fidx msg) = (map (curry :.* ws)
+                                 '(layout focus-index notification))
+  cmds = (db->workspace-commands name db)
+  cmd-desc = (commands->desc cmds)
+  idocs =
+  (forl
+    (interaction-widget iname) <- widgets
+    iaction = (:.* db 'interactions iname)
+    (list stx nav) = (map (curry :.* iaction) '(syntax nav))
+    nav->doc = (match stx
+                 ((isyntax-raw) nav-term-lifted-old->doc)
+                 ((isyntax-pretty) nav-term-lifted->doc))
+    (delay (nav->doc nav)))
+  (list msg cmd-desc fidx idocs))
+(def (workspace-preview->str-thunk (list msg cmd-desc fidx idocs))
+  (thunk (view->string (tabular-view msg cmd-desc fidx idocs))))
+
+(def (emdb->preview ws-name (list msg cdesc fidx idocs) emdb)
+  (match emdb
+    ((left count) (list (number->string count) cdesc fidx idocs))
+    ((right result)
+     (match result
+       ((nothing) (list "invalid choice" cdesc fidx idocs))
+       ((just db) (workspace-preview ws-name db))))))
