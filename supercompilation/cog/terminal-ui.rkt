@@ -115,34 +115,3 @@
       (just (interaction-command 'one 1 (ici-traverse-down 3)))
       (just (workspace-command 'one (wci-widget-close 2)))
       )))
-
-(module+ test
-  (require
-    (submod "interaction-model.rkt" test-support)
-    (submod "workspace-model.rkt" test-support))
-  (check-equal?
-    (database-update (workspace-command 'one (wci-widget-right 2)) test-db-0)
-    test-db-0)
-  (void (forl
-    ws <- test-workspaces
-    path = (list 'workspaces 'one)
-    db = (:= test-db-1 ws path)
-    (forl
-      instr <- test-instrs
-      cmd = (workspace-command 'one instr)
-      db = (database-update cmd db)
-      (check-equal?
-        (:. db path)
-        (workspace-update instr ws)))))
-  (void (forl
-    ia <- test-iactions
-    path = (list 'interactions 3)
-    db = (:= test-db-1 ia path)
-    (forl
-      instr <- (list (ici-step-complete) (ici-traverse-down 1))
-      cmd = (interaction-command 'one 3 instr)
-      db = (database-update cmd db)
-      (check-equal?
-        (list (:.* db 'workspaces 'one 'notification) (:. db path))
-        (interaction-update instr ia)))))
-  )
