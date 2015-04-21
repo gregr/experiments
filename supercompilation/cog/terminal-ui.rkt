@@ -1,5 +1,7 @@
 #lang racket
 (provide
+  interact-with
+  ui-loop
   )
 
 (require
@@ -10,11 +12,13 @@
   gregr-misc/cursor
   gregr-misc/dict
   gregr-misc/either
+  gregr-misc/generator
   gregr-misc/list
   gregr-misc/maybe
   gregr-misc/monad
   gregr-misc/record
   gregr-misc/sugar
+  gregr-misc/terminal
   gregr-misc/ui
   )
 
@@ -146,3 +150,80 @@
      (match result
        ((nothing) (list "invalid choice" cdesc fidx idocs))
        ((just db) (workspace-preview ws-name db))))))
+
+(define (keypress-thread chan)
+  (thread
+    (thunk (gen-loop (apply gen-compose* (map fn->gen
+      (list (curry channel-put chan) event-keypress (lambda (_) (read-char)))))
+      (void)))))
+
+(define (display-view-thread latency chan)
+  (define fetch-chan (make-channel))
+  (def (display-view view)
+    view-str = (view)
+    _ = (screen-clear)
+    (display view-str))
+  (define (display-loop timer)
+    (display-view (channel-get fetch-chan))
+    (sleep-remaining latency timer)
+    (display-loop (gen-susp-k (timer))))
+  (def (fetch-loop view)
+    evt = (sync chan (channel-put-evt fetch-chan view))
+    (if (channel-put-evt? evt)
+      (fetch-loop (channel-get chan))
+      (fetch-loop evt)))
+  (define fetch-thread (thread (thunk (fetch-loop (channel-get chan)))))
+  (define display-thread (thread (thunk (display-loop (timer-now)))))
+  (thread (thunk
+    (thread-wait fetch-thread)
+    (kill-thread display-thread)))
+  fetch-thread)
+
+(define (ui-loop ws-name db)
+  (define event-chan (make-channel))
+  (define display-chan (make-channel))
+  (define (check-quit input)
+    (if (match input
+          ((right (just db))
+           (empty? (:.* (:.* db 'workspaces ws-name) 'layout)))
+          (_ #f))
+      (gen-result "quitting: all interactions closed")
+      (gen-susp input check-quit)))
+  (define event->cmd (event->workspace-command ws-name))
+  (define handle-events
+    (gn yield (event)
+      (letn loop (list db event) = (list db event)
+        mdb = (begin/with-monad maybe-monad
+                cmd <- (event->cmd db event)
+                (pure (database-update cmd db)))
+        db = (maybe-from db mdb)
+        (loop (list db (yield mdb))))))
+  (with-cursor-hidden (with-stty-direct
+    (lets
+      threads = (list (keypress-thread event-chan)
+                      (display-view-thread 0.1 display-chan))
+      result =
+      (gen-loop
+        (gen-compose*
+          (either-gen handle-events)
+          keycount-controller
+          (fn->gen (lambda (_) (channel-get event-chan)))
+          (fn->gen (curry channel-put display-chan))
+          (fn->gen workspace-preview->str-thunk)
+          (gn yield (input)
+              (letn loop (list cur-preview input) =
+                         (list (make-list 4 (void)) input)
+                preview = (emdb->preview ws-name cur-preview input)
+                (loop (list preview (yield preview)))))
+          check-quit)
+        (right (just db)))
+      _ = (for-each kill-thread threads)
+      result))))
+
+(def (interact-with terms)
+  ws-name = 'terminal-ui:interact-with
+  iactions = (map interaction-new terms)
+  ws = (workspace-new (map interaction-widget (range (length terms))))
+  db = (:=* (:=* database-empty (hash ws-name ws) 'workspaces)
+            (list->index-dict iactions) 'interactions)
+  (ui-loop ws-name db))
