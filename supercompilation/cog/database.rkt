@@ -20,7 +20,7 @@
 (record workspace-command name instr)
 (record interaction-command ws-name name instr)
 
-(define ((database-update cmd) db)
+(define (database-update cmd db)
   (match cmd
     ((workspace-command name instr)
      (:~* db (curry workspace-update instr) 'workspaces name))

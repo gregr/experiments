@@ -134,7 +134,7 @@
 
 (module+ test
   (check-equal?
-    ((database-update (workspace-command 'one (wci-widget-right 2))) test-db-0)
+    (database-update (workspace-command 'one (wci-widget-right 2)) test-db-0)
     test-db-0)
   (check-equal?
     (lets
@@ -142,7 +142,7 @@
                      (wci-widget-right 2) (wci-widget-right 10)
                      (wci-widget-reverse 4) (wci-widget-reverse 20)
                      (wci-widget-close 3) (wci-widget-close 20))
-      updaters = (map (fn (instr) (database-update
+      updaters = (map (fn (instr) (curry database-update
                                     (workspace-command 'one instr))) instrs)
       dbs = (list* test-db-1 (map (fn (upd) (upd test-db-1)) updaters))
       (forl db <- dbs
@@ -158,19 +158,15 @@
                               (list* 0 (reverse (rest test-ws-range-0))))
                         '((0 4 5 6) (0)))
       (zip* (list 1 0 1 3 6 1 1 1 0) layouts)))
-  (check-equal?
-    (lets
-      cmds = (list (interaction-command 'one 1 (ici-step-complete))
-                   (interaction-command 'one 2 (ici-traverse-down 1)))
-      updaters = (map database-update cmds)
-      dbs = (map (fn (upd) (upd test-db-1)) updaters)
-      (forl db <- dbs
-            (list (:.* db 'workspaces 'one 'notification)
-                  (forl
-                    name <- '(1 2)
-                    iaction = (:.* db 'interactions name)
-                    nav = (:.* iaction 'nav)
-                    (navigator-focus nav)))))
-    (list (list "" (list (value (bit (b-1))) (navigator-focus (:.* test-iaction-0 'nav))))
-          (list "cannot traverse down" (map (compose1 navigator-focus (fn (ia) (:.* ia 'nav))) (reverse test-iactions))))
-    ))
+  (void (forl
+    ia <- test-iactions
+    path = (list 'interactions 3)
+    db = (:= test-db-1 ia path)
+    (void (forl
+      instr <- (list (ici-step-complete) (ici-traverse-down 1))
+      cmd = (interaction-command 'one 3 instr)
+      db = (database-update cmd db)
+      (check-equal?
+        (list (:.* db 'workspaces 'one 'notification) (:. db path))
+        (interaction-update instr ia))))))
+  )
