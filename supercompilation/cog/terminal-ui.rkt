@@ -88,20 +88,10 @@
           (compose1 (curry interaction-command ws-name name) instr))))
 
 (module+ test
-  (require (submod "interaction-model.rkt" test-support))
-  (define test-iaction-0 (list-ref test-iactions 0))
-  (define test-iaction-1 (list-ref test-iactions 1))
-  (define test-db-0
-    (:=* database-empty (hash 'one workspace-empty) 'workspaces))
-  (define test-widget-count 7)
-  (define test-widgets (map interaction-widget (range test-widget-count)))
-  (define test-db-1
-    (:=* (:=* test-db-0 (workspace-new test-widgets 1) 'workspaces 'one)
-         (:=* (list->index-dict (make-list test-widget-count test-iaction-0))
-              test-iaction-1 1)
-         'interactions)))
-
-(module+ test
+  (require (submod "database.rkt" test-support))
+  (define test-dbs (test-dbs-new interaction-widget))
+  (define test-db-0 (list-ref test-dbs 0))
+  (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
     (map list-init (db->workspace-commands 'one test-db-0))
     (map list-init (db->workspace-commands-top 'one test-db-0))
@@ -127,7 +117,9 @@
       )))
 
 (module+ test
-  (require (submod "workspace-model.rkt" test-support))
+  (require
+    (submod "interaction-model.rkt" test-support)
+    (submod "workspace-model.rkt" test-support))
   (check-equal?
     (database-update (workspace-command 'one (wci-widget-right 2)) test-db-0)
     test-db-0)

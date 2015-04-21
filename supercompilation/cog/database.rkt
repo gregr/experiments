@@ -6,10 +6,17 @@
   workspace-command
   )
 
+(module+ test-support
+  (provide
+    test-dbs-new
+    ))
+
 (require
   "interaction-model.rkt"
   "workspace-model.rkt"
+  (submod "interaction-model.rkt" test-support)
   gregr-misc/cursor
+  gregr-misc/list
   gregr-misc/record
   gregr-misc/sugar
   )
@@ -31,3 +38,15 @@
        db = (:=* db iaction 'interactions name)
        ws = (:=* (:.* db 'workspaces ws-name) msg 'notification)
        (:=* db ws 'workspaces ws-name)))))
+
+(define (test-dbs-new widget-new)
+  (define widget-count 7)
+  (define widgets (map widget-new (range widget-count)))
+  (define ia-0 (list-ref test-iactions 0))
+  (define ia-1 (list-ref test-iactions 1))
+  (define db (:=* database-empty (hash 'one workspace-empty) 'workspaces))
+  (list db
+        (:=* (:=* db (workspace-new widgets 1) 'workspaces 'one)
+             (:=* (list->index-dict (make-list widget-count ia-0)) ia-1 1)
+             'interactions)
+        ))
