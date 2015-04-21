@@ -10,6 +10,12 @@
   workspace-update
   )
 
+(module+ test-support
+  (provide
+    test-instrs
+    test-workspaces
+    ))
+
 (require
   gregr-misc/cursor
   gregr-misc/dict
@@ -22,8 +28,6 @@
 
 (module+ test
   (require
-    "syntax-abstract.rkt"
-    gregr-misc/navigator
     rackunit
     ))
 
@@ -61,3 +65,30 @@
        (:=* ws (list-range-reverse
                  layout fidx (end-index-valid layout (+ fidx count 1)))
             'layout)))))
+
+(define test-widgets (range 7))
+(define test-workspaces (list workspace-empty (workspace-new test-widgets 2)))
+(define test-instrs (list (wci-widget-left 10) (wci-widget-left 0)
+                          (wci-widget-right 2) (wci-widget-right 10)
+                          (wci-widget-reverse 4) (wci-widget-reverse 20)
+                          (wci-widget-close 3) (wci-widget-close 20)))
+
+(module+ test
+  (void (forl
+    instr <- test-instrs
+    (check-equal?
+      (workspace-update instr workspace-empty)
+      workspace-empty)))
+  (check-equal?
+    (forl
+      instr <- test-instrs
+      ws = (workspace-update instr (workspace-new test-widgets 1))
+      (map (curry :.* ws) '(focus-index layout)))
+    (zip* (list 0 1 3 6 1 1 1 0)
+          (append (make-list 4 test-widgets)
+                  (list (append (list 0)
+                                (rest (reverse (rest test-widgets)))
+                                (list 6))
+                        (list* 0 (reverse (rest test-widgets))))
+                  '((0 4 5 6) (0)))))
+  )
