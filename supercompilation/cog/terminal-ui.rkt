@@ -18,8 +18,6 @@
 
 (module+ test
   (require
-    "syntax-abstract.rkt"
-    gregr-misc/navigator
     rackunit
     ))
 
