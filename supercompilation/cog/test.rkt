@@ -1,7 +1,6 @@
 #lang racket
 (require
   "data-encoding.rkt"
-  "interaction.rkt"
   "parsing.rkt"
   "semantics-denotational.rkt"
   "semantics-operational.rkt"
@@ -11,6 +10,7 @@
   "syntax-1-parsing.rkt"
   "syntax-1.rkt"
   "syntax-abstract.rkt"
+  "terminal-ui.rkt"
   "workspace.rkt"
   gregr-misc/cursor
   gregr-misc/either
