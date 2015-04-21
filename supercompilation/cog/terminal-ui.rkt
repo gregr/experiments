@@ -133,40 +133,30 @@
       )))
 
 (module+ test
+  (require (submod "workspace-model.rkt" test-support))
   (check-equal?
     (database-update (workspace-command 'one (wci-widget-right 2)) test-db-0)
     test-db-0)
-  (check-equal?
-    (lets
-      instrs = (list (wci-widget-left 10) (wci-widget-left 0)
-                     (wci-widget-right 2) (wci-widget-right 10)
-                     (wci-widget-reverse 4) (wci-widget-reverse 20)
-                     (wci-widget-close 3) (wci-widget-close 20))
-      updaters = (map (fn (instr) (curry database-update
-                                    (workspace-command 'one instr))) instrs)
-      dbs = (list* test-db-1 (map (fn (upd) (upd test-db-1)) updaters))
-      (forl db <- dbs
-            ws = (:.* db 'workspaces 'one)
-            (list fidx layout) =
-            (map (curry :.* ws) '(focus-index layout))
-            (list fidx (map interaction-widget-name layout))))
-    (lets
-      layouts = (append (make-list 5 test-ws-range-0)
-                        (list (append (list 0)
-                                      (rest (reverse (rest test-ws-range-0)))
-                                      (list 6))
-                              (list* 0 (reverse (rest test-ws-range-0))))
-                        '((0 4 5 6) (0)))
-      (zip* (list 1 0 1 3 6 1 1 1 0) layouts)))
+  (void (forl
+    ws <- test-workspaces
+    path = (list 'workspaces 'one)
+    db = (:= test-db-1 ws path)
+    (forl
+      instr <- test-instrs
+      cmd = (workspace-command 'one instr)
+      db = (database-update cmd db)
+      (check-equal?
+        (:. db path)
+        (workspace-update instr ws)))))
   (void (forl
     ia <- test-iactions
     path = (list 'interactions 3)
     db = (:= test-db-1 ia path)
-    (void (forl
+    (forl
       instr <- (list (ici-step-complete) (ici-traverse-down 1))
       cmd = (interaction-command 'one 3 instr)
       db = (database-update cmd db)
       (check-equal?
         (list (:.* db 'workspaces 'one 'notification) (:. db path))
-        (interaction-update instr ia))))))
+        (interaction-update instr ia)))))
   )
