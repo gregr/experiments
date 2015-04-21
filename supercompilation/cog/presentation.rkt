@@ -2,14 +2,17 @@
 (provide
   nav-term-flat->doc
   nav-term-lifted->doc
-  string->doc
+  nav-term-lifted-old->doc
+  nav-term-lifted-old-raw->doc
   tabular-view
   view->string
   )
 
 (require
   "syntax.rkt"
+  "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
+  "util.rkt"
   gregr-misc/cursor
   gregr-misc/list
   gregr-misc/markout
@@ -299,3 +302,49 @@
         rows))
     content-table = (div-table (list (list* command-doc inner-docs)))
     (vertical-list style-empty (list content-table notification-doc))))
+
+; older presentation
+(record void-closure is-value upenv)
+(define (unparse-void-closure upe term)
+  (if (void? term) (void-closure #f upe)
+    (unparse-orec unparse-void-closure unparse-value-void-closure upe term)))
+(define (unparse-value-void-closure upe val)
+  (if (void? val) (void-closure #t upe)
+    (unparse-value-orec unparse-void-closure unparse-value-void-closure
+                        upe val)))
+(define (void-closures term)
+  (match term
+    ((? void-closure?) (list term))
+    ((? list?)         (foldr append '() (map void-closures term)))
+    (_                 '())))
+(define (chain-unparse chain)
+  (define (unparse-vc-chain term-or-value parents)
+    (match (car (void-closures (car parents)))
+      ((void-closure is-value upe)
+       (cons (if is-value
+               (unparse-value-void-closure upe term-or-value)
+               (unparse-void-closure upe term-or-value))
+             parents))))
+  (cdr (reverse
+         (foldl unparse-vc-chain (list (void-closure #f upenv-empty)) chain))))
+(define (holed-substitute hole? replacement term)
+  (match term
+    ((? hole?) replacement)
+    ((? list?) (map (curry holed-substitute hole? replacement) term))
+    (_ term)))
+(define (chain-unparse-void chain)
+  (map (curry holed-substitute void-closure? (void)) (chain-unparse chain)))
+(define (chain-show chain)
+  (string-join (map pretty-string chain) "----\n"))
+
+(define (nav-present-old nav)
+  (forl
+    (list focus hole-pos) <- (navigator-path nav)
+    (match hole-pos
+      ((nothing) focus)
+      ((just (list _ key)) (:= focus (void) key)))))
+
+(define nav-term-lifted-old->doc
+  (compose1 string->doc chain-show reverse chain-unparse-void nav-present-old))
+(define nav-term-lifted-old-raw->doc
+  (compose1 string->doc chain-show nav-present-old))

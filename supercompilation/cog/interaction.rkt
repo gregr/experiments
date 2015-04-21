@@ -8,9 +8,7 @@
   "semantics-operational.rkt"
   "substitution.rkt"
   "syntax.rkt"
-  "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
-  "util.rkt"
   gregr-misc/cursor
   gregr-misc/dict
   gregr-misc/either
@@ -67,53 +65,10 @@
 (define interact-complete (curry interact-with-focus step-complete-safe))
 (define interact-substitute-full
   (curry interact-with-focus (compose1 right substitute-full)))
-(define (interact-context-present nav)
-  (forl
-    (list focus hole-pos) <- (navigator-path nav)
-    (match hole-pos
-      ((nothing) focus)
-      ((just (list _ key)) (:= focus (void) key)))))
-
-(record void-closure is-value upenv)
-(define (unparse-void-closure upe term)
-  (if (void? term) (void-closure #f upe)
-    (unparse-orec unparse-void-closure unparse-value-void-closure upe term)))
-(define (unparse-value-void-closure upe val)
-  (if (void? val) (void-closure #t upe)
-    (unparse-value-orec unparse-void-closure unparse-value-void-closure
-                        upe val)))
-(define (void-closures term)
-  (match term
-    ((? void-closure?) (list term))
-    ((? list?)         (foldr append '() (map void-closures term)))
-    (_                 '())))
-(define (chain-unparse chain)
-  (define (unparse-vc-chain term-or-value parents)
-    (match (car (void-closures (car parents)))
-      ((void-closure is-value upe)
-       (cons (if is-value
-               (unparse-value-void-closure upe term-or-value)
-               (unparse-void-closure upe term-or-value))
-             parents))))
-  (cdr (reverse
-         (foldl unparse-vc-chain (list (void-closure #f upenv-empty)) chain))))
-(define (holed-substitute hole? replacement term)
-  (match term
-    ((? hole?) replacement)
-    ((? list?) (map (curry holed-substitute hole? replacement) term))
-    (_ term)))
-(define (chain-unparse-void chain)
-  (map (curry holed-substitute void-closure? (void)) (chain-unparse chain)))
-
-(define (chain-show chain)
-  (string-join (map pretty-string chain) "----\n"))
 
 (define view-syntax-doc nav-term-lifted->doc)
-(define view-syntax-raw
-  (compose1 string->doc chain-show interact-context-present))
-(define view-syntax-0
-  (compose1 string->doc chain-show reverse chain-unparse-void
-            interact-context-present))
+(define view-syntax-raw nav-term-lifted-old-raw->doc)
+(define view-syntax-0 nav-term-lifted-old->doc)
 (define (view-toggle current-view)
   (right (if (eq? view-syntax-doc current-view)
            view-syntax-0 view-syntax-doc)))
