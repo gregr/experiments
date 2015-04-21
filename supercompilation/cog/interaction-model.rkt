@@ -88,6 +88,7 @@
       #:break (left? prev)
       current = (right-x prev)
       (list (f current) current (> idx 0)))
+    success? = (or (right? prev) success?)
     (either-fold (fn (msg) (list success? msg final))
                  (fn (ia)  (list success? "" ia)) prev))
   (define (mtrans msg f seed count)
@@ -136,8 +137,8 @@
       ((ici-undo count)
        (match history
          ('() (list "nothing to undo" iaction-current))
-         (_ (list "" (:=* iaction (drop history (min count (length history)))
-                          'history))))))))
+         (_ (list "" (car (drop history (- (min count (length history))
+                                           1))))))))))
 
 (define test-terms
   (list (value (uno))
