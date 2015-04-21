@@ -89,23 +89,17 @@
 
 (module+ test
   (require (submod "interaction-model.rkt" test-support))
-  ;(define test-term-0 (value (uno)))
-  ;(define test-term-1 (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
-                                 ;(value (bit (b-1)))))
   (define test-iaction-0 (list-ref test-iactions 0))
   (define test-iaction-1 (list-ref test-iactions 1))
   (define test-db-0
     (:=* database-empty (hash 'one workspace-empty) 'workspaces))
-  (define test-ws-range-len 7)
-  (define test-ws-range-0 (range test-ws-range-len))
-  (define test-ws-0
-    (workspace-new (map interaction-widget test-ws-range-0) 1))
-  (define test-db-1 (:=* (:=* test-db-0 test-ws-0 'workspaces 'one)
-                         (:=* (make-immutable-hash
-                                (forl idx <- test-ws-range-0
-                                      (cons idx test-iaction-0)))
-                              test-iaction-1 1)
-                         'interactions)))
+  (define test-widget-count 7)
+  (define test-widgets (map interaction-widget (range test-widget-count)))
+  (define test-db-1
+    (:=* (:=* test-db-0 (workspace-new test-widgets 1) 'workspaces 'one)
+         (:=* (list->index-dict (make-list test-widget-count test-iaction-0))
+              test-iaction-1 1)
+         'interactions)))
 
 (module+ test
   (check-equal?

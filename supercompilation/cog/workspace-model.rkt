@@ -18,10 +18,7 @@
 
 (require
   gregr-misc/cursor
-  gregr-misc/dict
   gregr-misc/list
-  gregr-misc/maybe
-  gregr-misc/monad
   gregr-misc/record
   gregr-misc/sugar
   )
