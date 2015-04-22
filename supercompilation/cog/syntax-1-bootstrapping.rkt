@@ -10,11 +10,11 @@
 
 (require
   "data-encoding.rkt"
-  "interaction.rkt"
   "semantics-operational.rkt"
   "syntax-0-parsing.rkt"
   "syntax-0-unparsing.rkt"
   "syntax-abstract.rkt"
+  "terminal-ui.rkt"
   gregr-misc/either
   gregr-misc/list
   gregr-misc/match
@@ -154,7 +154,7 @@
     prog))
 
 (define interact-with-0
-  (compose1 interact-with right-x (curry parse-0 penv-init-0)))
+  (compose1 interact-with list right-x (curry parse-0 penv-init-0)))
 
 (define std-0-output-prog (right-x (parse-0 penv-init-0 (std `(tuple
   lam-wrap lam-unwrap 1-uno
