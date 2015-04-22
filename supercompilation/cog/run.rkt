@@ -1,8 +1,8 @@
 #lang racket
 (require
-  "interaction.rkt"
   "semantics-denotational.rkt"
   "syntax-0-parsing.rkt"
+  "terminal-ui.rkt"
   gregr-misc/either
   gregr-misc/monad
   )
@@ -23,7 +23,7 @@
 
 (define (step-eval-port parse inp)
   (interpret-port
-    parse interact-with (lambda (x) (displayln (left-x x))) inp))
+    parse (compose1 interact-with list) (lambda (x) (displayln (left-x x))) inp))
 
 (define eval-port (make-parameter denote-eval-port))
 (define program-source (make-parameter (current-input-port)))
