@@ -64,6 +64,33 @@ DB/editor tasks:
     open small or full editor inline in document; can connect to personal term/revision DB if desired
   "compiled" programs / editor scripts/config?
 
+semantics:
+  explicit substitution steps within values? would need a special pair constructor? maybe not do this
+  environments
+    binders, state/store (these are "permanent")
+    everything else is separate (they go away after enough steps)
+      state-accesses, reset/shift, produce
+      concurrent computation (these may not be primitives)
+        scheduling, interrupts, synch primitives, ipc
+        could do this via produce/consume + low level machine models
+    single "binders" construct
+      in parallel, separated by class
+  'denote' for binding bubbles: what do lambdas need to close over?
+    a list of global indices for non-lam binders
+  annotations (names/comments) for symbol/state/etc. binders
+  generalize variables/references
+    classes + indices?
+    lam-param, symbol-ref, state-ref, (state-observation/access-result state-ref-index); state-access and state-assign?
+  find CBV-equiv algo for reducing and equating terms with (in priority order): symbols, states - assignments - accesses, delimited control, concurrency
+    (environment ... (value ...)) ==> float env upward (if possible)
+    allow redundant introduction of effect binders; for showing equivalence with garbage-collected terms, backwards
+  bubbling binders
+    inspired by:
+      http://fexpr.blogspot.ca/2014/04/why-is-beta-substitution-like-higgs.html
+      http://fexpr.blogspot.ca/2014/03/continuations-and-term-rewriting-calculi.html
+    unique symbols w/ comparison/identicality operator
+    whole-term metavariables? maybe not; do this via reflection instead
+
 ===============================================================================
 = editor ideas
 ===============================================================================
