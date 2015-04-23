@@ -1,4 +1,42 @@
 ===============================================================================
+= more notes
+===============================================================================
+current tasks:
+  editing
+    delete to uno: D
+    toggle: t,T
+      (), 0, 1, bvars ...; swap lhs/rhs for pair, access, apply
+    wrap, except lam: A,p,P
+      lam: works anywhere
+      pair: works over any value
+      pair-access: works only over a (value _) term
+      lam-apply: works over any term
+      current term ends up in 1st pos of wrapper
+    trim, except lam: d
+      lam: only directly within a (value _)
+      pair: anywhere
+      pair-access: anywhere
+      lam-apply: anywhere
+      lhs arg is kept
+    wrap lam: a
+      introducing new lams must also introduce lifting subst
+    trim lam? not entirely necessary as it can be removed by application
+      trimming a lam must eliminate bound var
+    extract/copy closed term: e
+    paste/replace focus using closed term widget 'count' positions to the right: E
+    extract/match binder context to deal with open terms
+    jump to binder from bvar: ENTER
+    rename binder: ENTER
+      readline hack to start?
+      have workspace absorb digit state and remove keycount controller
+      text entry/edit workspace mode: C-c/a/f/b/d/w/k, bspace, del, arrows, ENTER to finish
+  other
+    redo buffer: U
+    C-c in general
+    full ascend/descend: J, K
+    jump to next/prev (): i/I
+
+===============================================================================
 = editor ideas
 ===============================================================================
 git-like branchable/mergeable hierarchical-groups
