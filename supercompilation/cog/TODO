@@ -43,6 +43,28 @@ later tasks:
     url trees
 
 ===============================================================================
+= older notes (but still important)
+===============================================================================
+DB/editor tasks:
+  start with single term, reading/writing a single file
+  maybe a racket #lang or macro in addition to the editor for bootstrapping/backup
+  syntax-0-like markout presentation
+    variable name capture: disambiguate
+    if-0, if-1, pair-l, pair-r as functions, not syntax
+    should this include special presentations for let, let*, letrec, etc? probably not for now
+      done through lam/arg attr syntax
+  module building/referencing, namespaces, "tagged context names" for term extraction and reincorporation
+  commits and merges as consolidated revisions
+    commit-only and merge-only branches
+    auto-commit branches for collaboration
+  multiple views of a term via sub-branches
+    high-level/canonical vs. explanatory vs. optimized, etc.
+  term views embedded in explanatory documents, wiki-style
+    pull term into personal editor session; wrapped with url source/comment for reference
+    open small or full editor inline in document; can connect to personal term/revision DB if desired
+  "compiled" programs / editor scripts/config?
+
+===============================================================================
 = editor ideas
 ===============================================================================
 git-like branchable/mergeable hierarchical-groups
