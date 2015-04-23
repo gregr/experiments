@@ -36,6 +36,12 @@ current tasks:
     full ascend/descend: J, K
     jump to next/prev (): i/I
 
+later tasks:
+  pull workspace.rkt apart, then rename *-model.rkt to *.rkt
+  general REST-like DB interface
+    get/put/post/delete
+    url trees
+
 ===============================================================================
 = editor ideas
 ===============================================================================
