@@ -27,35 +27,17 @@
 ; TODO: introductions from some kind of menu
 
 (define v-uno (uno))
+(define t-uno (value v-uno))
 (define v-0 (bit (b-0)))
+(define t-0 (value v-0))
 (define v-1 (bit (b-1)))
+(define t-1 (value v-1))
 (define v-uno-pair (pair v-uno v-uno))
-(define value-introductions
-  (list
-    (lambda (_) v-uno)
-    (lambda (_) v-0)
-    (lambda (_) v-1)
-    (lambda (l) (pair l v-uno))
-    (lambda (r) (pair v-uno r))
-    (lambda (v) (lam lattr-void (value v)))
-    (lambda (idx) (pair-access idx v-uno-pair))
-    (lambda (payload) (pair-access v-0 payload))
-    (lambda (payload) (pair-access v-1 payload))
-    ; TODO: available bvars
-    ))
-
-(define tv-uno (value v-uno))
-(define tv-0 (value v-0))
-(define tv-1 (value v-1))
-(define tv-id (value (lam lattr-void (bvar 0))))
-(define term-introductions
-  (list
-    (lambda (_) tv-uno)
-    (lambda (_) tv-0)
-    (lambda (_) tv-1)
-    (lambda (t) (value (lam lattr-void t)))
-    (lambda (proc) (lam-apply proc tv-uno))
-    (lambda (arg) (lam-apply tv-id arg))))
+(define t-uno-pair (value v-uno-pair))
+(define v-uno-lam (lam lattr-void t-uno))
+(define t-uno-lam (value v-uno-lam))
+(define t-uno-apply (lam-apply t-uno-lam t-uno))
+(define t-uno-pair-access (pair-access v-0 v-uno-pair))
 
 ;;pair-access
   ;;introduce: embed subvalue left/right
