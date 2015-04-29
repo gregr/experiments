@@ -3,6 +3,8 @@
   substitute
   substitute-full
   substitute-lam-apply
+  substitute-value
+  substitution-lam-applied
   )
 
 (require
@@ -43,8 +45,10 @@
        (lam attr (subst (substitution uses lift) body))))
     ((? term-value?) tv)))
 
+(define (substitution-lam-applied attr arg)
+  (substitution (list (substitution-use attr arg)) 0))
 (define (substitute-lam-apply attr body arg)
-  (subst (substitution (list (substitution-use attr arg)) 0) body))
+  (subst (substitution-lam-applied attr arg) body))
 
 (define (substitute sub term)
   (define sub-value (curry substitute-value sub))
