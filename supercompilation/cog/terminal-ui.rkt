@@ -105,7 +105,7 @@
     )
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "qHLRhjklSscdtxu"
+    "qHLRhjklSscdtTxu"
     ))
 
 (module+ test
