@@ -3,6 +3,7 @@
   ici-edit
   ici-edit-delete
   ici-edit-toggle
+  ici-edit-trim
   ici-edit-wrap
   ici-wrap-apply
   ici-wrap-pair
@@ -252,6 +253,7 @@
 (records interaction-edit-method
   (ici-edit-delete)
   (ici-edit-toggle count)
+  (ici-edit-trim count)
   (ici-edit-wrap wrap-type count))
 (records interaction-wrap-type
   (ici-wrap-pair)
@@ -313,6 +315,7 @@
          focus =
          (match method
            ((ici-edit-delete) (navterm-delete nav))
+           ((ici-edit-trim count) (navterm-trim nav count))
            ((ici-edit-toggle count) (navterm-toggle nav count))
            ((ici-edit-wrap type count)
             (lets wrap = (match type
@@ -348,4 +351,16 @@
             (list msg ia) = (interaction-update (ici-traverse-down 1) ia)
             (if (equal? msg "") (just (ia-term ia)) (nothing)))
           (maybe-map navigator-focus (navigator-descend (:.* ia 'nav)))))))
-    ))
+    )
+  (void (forl
+    wt <- (list (ici-wrap-pair) (ici-wrap-pair-access) (ici-wrap-apply))
+    ia = (list-ref test-iactions 0)
+    count = 4
+    wcmd = (ici-edit (ici-edit-wrap wt count))
+    tcmd = (ici-edit (ici-edit-trim count))
+    (check-equal?
+      ;(second (interaction-update wcmd ia))
+      (:.* (second (interaction-update
+                     tcmd (second (interaction-update wcmd ia)))) 'nav)
+      (:.* ia 'nav))))
+  )
