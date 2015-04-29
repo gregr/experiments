@@ -89,6 +89,12 @@
       (#\d "delete" ,(lambda (_) (ici-edit (ici-edit-delete))))
       (#\t "toggle" ,(compose1 ici-edit ici-edit-toggle))
       (#\T "toggle reverse" ,(compose1 ici-edit ici-edit-toggle -))
+      (#\A "wrap apply"
+       ,(compose1 ici-edit (curry ici-edit-wrap (ici-wrap-apply))))
+      (#\p "wrap pair"
+       ,(compose1 ici-edit (curry ici-edit-wrap (ici-wrap-pair))))
+      (#\P "wrap pair-access"
+       ,(compose1 ici-edit (curry ici-edit-wrap (ici-wrap-pair-access))))
       (#\x "toggle-syntax" ,(lambda (_) (ici-toggle-syntax)))
       (#\u "undo" ,ici-undo))
     (list char desc
@@ -105,7 +111,7 @@
     )
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "qHLRhjklSscdtTxu"
+    "qHLRhjklSscdtTApPxu"
     ))
 
 (module+ test
