@@ -3,6 +3,10 @@
   ici-edit
   ici-edit-delete
   ici-edit-toggle
+  ici-edit-wrap
+  ici-wrap-apply
+  ici-wrap-pair
+  ici-wrap-pair-access
   ici-traverse-down
   ici-traverse-left
   ici-traverse-right
@@ -43,22 +47,6 @@
     gregr-misc/maybe
     rackunit
     ))
-
-(records interaction-instruction
-  (ici-traverse-down count)
-  (ici-traverse-left count)
-  (ici-traverse-right count)
-  (ici-traverse-up count)
-  (ici-substitute-complete)
-  (ici-step count)
-  (ici-step-complete)
-  (ici-edit method)
-  (ici-toggle-syntax)
-  (ici-undo count))
-(records interaction-edit-method
-  (ici-edit-delete)
-  (ici-edit-toggle count)
-  )
 
 (def (subst-keys (substitution uses _))
   use-keys =
@@ -223,6 +211,25 @@
   (isyntax-pretty))
 (define (interaction-new term)
   (interaction (isyntax-pretty) '() (navterm-new term)))
+(records interaction-instruction
+  (ici-traverse-down count)
+  (ici-traverse-left count)
+  (ici-traverse-right count)
+  (ici-traverse-up count)
+  (ici-substitute-complete)
+  (ici-step count)
+  (ici-step-complete)
+  (ici-edit method)
+  (ici-toggle-syntax)
+  (ici-undo count))
+(records interaction-edit-method
+  (ici-edit-delete)
+  (ici-edit-toggle count)
+  (ici-edit-wrap wrap-type count))
+(records interaction-wrap-type
+  (ici-wrap-pair)
+  (ici-wrap-pair-access)
+  (ici-wrap-apply))
 
 (define (interaction-update instr iaction)
   (def (trans f seed count)
@@ -279,7 +286,13 @@
          focus =
          (match method
            ((ici-edit-delete) (navterm-delete nav))
-           ((ici-edit-toggle count) (navterm-toggle nav count)))
+           ((ici-edit-toggle count) (navterm-toggle nav count))
+           ((ici-edit-wrap type count)
+            (lets wrap = (match type
+                           ((ici-wrap-pair) wrap-pair)
+                           ((ici-wrap-pair-access) wrap-pair-access)
+                           ((ici-wrap-apply) wrap-apply))
+                  (wrap (navigator-focus nav)))))
          (list "" (:=* iaction (navigator-focus-set nav focus) 'nav))))
       ((ici-toggle-syntax)
        (list "" (:=* iaction (match syntax
