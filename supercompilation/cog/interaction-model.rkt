@@ -215,6 +215,9 @@
 
 (define (trim-tv tv)
   (match tv
+    ((value (lam attr body)) (substitute-lam-apply attr body v-uno))
+    ((lam attr (value body))
+     (substitute-value (substitution-lam-applied attr v-uno) body))
     ((pair l _) l)
     ((value v) (value (trim-tv v)))
     ((pair-access idx _) (value idx))
@@ -371,8 +374,10 @@
     count = 4
     wcmd = (ici-edit (ici-edit-wrap wt count))
     tcmd = (ici-edit (ici-edit-trim count))
+    ifocus = (fn (iaction) (navigator-focus (:.* iaction 'nav)))
+    wrapped = (second (interaction-update wcmd ia))
+    result = (second (interaction-update tcmd wrapped))
     (check-equal?
-      (:.* (second (interaction-update
-                     tcmd (second (interaction-update wcmd ia)))) 'nav)
-      (:.* ia 'nav))))
+      (ifocus result)
+      (ifocus ia))))
   )
