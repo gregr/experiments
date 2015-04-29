@@ -28,6 +28,7 @@
   gregr-misc/cursor
   gregr-misc/either
   gregr-misc/list
+  gregr-misc/maybe
   gregr-misc/monad
   gregr-misc/navigator
   gregr-misc/record
@@ -71,6 +72,39 @@
     ((lam _ _)       '((body)))
     (_ (if (or (term? focus) (pair? focus))
          (map list (dict-keys focus)) '()))))
+(define (navterm-new term) (navigator-new hole-keys term))
+
+(def (navterm-binder-count nav)
+  (list foci paths) =
+  (zip-default '(() ())
+               (forl (list focus mpath) <- (navigator-path nav)
+                     (list focus (match mpath
+                                   ((nothing) '())
+                                   ((just (list _ path)) path)))))
+  path = (append* paths)
+  (list env) = (nav-paths->binders binders-empty (first foci) (list path))
+  (length (binders-names env)))
+
+(define test-terms
+  (list (value (uno))
+        (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
+                   (value (bit (b-1))))))
+(define test-navterm-out (navterm-new (list-ref test-terms 1)))
+(define test-navterm-in
+  (lets
+    nav = test-navterm-out
+    (just nav) = (navigator-descend nav 0)
+    (just nav) = (navigator-descend nav 0)
+    nav))
+
+(module+ test
+  (check-equal?
+    (navterm-binder-count test-navterm-in)
+    1)
+  (check-equal?
+    (navterm-binder-count test-navterm-out)
+    0)
+  )
 
 (define v-uno (uno))
 (define t-uno (value v-uno))
@@ -85,12 +119,16 @@
 (define t-uno-apply (lam-apply t-uno-lam t-uno))
 (define t-uno-pair-access (pair-access v-0 v-uno-pair))
 
+; toggle, wrap, trim
+; extract/copy, paste/replace, rename
+; jump to binder
+
 (record interaction syntax history nav)
 (records interaction-syntax
   (isyntax-raw)
   (isyntax-pretty))
 (define (interaction-new term)
-  (interaction (isyntax-pretty) '() (navigator-new hole-keys term)))
+  (interaction (isyntax-pretty) '() (navterm-new term)))
 
 (define (interaction-update instr iaction)
   (def (trans f seed count)
@@ -153,10 +191,6 @@
          (_ (list "" (car (drop history (- (min count (length history))
                                            1))))))))))
 
-(define test-terms
-  (list (value (uno))
-        (lam-apply (value (lam (lattr-name 'v) (value (bvar 0))))
-                   (value (bit (b-1))))))
 (define test-iactions (map interaction-new test-terms))
 
 (module+ test
