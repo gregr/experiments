@@ -72,6 +72,19 @@
     (_ (if (or (term? focus) (pair? focus))
          (map list (dict-keys focus)) '()))))
 
+(define v-uno (uno))
+(define t-uno (value v-uno))
+(define v-0 (bit (b-0)))
+(define t-0 (value v-0))
+(define v-1 (bit (b-1)))
+(define t-1 (value v-1))
+(define v-uno-pair (pair v-uno v-uno))
+(define t-uno-pair (value v-uno-pair))
+(define v-uno-lam (lam lattr-void t-uno))
+(define t-uno-lam (value v-uno-lam))
+(define t-uno-apply (lam-apply t-uno-lam t-uno))
+(define t-uno-pair-access (pair-access v-0 v-uno-pair))
+
 (record interaction syntax history nav)
 (records interaction-syntax
   (isyntax-raw)
