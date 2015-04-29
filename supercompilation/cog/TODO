@@ -3,14 +3,6 @@
 ===============================================================================
 current tasks:
   editing
-    wrap lam: a
-      lam: works anywhere
-      introducing new lams must also introduce lifting subst
-    trim lam? not entirely necessary as it can be removed by application
-      lam: only directly within a (value _)
-        also works when body is a (value _), but needs to immediately substitute
-      trimming a lam must eliminate bound var
-      immediate-apply to the focus of another widget would be a better editing command than trim lam
     extract/copy closed term: e
     paste/replace focus using closed term widget 'count' positions to the right: E
     extract/match binder context to deal with open terms
