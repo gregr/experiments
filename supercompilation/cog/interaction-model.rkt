@@ -201,7 +201,34 @@
     (lam-apply t-0 t-uno))
   )
 
-; trim
+(define (trim-tv tv)
+  (match tv
+    ((pair l _) l)
+    ((value v) (value (trim-tv v)))
+    ((pair-access idx _) (value idx))
+    ((lam-apply proc _) proc)
+    (_ tv)))
+(define (navterm-trim nav count)
+  (last (iterate trim-tv (navigator-focus nav) count)))
+
+(module+ test
+  (check-equal?
+    (trim-tv (pair v-1 v-0))
+    v-1)
+  (check-equal?
+    (trim-tv (value (pair v-1 v-0)))
+    t-1)
+  (check-equal?
+    (trim-tv (pair-access v-1 v-0))
+    t-1)
+  (check-equal?
+    (trim-tv (lam-apply v-1 v-0))
+    v-1)
+  (check-equal?
+    (trim-tv v-0)
+    v-0)
+  )
+
 ; extract/copy, paste/replace, rename
 ; jump to binder
 
