@@ -90,6 +90,7 @@
       (#\d "delete outermost" ,(compose1 ici-edit ici-edit-trim))
       (#\t "toggle" ,(compose1 ici-edit ici-edit-toggle))
       (#\T "toggle reverse" ,(compose1 ici-edit ici-edit-toggle -))
+      (#\a "wrap lam" ,(compose ici-edit (curry ici-edit-wrap (ici-wrap-lam))))
       (#\A "wrap apply"
        ,(compose1 ici-edit (curry ici-edit-wrap (ici-wrap-apply))))
       (#\p "wrap pair"
@@ -112,7 +113,7 @@
     )
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "qHLRhjklSscDdtTApPxu"
+    "qHLRhjklSscDdtTaApPxu"
     ))
 
 (module+ test
