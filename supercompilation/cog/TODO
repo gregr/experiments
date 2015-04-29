@@ -3,15 +3,6 @@
 ===============================================================================
 current tasks:
   editing
-    delete to uno: D
-    toggle: t,T
-      (), 0, 1, bvars ...; swap lhs/rhs for pair, access, apply
-    wrap, except lam: A,p,P
-      lam: works anywhere
-      pair: works over any value
-      pair-access: works only over a (value _) term
-      lam-apply: works over any term
-      current term ends up in 1st pos of wrapper
     trim, except lam: d
       lam: only directly within a (value _)
       pair: anywhere
@@ -19,6 +10,7 @@ current tasks:
       lam-apply: anywhere
       lhs arg is kept
     wrap lam: a
+      lam: works anywhere
       introducing new lams must also introduce lifting subst
     trim lam? not entirely necessary as it can be removed by application
       trimming a lam must eliminate bound var
@@ -37,6 +29,7 @@ current tasks:
     jump to next/prev (): i/I
 
 later tasks:
+  deal with edit.rkt
   pull workspace.rkt apart, then rename *-model.rkt to *.rkt
   general REST-like DB interface
     get/put/post/delete
