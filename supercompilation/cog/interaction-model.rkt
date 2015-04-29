@@ -319,7 +319,7 @@
                            ((ici-wrap-pair) wrap-pair)
                            ((ici-wrap-pair-access) wrap-pair-access)
                            ((ici-wrap-apply) wrap-apply))
-                  (wrap (navigator-focus nav)))))
+                  (last (iterate wrap (navigator-focus nav) count)))))
          (list "" (:=* iaction (navigator-focus-set nav focus) 'nav))))
       ((ici-toggle-syntax)
        (list "" (:=* iaction (match syntax
