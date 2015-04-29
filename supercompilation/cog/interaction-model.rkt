@@ -128,7 +128,45 @@
     (navterm-delete test-navterm-in)
     t-uno))
 
-; toggle, wrap, trim
+(def (value-shift-by val binder-count offset)
+  targets = (append (list v-uno v-0 v-1) (map bvar (range binder-count)))
+  pos =
+  (match val
+    ((uno) 0)
+    ((bit (b-0)) 1)
+    ((bit (b-1)) 2)
+    ((bvar idx) (+ 3 idx)))
+  (list-ref targets (remainder (+ pos offset) (length targets))))
+(define (value-toggle val binder-count offset)
+  (match val
+    ((lam _ _) val)
+    ((pair l r) (pair r l))
+    (_ (value-shift-by val binder-count offset))))
+(define (term-toggle term binder-count offset)
+  (match term
+    ((value val) (value (value-toggle val binder-count offset)))
+    ((pair-access idx pr) (pair-access pr idx))
+    ((lam-apply proc arg) (lam-apply arg proc))
+    (_ term)))
+(def (navterm-toggle nav offset)
+  binder-count = (navterm-binder-count nav)
+  focus = (navigator-focus nav)
+  toggle = (if (term? focus) term-toggle value-toggle)
+  (toggle focus binder-count offset))
+
+(module+ test
+  (check-equal?
+    (term-toggle t-0 4 11)
+    (value (bvar 2)))
+  (check-equal?
+    (navterm-toggle test-navterm-in 4)
+    (value (bvar 0)))
+  (check-equal?
+    (navterm-toggle test-navterm-in 1)
+    t-uno)
+  )
+
+; wrap, trim
 ; extract/copy, paste/replace, rename
 ; jump to binder
 
