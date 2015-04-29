@@ -1,5 +1,8 @@
 #lang racket
 (provide
+  ici-edit
+  ici-edit-delete
+  ici-edit-toggle
   ici-traverse-down
   ici-traverse-left
   ici-traverse-right
@@ -49,8 +52,13 @@
   (ici-substitute-complete)
   (ici-step count)
   (ici-step-complete)
+  (ici-edit method)
   (ici-toggle-syntax)
   (ici-undo count))
+(records interaction-edit-method
+  (ici-edit-delete)
+  (ici-edit-toggle count)
+  )
 
 (def (subst-keys (substitution uses _))
   use-keys =
@@ -227,6 +235,13 @@
        (trans-nav history (trans-focus step-safe) iaction count))
       ((ici-step-complete)
        (trans-nav history (trans-focus step-complete-safe) iaction 1))
+      ((ici-edit method)
+       (lets
+         focus =
+         (match method
+           ((ici-edit-delete) (navterm-delete nav))
+           ((ici-edit-toggle count) (navterm-toggle nav count)))
+         (list "" (:=* iaction (navigator-focus-set nav focus) 'nav))))
       ((ici-toggle-syntax)
        (list "" (:=* iaction (match syntax
                                ((isyntax-raw) (isyntax-pretty))
