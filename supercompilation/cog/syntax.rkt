@@ -1,7 +1,8 @@
 #lang racket
 (provide
-  binders-get
   binders-empty
+  binders-get
+  binders-names
   gather-applications
   gather-lams
   nav-paths->binders
@@ -57,7 +58,6 @@
 (define (nav-paths->binders env focus paths)
   (gen->list
     (gn yield (_)
-      _ = (yield env)
       (forf
         (list focus env) = (list focus env)
         path <- paths

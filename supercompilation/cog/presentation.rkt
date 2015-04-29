@@ -210,7 +210,7 @@
   focus = (first (drop foci hidden-count))
   selected-path = (append* (drop paths hidden-count))
   context-path = (append* (take paths hidden-count))
-  env = (last (nav-paths->binders binders-empty term (list context-path)))
+  env = (last (nav-paths->binders binders-empty term (list '() context-path)))
   focus = (if (empty? selected-path) focus (:~ focus selected selected-path))
   hidden = (doc-atom style-empty (format "~a levels hidden ..." hidden-count))
   focus-doc = (doc-render-default env focus)
@@ -226,7 +226,7 @@
            ((nothing) (list '() focus))
            ((just (list _ path)) (list path (:= focus hole-term path))))
          (list focus path holed-focus)))
-  envs = (nav-paths->binders binders-empty (first foci) paths)
+  envs = (nav-paths->binders binders-empty (first foci) (list* '() paths))
   focus-docs =
   (forl
     focus <- holed-foci
