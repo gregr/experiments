@@ -359,7 +359,6 @@
     wcmd = (ici-edit (ici-edit-wrap wt count))
     tcmd = (ici-edit (ici-edit-trim count))
     (check-equal?
-      ;(second (interaction-update wcmd ia))
       (:.* (second (interaction-update
                      tcmd (second (interaction-update wcmd ia)))) 'nav)
       (:.* ia 'nav))))
