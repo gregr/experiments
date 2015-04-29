@@ -6,6 +6,7 @@
   ici-edit-trim
   ici-edit-wrap
   ici-wrap-apply
+  ici-wrap-lam
   ici-wrap-pair
   ici-wrap-pair-access
   ici-traverse-down
@@ -266,9 +267,10 @@
   (ici-edit-trim count)
   (ici-edit-wrap wrap-type count))
 (records interaction-wrap-type
+  (ici-wrap-apply)
+  (ici-wrap-lam)
   (ici-wrap-pair)
-  (ici-wrap-pair-access)
-  (ici-wrap-apply))
+  (ici-wrap-pair-access))
 
 (define (interaction-update instr iaction)
   (def (trans f seed count)
@@ -329,9 +331,10 @@
            ((ici-edit-toggle count) (navterm-toggle nav count))
            ((ici-edit-wrap type count)
             (lets wrap = (match type
+                           ((ici-wrap-lam) wrap-lam)
+                           ((ici-wrap-apply) wrap-apply)
                            ((ici-wrap-pair) wrap-pair)
-                           ((ici-wrap-pair-access) wrap-pair-access)
-                           ((ici-wrap-apply) wrap-apply))
+                           ((ici-wrap-pair-access) wrap-pair-access))
                   (last (iterate wrap (navigator-focus nav) count)))))
          (list "" (:=* iaction (navigator-focus-set nav focus) 'nav))))
       ((ici-toggle-syntax)
