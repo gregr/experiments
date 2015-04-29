@@ -174,7 +174,46 @@
     t-uno)
   )
 
-; wrap, trim
+(define (value-wrap-pair lhs) (pair lhs v-uno))
+(define (wrap-pair lhs)
+  (if (term-value? lhs) (value-wrap-pair lhs)
+    (match lhs
+      ((value lhs) (value (value-wrap-pair lhs)))
+      (_ lhs))))
+(define (wrap-pair-access idx)
+  (match idx
+    ((value idx) (pair-access idx v-uno-pair))
+    (_ idx)))
+(define (wrap-apply proc) (if (term-value? proc) proc (lam-apply proc t-uno)))
+
+(module+ test
+  (check-equal?
+    (wrap-pair v-1)
+    (pair v-1 v-uno))
+  (check-equal?
+    (wrap-pair t-1)
+    (value (pair v-1 v-uno)))
+  (check-equal?
+    (wrap-pair (lam-apply t-uno t-uno))
+    (lam-apply t-uno t-uno))
+  (check-equal?
+    (wrap-pair-access (lam-apply t-uno t-uno))
+    (lam-apply t-uno t-uno))
+  (check-equal?
+    (wrap-pair-access v-uno)
+    v-uno)
+  (check-equal?
+    (wrap-pair-access t-1)
+    (pair-access v-1 v-uno-pair))
+  (check-equal?
+    (wrap-apply v-0)
+    v-0)
+  (check-equal?
+    (wrap-apply t-0)
+    (lam-apply t-0 t-uno))
+  )
+
+; trim
 ; extract/copy, paste/replace, rename
 ; jump to binder
 
