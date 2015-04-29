@@ -144,7 +144,7 @@
     ((bit (b-0)) 1)
     ((bit (b-1)) 2)
     ((bvar idx) (+ 3 idx)))
-  (list-ref targets (remainder (+ pos offset) (length targets))))
+  (list-ref targets (modulo (+ pos offset) (length targets))))
 (define (value-toggle val binder-count offset)
   (match val
     ((lam _ _) val)
