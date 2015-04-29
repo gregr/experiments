@@ -174,6 +174,10 @@
     ((value idx) (pair-access idx v-uno-pair))
     (_ idx)))
 (define (wrap-apply proc) (if (term-value? proc) proc (lam-apply proc t-uno)))
+(define (lift-by lift term) (subst (substitution '() lift) term))
+(define (wrap-lam tv)
+  (define (wrap term) (lam lattr-void (lift-by 1 term)))
+  (if (term-value? tv) (wrap (value tv)) (value (wrap tv))))
 
 (module+ test
   (check-equal?
@@ -200,6 +204,12 @@
   (check-equal?
     (wrap-apply t-0)
     (lam-apply t-0 t-uno))
+  (check-equal?
+    (wrap-lam t-1)
+    (value (lam lattr-void (lift-by 1 t-1))))
+  (check-equal?
+    (wrap-lam v-1)
+    (lam lattr-void (lift-by 1 t-1)))
   )
 
 (define (trim-tv tv)
