@@ -119,6 +119,15 @@
 (define t-uno-apply (lam-apply t-uno-lam t-uno))
 (define t-uno-pair-access (pair-access v-0 v-uno-pair))
 
+(def (navterm-delete nav)
+  focus = (navigator-focus nav)
+  (if (term? focus) t-uno v-uno))
+
+(module+ test
+  (check-equal?
+    (navterm-delete test-navterm-in)
+    t-uno))
+
 ; toggle, wrap, trim
 ; extract/copy, paste/replace, rename
 ; jump to binder
