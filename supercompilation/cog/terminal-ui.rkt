@@ -203,12 +203,12 @@
   (define event->cmd (event->workspace-command ws-name))
   (define handle-events
     (gn yield (event)
-      (letn loop (list db event) = (list db event)
+      (letn loop (values db event) = (values db event)
         mdb = (begin/with-monad maybe-monad
                 cmd <- (event->cmd db event)
                 (pure (database-update cmd db)))
         db = (maybe-from db mdb)
-        (loop (list db (yield mdb))))))
+        (loop db (yield mdb)))))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
@@ -222,10 +222,10 @@
           (fn->gen (curry channel-put display-chan))
           (fn->gen workspace-preview->str-thunk)
           (gn yield (input)
-              (letn loop (list cur-preview input) =
-                         (list (make-list 4 (void)) input)
+              (letn loop (values cur-preview input) =
+                         (values (make-list 4 (void)) input)
                 preview = (emdb->preview ws-name cur-preview input)
-                (loop (list preview (yield preview)))))
+                (loop preview (yield preview))))
           check-quit)
         (right (just db)))
       _ = (for-each kill-thread threads)
