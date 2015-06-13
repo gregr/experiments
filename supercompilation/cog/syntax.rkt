@@ -50,7 +50,7 @@
        (list env (list* new-name names) body)))
     (body (list env '() body))))
 (define (gather-applications t/v)
-  (letsn loop (proc = t/v args = '())
+  (letn loop (values proc args) = (values t/v '())
     (match proc
       ((lam-apply proc arg) (loop proc (list* arg args)))
       (proc (list* proc args)))))
