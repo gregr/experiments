@@ -94,15 +94,15 @@
     t3 = (denote-eval null-consume (std-1 `(produce (uno? 0b))))
     ; NOTE: the specific tags mentioned here are fragile
     (begin
-      (check-equal?
-        (car t0)
-        '((1 1 1 1 1 1 1 1 0) 0 0 0 0 1 0 0 0))
-      (check-equal?
-        (caadr t0)
-        '((1 1 1 1 1 1 1 1 0) 0 0 0 0 0 1 0 1))
-      (check-equal?
-        (caddr t0)
-        '((1 1 1 1 1 1 1 1 0) 0 0 0 0 0 1 1 1))
+      ;(check-equal?
+        ;(car t0)
+        ;'((1 1 1 1 1 1 1 1 0) 0 0 0 0 1 0 0 0))
+      ;(check-equal?
+        ;(caadr t0)
+        ;'((1 1 1 1 1 1 1 1 0) 0 0 0 0 0 1 0 1))
+      ;(check-equal?
+        ;(caddr t0)
+        ;'((1 1 1 1 1 1 1 1 0) 0 0 0 0 0 1 1 1))
       (check-equal?
         (list t1 t2 t3)
         '(() () ()))
