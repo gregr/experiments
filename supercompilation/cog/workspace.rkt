@@ -30,6 +30,7 @@
   ;"syntax-abstract.rkt"
   ;"util.rkt"
   gregr-misc/cursor
+  gregr-misc/dict
   gregr-misc/either
   ;gregr-misc/list
   ;gregr-misc/match
@@ -42,21 +43,21 @@
   (require rackunit))
 
 (record url-tree data children)
-(define url-tree-empty (url-tree (void) (hash)))
-(define (new-url-tree . _) url-tree-empty)
+(define (url-tree-new) url-tree-empty)
+(define url-tree-empty
+  (url-tree (void) (default-hash (lambda (_) (url-tree-new)) (hash))))
 (define (url-path->cursor-path path)
   (append* (map (lambda (segment) (list 'children segment)) path)))
-(define (url-tree-get tree path)
-  (:%. new-url-tree tree (url-path->cursor-path path)))
+(define (url-tree-get tree path) (:. tree (url-path->cursor-path path)))
 (def (url-tree-trans tree path trans)
   path = (url-path->cursor-path path)
   path = (append path '(data))
-  (:%~ new-url-tree tree trans path))
+  (:~ tree trans path))
 (def (url-tree-add tree path data)
   (url-tree-trans tree path (const data)))
 (def (url-tree-remove tree path)
   path = (url-path->cursor-path path)
-  (:%= new-url-tree tree url-tree-empty path))
+  (:= tree url-tree-empty path))
 
 (module+ test
   (lets
@@ -108,7 +109,8 @@
 (define (url-interaction uref) (list* "interaction" uref))
 
 (record database url-tree uid-next revisions interactions)
-(define database-empty (database url-tree-empty 0 (hash) (hash)))
+(define dhash-empty (default-hash (const (void)) hash-empty))
+(define database-empty (database url-tree-empty 0 dhash-empty dhash-empty))
 
 (define (db-url-get-base db url)
   (:.* (url-tree-get (:.* db 'url-tree) url) 'data))
@@ -137,7 +139,7 @@
     (right (:~* db (lambda (tree) (url-tree-remove tree url)) 'url-tree))))
 
 (def (db-get db type uid)
-  result = (:%.* (const (void)) db type uid)
+  result = (:.* db type uid)
   (if (void? result) (left "does not exist") (right result)))
 (define (db-revision-get db uid) (db-get db 'revisions uid))
 (define (db-interaction-get db uid) (db-get db 'interactions uid))
@@ -146,7 +148,7 @@
     uid = (:.* db 'uid-next)
     db = (:~* db (curry + 1) 'uid-next)
     resource = (apply new uid args)
-    db = (:%=* (const (void)) db resource type uid)
+    db = (:=* db resource type uid)
     (list db resource)))
 (define db-revision-add (curry db-add 'revisions revision))
 (define db-interaction-add (curry db-add 'interactions interaction))
