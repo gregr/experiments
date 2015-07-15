@@ -16,6 +16,7 @@
   "workspace-model.rkt"
   (submod "interaction-model.rkt" test-support)
   gregr-misc/cursor
+  gregr-misc/dict
   gregr-misc/list
   gregr-misc/record
   gregr-misc/sugar
@@ -25,7 +26,9 @@
   (require rackunit))
 
 (record database workspaces interactions) ; {workspaces: {name => workspace}, interactions: {name => interaction}, ...}
-(define database-empty (database (hash) (hash)))
+(define workspaces-empty (default-hash (const workspace-empty) hash-empty))
+(define interactions-empty (default-hash (const interaction-empty) hash-empty))
+(define database-empty (database workspaces-empty interactions-empty))
 
 (record workspace-command name instr)
 (record interaction-command ws-name name instr)

@@ -21,6 +21,7 @@
   ici-undo
   isyntax-raw
   isyntax-pretty
+  interaction-empty
   interaction-new
   interaction-update
   )
@@ -265,6 +266,7 @@
   (isyntax-pretty))
 (define (interaction-new term)
   (interaction (isyntax-pretty) '() (navterm-new term)))
+(define interaction-empty (interaction-new t-uno))
 (records interaction-instruction
   (ici-traverse-down count)
   (ici-traverse-left count)
