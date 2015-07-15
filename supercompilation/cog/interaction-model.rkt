@@ -1,6 +1,7 @@
 #lang racket
 (provide
   ici-edit
+  ici-edit-close
   ici-edit-delete
   ici-edit-toggle
   ici-edit-trim
@@ -117,6 +118,15 @@
 (define t-uno-apply (lam-apply t-uno-lam t-uno))
 (define t-uno-pair-access (pair-access v-0 v-uno-pair))
 
+; does not produce an equivalent term in value context (cannot wrap-apply)
+; is this desirable?
+(def (navterm-close-over-free nav)
+  focus = (navigator-focus nav)
+  binder-count = (navterm-binder-count nav)
+  (forf focus = (last (iterate (wrap-lam-trans identity) focus binder-count))
+        index <- (reverse (range binder-count))
+        (wrap-apply focus (value (bvar index)))))
+
 (def (navterm-delete nav)
   focus = (navigator-focus nav)
   (if (term? focus) t-uno v-uno))
@@ -174,11 +184,13 @@
   (match idx
     ((value idx) (pair-access idx v-uno-pair))
     (_ idx)))
-(define (wrap-apply proc) (if (term-value? proc) proc (lam-apply proc t-uno)))
+(define (wrap-apply proc (arg t-uno))
+  (if (term-value? proc) proc (lam-apply proc arg)))
 (define (lift-by lift term) (subst (substitution '() lift) term))
-(define (wrap-lam tv)
-  (define (wrap term) (lam lattr-void (lift-by 1 term)))
+(define ((wrap-lam-trans trans) tv)
+  (define (wrap term) (lam lattr-void (trans term)))
   (if (term-value? tv) (wrap (value tv)) (value (wrap tv))))
+(define wrap-lam (wrap-lam-trans (lambda (tm) (lift-by 1 tm))))
 
 (module+ test
   (check-equal?
@@ -265,6 +277,7 @@
   (ici-toggle-syntax)
   (ici-undo count))
 (records interaction-edit-method
+  (ici-edit-close)
   (ici-edit-delete)
   (ici-edit-toggle count)
   (ici-edit-trim count)
@@ -329,6 +342,7 @@
        (lets
          focus =
          (match method
+           ((ici-edit-close) (navterm-close-over-free nav))
            ((ici-edit-delete) (navterm-delete nav))
            ((ici-edit-trim count) (navterm-trim nav count))
            ((ici-edit-toggle count) (navterm-toggle nav count))
