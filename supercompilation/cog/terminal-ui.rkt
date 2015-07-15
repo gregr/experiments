@@ -85,7 +85,8 @@
       (#\l "traverse right" ,ici-traverse-right)
       (#\S "substitute completely" ,(lambda (_) (ici-substitute-complete)))
       (#\s "step" ,ici-step)
-      (#\c "step completely" ,(lambda (_) (ici-step-complete)))
+      (#\C "step completely" ,(lambda (_) (ici-step-complete)))
+      (#\c "close over free vars" ,(lambda (_) (ici-edit (ici-edit-close))))
       (#\D "delete" ,(lambda (_) (ici-edit (ici-edit-delete))))
       (#\d "delete outermost" ,(compose1 ici-edit ici-edit-trim))
       (#\t "toggle" ,(compose1 ici-edit ici-edit-toggle))
@@ -113,7 +114,7 @@
     )
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "qHLRhjklSscDdtTaApPxu"
+    "qHLRhjklSsCcDdtTaApPxu"
     ))
 
 (module+ test
