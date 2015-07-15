@@ -51,11 +51,10 @@
   (define ia-0 (list-ref test-iactions 0))
   (define ia-1 (list-ref test-iactions 1))
   (define db (:=* database-empty (hash 'one workspace-empty) 'workspaces))
-  (list db
-        (:=* (:=* db (workspace-new widgets 1) 'workspaces 'one)
-             (:=* (list->index-dict (make-list widget-count ia-0)) ia-1 1)
-             'interactions)
-        ))
+  (define iws (:=* (list->index-dict (make-list widget-count ia-0)) ia-1 1))
+  (list db (:** database-empty
+             := (workspace-new widgets 1) '(workspaces one)
+             := iws '(interactions))))
 
 (module+ test
   (require (submod "workspace-model.rkt" test-support))
