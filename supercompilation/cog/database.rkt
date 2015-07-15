@@ -38,12 +38,12 @@
     ((workspace-command name instr)
      (:~* db (curry workspace-update instr) 'workspaces name))
     ((interaction-command ws-name name instr)
-     (lets
-       iaction = (:.* db 'interactions name)
+     (:** db
+       ipath = `(interactions ,name)
+       :. iaction ipath
        (list msg iaction) = (interaction-update instr iaction)
-       db = (:=* db iaction 'interactions name)
-       ws = (:=* (:.* db 'workspaces ws-name) msg 'notification)
-       (:=* db ws 'workspaces ws-name)))))
+       := iaction ipath
+       := msg `(workspaces ,ws-name notification)))))
 
 (define (test-dbs-new widget-new)
   (define widget-count 7)
