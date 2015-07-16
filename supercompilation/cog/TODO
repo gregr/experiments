@@ -3,9 +3,6 @@
 ===============================================================================
 current tasks:
   editing
-    extract/copy closed term: e
-    paste/replace focus using closed term widget 'count' positions to the right: E
-    extract/match binder context to deal with open terms
     jump to binder from bvar: ENTER
     rename binder: ENTER
       readline hack to start?
