@@ -236,6 +236,7 @@
   ws-name = 'terminal-ui:interact-with
   iactions = (map interaction-new terms)
   ws = (workspace-new (map interaction-widget (range (length terms))))
-  db = (:=* (:=* database-empty (hash ws-name ws) 'workspaces)
-            (list->index-dict iactions) 'interactions)
+  db = (:** database-empty
+         := ws `(workspaces ,ws-name)
+         :~+ (list->index-dict iactions) '(interactions))
   (ui-loop ws-name db))
