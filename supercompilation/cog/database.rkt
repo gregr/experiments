@@ -3,7 +3,11 @@
   database-empty
   database-update
   interaction-command
+  interactions-empty
+  interactions-new
   workspace-command
+  workspaces-empty
+  workspaces-new
   )
 
 (module+ test-support
@@ -26,8 +30,10 @@
   (require rackunit))
 
 (record database workspaces interactions) ; {workspaces: {name => workspace}, interactions: {name => interaction}, ...}
-(define workspaces-empty (default-hash (const workspace-empty) hash-empty))
-(define interactions-empty (default-hash (const interaction-empty) hash-empty))
+(define (workspaces-new wss) (default-hash (const workspace-empty) wss))
+(define (interactions-new ias) (default-hash (const interaction-empty) ias))
+(define workspaces-empty (workspaces-new hash-empty))
+(define interactions-empty (interactions-new hash-empty))
 (define database-empty (database workspaces-empty interactions-empty))
 
 (record workspace-command name instr)
