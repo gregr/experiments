@@ -3,6 +3,7 @@
   ici-edit
   ici-edit-close
   ici-edit-delete
+  ici-edit-replace
   ici-edit-toggle
   ici-edit-trim
   ici-edit-wrap
@@ -128,9 +129,16 @@
         index <- (reverse (range binder-count))
         (wrap-apply focus (value (bvar index)))))
 
-(def (navterm-delete nav)
+(def (navterm-replace nav term)
   focus = (navigator-focus nav)
-  (if (term? focus) t-uno v-uno))
+  (if (term? focus)
+    (if (term-value? term) (value term) term)
+    (if (term-value? term) term
+      (match term
+        ((value val) val)
+        (_ focus)))))
+
+(define (navterm-delete nav) (navterm-replace nav t-uno))
 
 (module+ test
   (check-equal?
@@ -279,6 +287,7 @@
   (ici-toggle-syntax)
   (ici-undo count))
 (records interaction-edit-method
+  (ici-edit-replace term)
   (ici-edit-close)
   (ici-edit-delete)
   (ici-edit-toggle count)
@@ -344,6 +353,7 @@
        (lets
          focus =
          (match method
+           ((ici-edit-replace term) (navterm-replace nav term))
            ((ici-edit-close) (navterm-close-over-free nav))
            ((ici-edit-delete) (navterm-delete nav))
            ((ici-edit-trim count) (navterm-trim nav count))
