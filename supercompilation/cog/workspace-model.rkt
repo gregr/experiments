@@ -1,5 +1,6 @@
 #lang racket
 (provide
+  focus-index-valid
   wci-widget-add
   wci-widget-close
   wci-widget-left

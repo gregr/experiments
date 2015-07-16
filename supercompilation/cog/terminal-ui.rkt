@@ -43,6 +43,7 @@
   ; TODO: specialized commands based on state
   cmd-table =
   `((#\n "new interaction" ,eci-interaction-new)
+    (#\E "replacE closed term" ,eci-paste-subterm)
     )
   (forl
     (list char desc instr) <- cmd-table
@@ -119,7 +120,7 @@
   (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "nqHLRhjklSsCcDdtTaApPxu"
+    "nEqHLRhjklSsCcDdtTaApPxu"
     ))
 
 (module+ test
