@@ -124,9 +124,10 @@
 ; is this desirable?
 (def (navterm-close-over-free nav)
   focus = (navigator-focus nav)
-  binder-count = (navterm-binder-count nav)
-  (forf focus = (last (iterate (wrap-lam-trans identity) focus binder-count))
-        index <- (reverse (range binder-count))
+  frees = (term-frees-safe focus)
+  max-binder = (+ 1 (apply max -1 (set->list frees)))
+  (forf focus = (last (iterate (wrap-lam-trans identity) focus max-binder))
+        index <- (reverse (range max-binder))
         (wrap-apply focus (value (bvar index)))))
 
 (def (navterm-replace nav term)
