@@ -1,9 +1,10 @@
 #lang racket
 (provide
-  wci-widget-left
-  wci-widget-right
-  wci-widget-reverse
+  wci-widget-add
   wci-widget-close
+  wci-widget-left
+  wci-widget-reverse
+  wci-widget-right
   workspace->focus-widget
   workspace-empty
   workspace-new
@@ -47,12 +48,16 @@
   (wci-widget-left count)
   (wci-widget-right count)
   (wci-widget-reverse count)
-  (wci-widget-close count))
+  (wci-widget-close count)
+  (wci-widget-add widget offset))
 
 (def (workspace-update instr ws)
   (workspace layout fidx _) = ws
   (workspace-valid
     (match instr
+      ((wci-widget-add widget offset)
+       (lets idx = (end-index-valid layout (+ fidx offset))
+             (:=* ws (list-insert layout idx (list widget)) 'layout)))
       ((wci-widget-close count)
        (lets end = (end-index-valid layout (+ fidx count))
              (:=* ws (list-range-remove layout fidx end) 'layout)))
