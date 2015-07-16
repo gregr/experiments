@@ -6,6 +6,7 @@
 
 (require
   "database.rkt"
+  "editor.rkt"
   "interaction-model.rkt"
   "presentation.rkt"
   "workspace-model.rkt"
@@ -26,8 +27,6 @@
   (require
     rackunit
     ))
-
-(record interaction-widget name)
 
 (define (commands->keymap commands)
   (make-immutable-hash
@@ -207,7 +206,7 @@
       (letn loop (values db event) = (values db event)
         mdb = (begin/with-monad maybe-monad
                 cmd <- (event->cmd db event)
-                (pure (database-update cmd db)))
+                (pure (editor-update cmd db)))
         db = (maybe-from db mdb)
         (loop db (yield mdb)))))
   (with-cursor-hidden (with-stty-direct
