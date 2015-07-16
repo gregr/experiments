@@ -23,6 +23,10 @@
   lattr
   lattr-name
   lattr-void
+
+  term-frees
+  term-frees-safe
+  term-value-frees
   )
 
 (require
@@ -53,3 +57,28 @@
   (produce     t)
   (pair-access index pair)
   (lam-apply   proc arg))
+
+(define set-empty (set))
+
+(define (term-frees term (scope 0))
+  (match term
+    ((subst (substitution uses lift) t)
+     (term-frees t (+ (length uses) (max 0 (- scope lift)))))
+    ((value       v)        (term-value-frees v scope))
+    ((produce     t)        (term-frees t))
+    ((pair-access idx pr)   (set-union (term-value-frees idx scope)
+                                       (term-value-frees pr scope)))
+    ((lam-apply   proc arg) (set-union (term-frees proc scope)
+                                       (term-frees arg scope)))))
+
+(define (term-value-frees tv (scope 0))
+  (match tv
+    ((uno)            set-empty)
+    ((bit  b)         set-empty)
+    ((pair l r)       (set-union (term-value-frees l scope)
+                                 (term-value-frees r scope)))
+    ((bvar idx)       (if (< idx scope) set-empty (set (- idx scope))))
+    ((lam  attr body) (term-frees body (+ 1 scope)))))
+
+(define (term-frees-safe tv)
+  (if (term? tv) (term-frees tv) (term-value-frees tv)))
