@@ -39,6 +39,15 @@
                       (interaction->commands ws-name name db))
               (workspace->focus-widget ws)))
 
+(def (db->editor-commands ws-name db)
+  ; TODO: specialized commands based on state
+  cmd-table =
+  `((#\n "new interaction" ,eci-interaction-new)
+    )
+  (forl
+    (list char desc instr) <- cmd-table
+    (list char desc (compose1 (curry editor-command ws-name) instr))))
+
 (def (db->workspace-commands-top name db)
   ; TODO: specialized commands based on workspace state
   ;ws = (:.* db 'workspaces name)
@@ -53,6 +62,7 @@
 
 (def (db->workspace-commands name db)
   ws = (:.* db 'workspaces name)
+  editor-cmds = (db->editor-commands name db)
   ws-top-cmds = (db->workspace-commands-top name db)
   widget-cmds = (workspace->focus-commands name ws db)
   cmds->char-assoc = (lambda (cmds)
@@ -64,7 +74,7 @@
                   (list a0 a1) = (map cmds->char-assoc (list cmds0 cmds1))
                   a1 = (dict-subtract a1 a0)
                   (append* (map (curry map cdr) (list a0 a1))))
-  (cmds-merge1 ws-top-cmds widget-cmds))
+  (cmds-merge1 editor-cmds (cmds-merge1 ws-top-cmds widget-cmds)))
 
 (define (event->workspace-command ws-name)
   (fn (db (event-keycount char count))
@@ -108,12 +118,8 @@
   (define test-db-0 (list-ref test-dbs 0))
   (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
-    (map list-init (db->workspace-commands 'one test-db-0))
-    (map list-init (db->workspace-commands-top 'one test-db-0))
-    )
-  (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "qHLRhjklSsCcDdtTaApPxu"
+    "nqHLRhjklSsCcDdtTaApPxu"
     ))
 
 (module+ test
