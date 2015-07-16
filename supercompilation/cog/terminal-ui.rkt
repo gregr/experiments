@@ -43,8 +43,8 @@
   ; TODO: specialized commands based on state
   cmd-table =
   `((#\n "new interaction" ,eci-interaction-new)
-    (#\E "replacE closed term" ,eci-paste-subterm)
-    )
+    (#\e "extract closed term" ,(curry eci-paste-subterm #f))
+    (#\E "replacE closed term" ,(curry eci-paste-subterm #t)))
   (forl
     (list char desc instr) <- cmd-table
     (list char desc (compose1 (curry editor-command ws-name) instr))))
@@ -120,7 +120,7 @@
   (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "nEqHLRhjklSsCcDdtTaApPxu"
+    "neEqHLRhjklSsCcDdtTaApPxu"
     ))
 
 (module+ test

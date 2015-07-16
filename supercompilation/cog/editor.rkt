@@ -23,8 +23,7 @@
 
 (records editor-instruction
   (eci-interaction-new offset)
-  (eci-paste-subterm offset)
-  )
+  (eci-paste-subterm reverse? offset))
 
 (define (editor-update cmd db)
   (match cmd
@@ -37,13 +36,14 @@
           wci = (wci-widget-add (interaction-widget name) offset)
           := interaction-empty            `(interactions ,name)
           :~ (curry workspace-update wci) `(workspaces ,ws-name)))
-       ((eci-paste-subterm offset)
+       ((eci-paste-subterm reverse? offset)
         (:** db
           :. layout `(workspaces ,ws-name layout)
           :. fidx `(workspaces ,ws-name focus-index)
           idx = (focus-index-valid layout (+ fidx offset))
           (interaction-widget src) = (list-ref layout idx)
           (interaction-widget tgt) = (list-ref layout fidx)
+          (values src tgt) = (if reverse? (values src tgt) (values tgt src))
           ipath = `(interactions ,tgt)
           :. src-nav `(interactions ,src nav)
           :. ia ipath
