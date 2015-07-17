@@ -11,6 +11,7 @@
   ici-wrap-lam
   ici-wrap-pair
   ici-wrap-pair-access
+  ici-rename-binder
   ici-traverse-binder
   ici-traverse-down
   ici-traverse-left
@@ -123,12 +124,18 @@
 
 (define (as-value tv) (if (value? tv) (value-v tv) tv))
 
+; TODO: support substitutions
+(define ((rename-binder name) focus)
+  (match focus
+    ((lam (lattr _ sa sl) body) (right (lam (lattr name sa sl) body)))
+    (_ (left "cannot rename non-binder"))))
+
 ; TODO: this is broken within assigned values of substitution uses
 (define (navterm-ascend-binder nav idx)
   (begin/with-monad maybe-monad
     nav <- (navigator-ascend nav)
     idx = (match (as-value (navigator-focus nav))
-            ((lam (lattr name _ _) _) (- idx 1))
+            ((lam _ _) (- idx 1))
             ((subst s _) (- idx (subst-scope-size s)))
             (_ idx))
     (if (< idx 0) (pure nav) (navterm-ascend-binder nav idx))))
@@ -305,6 +312,7 @@
   (ici-traverse-right count)
   (ici-traverse-up count)
   (ici-traverse-binder)
+  (ici-rename-binder name)
   (ici-substitute-complete)
   (ici-step count)
   (ici-step-complete)
@@ -369,6 +377,8 @@
                    navigator-ascend iaction count))
       ((ici-traverse-binder)
        (trans-nav history navterm-traverse-binder iaction 1))
+      ((ici-rename-binder name)
+       (trans-nav history (trans-focus (rename-binder name)) iaction 1))
       ((ici-substitute-complete)
        (trans-nav history (trans-focus (compose1 right substitute-full))
                   iaction 1))
