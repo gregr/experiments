@@ -3,7 +3,6 @@
 ===============================================================================
 current tasks:
   editing
-    jump to binder from bvar: ENTER
     rename binder: ENTER
       readline hack to start?
       have workspace absorb digit state and remove keycount controller
@@ -20,6 +19,10 @@ later tasks:
   general REST-like DB interface
     get/put/post/delete
     url trees
+
+issues:
+  when descending into substitution uses, variable name unparsing breaks
+  cannot jump to binder from within a substitution use
 
 ===============================================================================
 = older notes (but still important)

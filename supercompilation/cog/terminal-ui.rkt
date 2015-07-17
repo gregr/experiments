@@ -93,6 +93,7 @@
       (#\j "traverse down" ,ici-traverse-down)
       (#\k "traverse up" ,ici-traverse-up)
       (#\l "traverse right" ,ici-traverse-right)
+      (#\space "jump to binder" ,(lambda (_) (ici-traverse-binder)))
       (#\S "substitute completely" ,(lambda (_) (ici-substitute-complete)))
       (#\s "step" ,ici-step)
       (#\C "step completely" ,(lambda (_) (ici-step-complete)))
@@ -120,7 +121,7 @@
   (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "neEqHLRhjklSsCcDdtTaApPxu"
+    "neEqHLRhjkl SsCcDdtTaApPxu"
     ))
 
 (module+ test

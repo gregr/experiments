@@ -11,6 +11,7 @@
   ici-wrap-lam
   ici-wrap-pair
   ici-wrap-pair-access
+  ici-traverse-binder
   ici-traverse-down
   ici-traverse-left
   ici-traverse-right
@@ -119,6 +120,28 @@
 (define t-uno-lam (value v-uno-lam))
 (define t-uno-apply (lam-apply t-uno-lam t-uno))
 (define t-uno-pair-access (pair-access v-0 v-uno-pair))
+
+(define (as-value tv) (if (value? tv) (value-v tv) tv))
+
+; TODO: this is broken within assigned values of substitution uses
+(define (navterm-ascend-binder nav idx)
+  (begin/with-monad maybe-monad
+    nav <- (navigator-ascend nav)
+    idx = (match (as-value (navigator-focus nav))
+            ((lam (lattr name _ _) _) (- idx 1))
+            ((subst s _) (- idx (subst-scope-size s)))
+            (_ idx))
+    (if (< idx 0) (pure nav) (navterm-ascend-binder nav idx))))
+
+(define (navterm-traverse-binder nav)
+  (begin/with-monad either-monad
+    focus = (navigator-focus nav)
+    idx <- (match focus
+             ((bvar idx) (right idx))
+             ((value (bvar idx)) (right idx))
+             (_ (left "cannot traverse non-variable")))
+    (maybe->either "cannot traverse free variable"
+                   (navterm-ascend-binder nav idx))))
 
 ; does not produce an equivalent term in value context (cannot wrap-apply)
 ; is this desirable?
@@ -281,6 +304,7 @@
   (ici-traverse-left count)
   (ici-traverse-right count)
   (ici-traverse-up count)
+  (ici-traverse-binder)
   (ici-substitute-complete)
   (ici-step count)
   (ici-step-complete)
@@ -343,6 +367,8 @@
       ((ici-traverse-up count)
        (mtrans-nav "cannot traverse up" history
                    navigator-ascend iaction count))
+      ((ici-traverse-binder)
+       (trans-nav history navterm-traverse-binder iaction 1))
       ((ici-substitute-complete)
        (trans-nav history (trans-focus (compose1 right substitute-full))
                   iaction 1))

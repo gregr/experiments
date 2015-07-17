@@ -24,6 +24,7 @@
   lattr-name
   lattr-void
 
+  subst-scope-size
   term-frees
   term-frees-safe
   term-value-frees
@@ -31,6 +32,7 @@
 
 (require
   gregr-misc/record
+  gregr-misc/sugar
   )
 
 (record lattr arg-name arg-syntax lam-syntax)
@@ -60,10 +62,11 @@
 
 (define set-empty (set))
 
+(def (subst-scope-size (substitution uses lift)) (- (length uses) lift))
+
 (define (term-frees term (scope 0))
   (match term
-    ((subst (substitution uses lift) t)
-     (term-frees t (+ (length uses) (max 0 (- scope lift)))))
+    ((subst s t)            (term-frees t (+ scope (subst-scope-size s))))
     ((value       v)        (term-value-frees v scope))
     ((produce     t)        (term-frees t))
     ((pair-access idx pr)   (set-union (term-value-frees idx scope)
