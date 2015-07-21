@@ -2,7 +2,12 @@
 (provide
   focus-index-valid
   keypress-add
+  keypress-cmd
   keypress-cmd-mode
+  keypress-pending
+  keypress-text-entry
+  keypress-text-entry-mode
+  keypress-text-entry-mode-empty
   wci-widget-add
   wci-widget-close
   wci-widget-left
@@ -22,7 +27,6 @@
 
 (require
   gregr-misc/cursor
-  gregr-misc/either
   gregr-misc/list
   gregr-misc/record
   gregr-misc/string
@@ -36,22 +40,50 @@
 
 (records keypress-mode
   (keypress-cmd-mode digits)
+  (keypress-text-entry-mode text pos)
   )
+(define keypress-text-entry-mode-empty (keypress-text-entry-mode "" 0))
 (define keypress-mode-default (keypress-cmd-mode '()))
+(records keypress-result
+  (keypress-pending text)
+  (keypress-cmd char count)
+  (keypress-text-entry text))
 
 (define (keypress-add mode char)
   (define (digits->count digits)
     (if (empty? digits) 1 (string->number (list->string (reverse digits)))))
-  (if (eq? #\u0003 char) (values keypress-mode-default (left "")) ; C-c
+  (def (valid-text-entry text pos)
+    (values (keypress-text-entry-mode
+              text (max 0 (min pos (string-length text))))
+            (keypress-pending (string-append "press ENTER when finished: "
+                                             (string-insert text pos "∣")))))
+  (if (eq? #\u0003 char)
+    (values keypress-mode-default (keypress-pending "")) ; C-c
     (match mode
       ((keypress-cmd-mode digits)
        (if (char-numeric? char)
          (lets digits = (list* char digits)
                (values (keypress-cmd-mode digits)
-                       (left (number->string (digits->count digits)))))
+                       (keypress-pending
+                         (number->string (digits->count digits)))))
          (values (keypress-cmd-mode '())
-                 (right (list char (digits->count digits))))))
-)))
+                 (keypress-cmd char (digits->count digits)))))
+      ((keypress-text-entry-mode text pos)
+       (match char
+         (#\u0006 (valid-text-entry text (+ pos 1))) ; C-f
+         (#\u0002 (valid-text-entry text (- pos 1))) ; C-b
+         (#\u0001 (valid-text-entry text 0)) ; C-a
+         (#\u0005 (valid-text-entry text (string-length text))) ; C-e
+         (#\u0017 (valid-text-entry
+                    (substring text pos (string-length text)) 0)) ; C-w
+         (#\vtab (valid-text-entry (substring text 0 pos) pos)) ; C-k
+         (#\rubout (valid-text-entry (string-remove text (- pos 1)) (- pos 1)))
+         (#\u0004 (valid-text-entry (string-remove text pos) pos)) ; C-d
+         ((or #\return #\newline)
+          (values keypress-mode-default (keypress-text-entry text)))
+         (_ (valid-text-entry
+              (string-insert text pos (list->string (list char)))
+              (+ pos 1))))))))
 
 (record workspace layout focus-index notification keypress-mode) ; {layout: [widget], focus-index: nat, notification: string, keypress-mode: keypress-mode}
 (define (workspace-new widgets (fidx 0) (msg ""))

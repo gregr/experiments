@@ -12,7 +12,6 @@
   "workspace-model.rkt"
   gregr-misc/cursor
   gregr-misc/dict
-  gregr-misc/either
   gregr-misc/generator
   gregr-misc/list
   gregr-misc/maybe
@@ -44,7 +43,9 @@
   cmd-table =
   `((#\n "new interaction" ,eci-interaction-new)
     (#\e "extract closed term" ,(curry eci-paste-subterm #f))
-    (#\E "replacE closed term" ,(curry eci-paste-subterm #t)))
+    (#\E "replacE closed term" ,(curry eci-paste-subterm #t))
+    (#\return "rename binder" ,(lambda (_) (eci-rename-binder-start)))
+    )
   (forl
     (list char desc instr) <- cmd-table
     (list char desc (compose1 (curry editor-command ws-name) instr))))
@@ -77,7 +78,7 @@
                   (append* (map (curry map cdr) (list a0 a1))))
   (cmds-merge1 editor-cmds (cmds-merge1 ws-top-cmds widget-cmds)))
 
-(def ((event->workspace-command ws-name) db (list char count))
+(def ((event->workspace-command ws-name) db (keypress-cmd char count))
   cmds = (db->workspace-commands ws-name db)
   keymap = (commands->keymap cmds)
   (begin/with-monad maybe-monad
@@ -120,7 +121,7 @@
   (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "neEqHLRhjkl SsCcDdtTaApPxu"
+    "neE\rqHLRhjkl SsCcDdtTaApPxu"
     ))
 
 (module+ test
@@ -128,9 +129,9 @@
     (lets
       event->cmd = (event->workspace-command 'one)
       (list
-        (event->cmd test-db-0 (event-keycount #\j 3))
-        (event->cmd test-db-1 (event-keycount #\j 3))
-        (event->cmd test-db-0 (event-keycount #\q 2))
+        (event->cmd test-db-0 (keypress-cmd #\j 3))
+        (event->cmd test-db-1 (keypress-cmd #\j 3))
+        (event->cmd test-db-0 (keypress-cmd #\q 2))
         ))
     (list
       (nothing)
@@ -138,10 +139,15 @@
       (just (workspace-command 'one (wci-widget-close 2)))
       )))
 
+(define (cmdchar->string char)
+  (match char
+    (#\return "ENTER")
+    (#\space "SPACE")
+    (_ (string-append (list->string (list char)) "    "))))
 (define (commands->desc commands)
   (forl
     (list char desc action) <- commands
-    (list (list->string (list char)) desc)))
+    (list (cmdchar->string char) desc)))
 (def (workspace-preview name db)
   ws = (:.* db 'workspaces name)
   (list widgets fidx msg) = (map (curry :.* ws)
@@ -206,16 +212,16 @@
           :. kpmode kpm-path
           (values kpmode result) = (keypress-add kpmode char)
           := kpmode kpm-path
-          := (match result ((left msg) msg) ((right _) ""))
+          := (match result ((keypress-pending msg) msg) (_ ""))
             `(workspaces ,ws-name notification)
           result)
         db = (match result
-               ((left _) db)
-               ((right event)
-                (match (event->cmd db event)
+               ((keypress-cmd chr _)
+                (match (event->cmd db result)
                   ((nothing)
                    (:=* db "invalid choice" 'workspaces ws-name 'notification))
-                  ((just cmd) (editor-update cmd db)))))
+                  ((just cmd) (editor-update cmd db))))
+               (_ db))
         (loop db (yield db)))))
   (with-cursor-hidden (with-stty-direct
     (lets

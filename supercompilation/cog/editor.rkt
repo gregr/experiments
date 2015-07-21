@@ -2,6 +2,7 @@
 (provide
   eci-interaction-new
   eci-paste-subterm
+  eci-rename-binder-start
   editor-command
   editor-update
   interaction-widget
@@ -23,7 +24,8 @@
 
 (records editor-instruction
   (eci-interaction-new offset)
-  (eci-paste-subterm reverse? offset))
+  (eci-paste-subterm reverse? offset)
+  (eci-rename-binder-start))
 
 (define (editor-update cmd db)
   (match cmd
@@ -54,5 +56,7 @@
                               (ici-edit (ici-edit-replace term)) ia)
                             (list "cannot paste subterm with free vars" ia))
           := ia ipath
-          := msg `(workspaces ,ws-name notification)))))
+          := msg `(workspaces ,ws-name notification)))
+       ((eci-rename-binder-start) (:=* db keypress-text-entry-mode-empty
+                                       'workspaces ws-name 'keypress-mode))))
     (_ (database-update cmd db))))
