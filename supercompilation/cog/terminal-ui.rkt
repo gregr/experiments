@@ -33,10 +33,14 @@
       (list char desc cmd) <- commands
       (cons char cmd))))
 
+(define (workspace->focus-interaction-name ws)
+  (match (workspace->focus-widget ws)
+    ((just (interaction-widget name)) (just name))
+    (_ (nothing))))
+
 (define (workspace->focus-commands ws-name ws db)
-  (maybe-fold '() (fn ((interaction-widget name))
-                      (interaction->commands ws-name name db))
-              (workspace->focus-widget ws)))
+  (maybe-fold '() (lambda (name) (interaction->commands ws-name name db))
+              (workspace->focus-interaction-name ws)))
 
 (def (db->editor-commands ws-name db)
   ; TODO: specialized commands based on state
