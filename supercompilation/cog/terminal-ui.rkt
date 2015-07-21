@@ -210,7 +210,7 @@
   (define handle-events
     (gn yield (event)
       (letn loop (values db (event-keypress char)) = (values db event)
-        (values db result) =
+        (values db (list ws result)) =
         (:** db
           kpm-path = `(workspaces ,ws-name keypress-mode)
           :. kpmode kpm-path
@@ -218,13 +218,22 @@
           := kpmode kpm-path
           := (match result ((keypress-pending msg) msg) (_ ""))
             `(workspaces ,ws-name notification)
-          result)
+          :. ws `(workspaces ,ws-name)
+          (list ws result))
         db = (match result
                ((keypress-cmd chr _)
                 (match (event->cmd db result)
                   ((nothing)
                    (:=* db "invalid choice" 'workspaces ws-name 'notification))
                   ((just cmd) (editor-update cmd db))))
+               ((keypress-text-entry text)
+                (match (workspace->focus-interaction-name ws)
+                  ((nothing) db)
+                  ((just name)
+                   (editor-update
+                     (interaction-command
+                       ws-name name (ici-rename-binder
+                                      (string->symbol text))) db))))
                (_ db))
         (loop db (yield db)))))
   (with-cursor-hidden (with-stty-direct
