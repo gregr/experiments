@@ -57,6 +57,10 @@
                             (list "cannot paste subterm with free vars" ia))
           := ia ipath
           := msg `(workspaces ,ws-name notification)))
-       ((eci-rename-binder-start) (:=* db keypress-text-entry-mode-empty
-                                       'workspaces ws-name 'keypress-mode))))
+       ((eci-rename-binder-start)
+        (:** db
+          kpm = keypress-text-entry-mode-empty
+          := kpm `(workspaces ,ws-name keypress-mode)
+          := (keypress-text-entry-mode->desc kpm)
+            `(workspaces ,ws-name notification)))))
     (_ (database-update cmd db))))

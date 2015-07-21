@@ -7,6 +7,7 @@
   keypress-pending
   keypress-text-entry
   keypress-text-entry-mode
+  keypress-text-entry-mode->desc
   keypress-text-entry-mode-empty
   wci-widget-add
   wci-widget-close
@@ -48,15 +49,16 @@
   (keypress-pending text)
   (keypress-cmd char count)
   (keypress-text-entry text))
+(def (keypress-text-entry-mode->desc (keypress-text-entry-mode text pos))
+  (string-append "press ENTER when finished: " (string-insert text pos "∣")))
 
 (define (keypress-add mode char)
   (define (digits->count digits)
     (if (empty? digits) 1 (string->number (list->string (reverse digits)))))
   (def (valid-text-entry text pos)
-    (values (keypress-text-entry-mode
-              text (max 0 (min pos (string-length text))))
-            (keypress-pending (string-append "press ENTER when finished: "
-                                             (string-insert text pos "∣")))))
+    mode = (keypress-text-entry-mode
+             text (max 0 (min pos (string-length text))))
+    (values mode (keypress-pending (keypress-text-entry-mode->desc mode))))
   (if (eq? #\u0003 char)
     (values keypress-mode-default (keypress-pending "")) ; C-c
     (match mode
