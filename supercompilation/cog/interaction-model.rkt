@@ -128,6 +128,7 @@
 (define ((rename-binder name) focus)
   (match focus
     ((lam (lattr _ sa sl) body) (right (lam (lattr name sa sl) body)))
+    ((value val) (either-map value ((rename-binder name) val)))
     (_ (left "cannot rename non-binder"))))
 
 ; TODO: this is broken within assigned values of substitution uses
