@@ -1,6 +1,8 @@
 #lang racket
 (provide
   focus-index-valid
+  keypress-add
+  keypress-cmd-mode
   wci-widget-add
   wci-widget-close
   wci-widget-left
@@ -20,8 +22,10 @@
 
 (require
   gregr-misc/cursor
+  gregr-misc/either
   gregr-misc/list
   gregr-misc/record
+  gregr-misc/string
   gregr-misc/sugar
   )
 
@@ -30,9 +34,28 @@
     rackunit
     ))
 
-(record workspace layout focus-index notification) ; {layout: [widget], focus-index: nat, notification: string}
+(records keypress-mode
+  (keypress-cmd-mode digits)
+  )
+(define keypress-mode-default (keypress-cmd-mode '()))
+
+(define (keypress-add mode char)
+  (define (digits->count digits)
+    (if (empty? digits) 1 (string->number (list->string (reverse digits)))))
+  (if (eq? #\u0003 char) (values keypress-mode-default (left "")) ; C-c
+    (match mode
+      ((keypress-cmd-mode digits)
+       (if (char-numeric? char)
+         (lets digits = (list* char digits)
+               (values (keypress-cmd-mode digits)
+                       (left (number->string (digits->count digits)))))
+         (values (keypress-cmd-mode '())
+                 (right (list char (digits->count digits))))))
+)))
+
+(record workspace layout focus-index notification keypress-mode) ; {layout: [widget], focus-index: nat, notification: string, keypress-mode: keypress-mode}
 (define (workspace-new widgets (fidx 0) (msg ""))
-  (workspace widgets fidx msg))
+  (workspace widgets fidx msg keypress-mode-default))
 (define workspace-empty (workspace-new '() 0))
 
 (define (focus-index-valid layout idx) (max 0 (min (- (length layout) 1) idx)))
@@ -42,7 +65,7 @@
 
 ;workspace->doc ; workspace -> db -> doc
 
-(def (workspace->focus-widget (workspace layout fidx _))
+(def (workspace->focus-widget (workspace layout fidx _ _))
   (list-get layout fidx))
 
 (records workspace-instruction
@@ -53,7 +76,7 @@
   (wci-widget-add widget offset))
 
 (def (workspace-update instr ws)
-  (workspace layout fidx _) = ws
+  (workspace layout fidx _ _) = ws
   (workspace-valid
     (match instr
       ((wci-widget-add widget offset)

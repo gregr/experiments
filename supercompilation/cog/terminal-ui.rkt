@@ -77,13 +77,12 @@
                   (append* (map (curry map cdr) (list a0 a1))))
   (cmds-merge1 editor-cmds (cmds-merge1 ws-top-cmds widget-cmds)))
 
-(define (event->workspace-command ws-name)
-  (fn (db (event-keycount char count))
-    cmds = (db->workspace-commands ws-name db)
-    keymap = (commands->keymap cmds)
-    (begin/with-monad maybe-monad
-      cmd-new <- (dict-get keymap char)
-      (pure (cmd-new count)))))
+(def ((event->workspace-command ws-name) db (list char count))
+  cmds = (db->workspace-commands ws-name db)
+  keymap = (commands->keymap cmds)
+  (begin/with-monad maybe-monad
+    cmd-new <- (dict-get keymap char)
+    (pure (cmd-new count))))
 
 (define (interaction->commands ws-name name db)
   ; TODO: specialized commands based on interaction state
@@ -162,14 +161,6 @@
 (def (workspace-preview->str-thunk (list msg cmd-desc fidx idocs))
   (thunk (view->string (tabular-view msg cmd-desc fidx idocs))))
 
-(def (emdb->preview ws-name (list msg cdesc fidx idocs) emdb)
-  (match emdb
-    ((left count) (list (number->string count) cdesc fidx idocs))
-    ((right result)
-     (match result
-       ((nothing) (list "invalid choice" cdesc fidx idocs))
-       ((just db) (workspace-preview ws-name db))))))
-
 (define (keypress-thread chan)
   (thread
     (thunk (gen-loop (apply gen-compose* (map fn->gen
@@ -201,22 +192,31 @@
 (define (ui-loop ws-name db)
   (define event-chan (make-channel))
   (define display-chan (make-channel))
-  (define (check-quit input)
-    (if (match input
-          ((right (just db))
-           (empty? (:.* (:.* db 'workspaces ws-name) 'layout)))
-          (_ #f))
+  (define (check-quit db)
+    (if (empty? (:.* db 'workspaces ws-name 'layout))
       (gen-result "quitting: all interactions closed")
-      (gen-susp input check-quit)))
+      (gen-susp db check-quit)))
   (define event->cmd (event->workspace-command ws-name))
   (define handle-events
     (gn yield (event)
-      (letn loop (values db event) = (values db event)
-        mdb = (begin/with-monad maybe-monad
-                cmd <- (event->cmd db event)
-                (pure (editor-update cmd db)))
-        db = (maybe-from db mdb)
-        (loop db (yield mdb)))))
+      (letn loop (values db (event-keypress char)) = (values db event)
+        (values db result) =
+        (:** db
+          kpm-path = `(workspaces ,ws-name keypress-mode)
+          :. kpmode kpm-path
+          (values kpmode result) = (keypress-add kpmode char)
+          := kpmode kpm-path
+          := (match result ((left msg) msg) ((right _) ""))
+            `(workspaces ,ws-name notification)
+          result)
+        db = (match result
+               ((left _) db)
+               ((right event)
+                (match (event->cmd db event)
+                  ((nothing)
+                   (:=* db "invalid choice" 'workspaces ws-name 'notification))
+                  ((just cmd) (editor-update cmd db)))))
+        (loop db (yield db)))))
   (with-cursor-hidden (with-stty-direct
     (lets
       threads = (list (keypress-thread event-chan)
@@ -224,18 +224,17 @@
       result =
       (gen-loop
         (gen-compose*
-          (either-gen handle-events)
-          keycount-controller
+          handle-events
           (fn->gen (lambda (_) (channel-get event-chan)))
           (fn->gen (curry channel-put display-chan))
           (fn->gen workspace-preview->str-thunk)
-          (gn yield (input)
-              (letn loop (values cur-preview input) =
-                         (values (make-list 4 (void)) input)
-                preview = (emdb->preview ws-name cur-preview input)
+          (gn yield (db)
+              (letn loop (values cur-preview db) =
+                         (values (make-list 4 (void)) db)
+                preview = (workspace-preview ws-name db)
                 (loop preview (yield preview))))
           check-quit)
-        (right (just db)))
+        db)
       _ = (for-each kill-thread threads)
       result))))
 
