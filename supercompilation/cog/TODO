@@ -2,11 +2,6 @@
 = more notes
 ===============================================================================
 current tasks:
-  editing
-    rename binder: ENTER
-      readline hack to start?
-      have workspace absorb digit state and remove keycount controller
-      text entry/edit workspace mode: C-c/a/f/b/d/w/k, bspace, del, arrows, ENTER to finish
   other
     redo buffer: U
     C-c in general
