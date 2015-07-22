@@ -298,9 +298,6 @@
     v-0)
   )
 
-; extract/copy, paste/replace, rename
-; jump to binder
-
 (record interaction syntax history rhistory nav)
 (records interaction-syntax
   (isyntax-raw)
