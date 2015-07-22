@@ -17,6 +17,8 @@
   ici-traverse-left
   ici-traverse-right
   ici-traverse-up
+  ici-traverse-uno-next
+  ici-traverse-uno-prev
   ici-substitute-complete
   ici-step
   ici-step-complete
@@ -298,6 +300,17 @@
     v-0)
   )
 
+(define (navterm-uno? nav)
+  (match (navigator-focus nav)
+    ((or (uno) (value (uno))) #t)
+    (_ #f)))
+
+(define ((navterm-find target? transition) nav)
+  (match (transition nav)
+    ((nothing) (nothing))
+    ((just nav) (if (target? nav) (just nav)
+                  ((navterm-find target? transition) nav)))))
+
 (record interaction syntax history rhistory nav)
 (records interaction-syntax
   (isyntax-raw)
@@ -311,6 +324,8 @@
   (ici-traverse-right count)
   (ici-traverse-up count)
   (ici-traverse-binder)
+  (ici-traverse-uno-next count)
+  (ici-traverse-uno-prev count)
   (ici-rename-binder name)
   (ici-substitute-complete)
   (ici-step count)
@@ -373,13 +388,21 @@
                    (fn (nav) (navigator-descend nav 0)) iaction count))
       ((ici-traverse-left count)
        (mtrans-nav "cannot traverse left" history
-                   (fn (nav) (navigator-shift nav (- 1))) iaction count))
+                   (fn (nav) (navigator-shift nav -1)) iaction count))
       ((ici-traverse-right count)
        (mtrans-nav "cannot traverse right" history
                    (fn (nav) (navigator-shift nav 1)) iaction count))
       ((ici-traverse-up count)
        (mtrans-nav "cannot traverse up" history
                    navigator-ascend iaction count))
+      ((ici-traverse-uno-next count)
+       (mtrans-nav "no next {} to move to" history
+                   (navterm-find navterm-uno? navigator-preorder-next)
+                   iaction count))
+      ((ici-traverse-uno-prev count)
+       (mtrans-nav "no prev {} to move to" history
+                   (navterm-find navterm-uno? navigator-preorder-prev)
+                   iaction count))
       ((ici-traverse-binder)
        (trans-nav history navterm-traverse-binder iaction 1))
       ((ici-rename-binder name)
