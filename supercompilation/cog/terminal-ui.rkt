@@ -114,7 +114,8 @@
       (#\P "wrap pair-access"
        ,(compose1 ici-edit (curry ici-edit-wrap (ici-wrap-pair-access))))
       (#\x "toggle-syntax" ,(lambda (_) (ici-toggle-syntax)))
-      (#\u "undo" ,ici-undo))
+      (#\u "undo" ,ici-undo)
+      (#\U "redo" ,ici-redo))
     (list char desc
           (compose1 (curry interaction-command ws-name name) instr))))
 
@@ -125,7 +126,7 @@
   (define test-db-1 (list-ref test-dbs 1))
   (check-equal?
     (list->string (map car (db->workspace-commands 'one test-db-1)))
-    "neE\rqHLRhjkl SsCcDdtTaApPxu"
+    "neE\rqHLRhjkl SsCcDdtTaApPxuU"
     ))
 
 (module+ test
