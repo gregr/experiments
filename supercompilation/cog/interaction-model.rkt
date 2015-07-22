@@ -22,6 +22,7 @@
   ici-step-complete
   ici-toggle-syntax
   ici-undo
+  ici-redo
   isyntax-raw
   isyntax-pretty
   interaction-empty
@@ -300,12 +301,12 @@
 ; extract/copy, paste/replace, rename
 ; jump to binder
 
-(record interaction syntax history nav)
+(record interaction syntax history rhistory nav)
 (records interaction-syntax
   (isyntax-raw)
   (isyntax-pretty))
 (define (interaction-new term)
-  (interaction (isyntax-pretty) '() (navterm-new term)))
+  (interaction (isyntax-pretty) '() '() (navterm-new term)))
 (define interaction-empty (interaction-new t-uno))
 (records interaction-instruction
   (ici-traverse-down count)
@@ -319,7 +320,8 @@
   (ici-step-complete)
   (ici-edit method)
   (ici-toggle-syntax)
-  (ici-undo count))
+  (ici-undo count)
+  (ici-redo count))
 (records interaction-edit-method
   (ici-edit-replace term)
   (ici-edit-close)
@@ -345,6 +347,9 @@
     success? = (or (right? prev) success?)
     (either-fold (fn (msg) (list success? msg final))
                  (fn (ia)  (list success? "" ia)) prev))
+  (def (trans-ia0 f iaction count)
+    (list _ msg iaction) = (trans f iaction count)
+    (list msg iaction))
   (define (mtrans msg f seed count)
     (define (g arg) (maybe->either msg (f arg)))
     (trans g seed count))
@@ -360,9 +365,11 @@
       new-focus <- (f (navigator-focus nav))
       (pure (navigator-focus-set nav new-focus))))
   (lets
-    (interaction syntax history nav) = iaction
+    (interaction syntax history rhistory nav) = iaction
     iaction-current = iaction
-    iaction = (:~* iaction (curry cons iaction) 'history)
+    iaction = (:** iaction
+                :~ (curry cons iaction) '(history)
+                := '() '(rhistory))
     (match instr
       ((ici-traverse-down count)
        (mtrans-nav "cannot traverse down" history
@@ -409,11 +416,19 @@
                                ((isyntax-raw) (isyntax-pretty))
                                ((isyntax-pretty) (isyntax-raw)))
                      'syntax)))
-      ((ici-undo count)
-       (match history
-         ('() (list "nothing to undo" iaction-current))
-         (_ (list "" (car (drop history (- (min count (length history))
-                                           1))))))))))
+      ((ici-undo count) (trans-ia0 interaction-undo iaction-current count))
+      ((ici-redo count) (trans-ia0 interaction-redo iaction-current count)))))
+
+(def (interaction-undo ia)
+  (interaction _ history rhistory _) = ia
+  (match history
+    ('() (left "nothing to undo"))
+    ((cons h0 _) (right (:=* h0 (cons ia rhistory) 'rhistory)))))
+(def (interaction-redo ia)
+  (interaction _ history rhistory _) = ia
+  (match rhistory
+    ('() (left "nothing to redo"))
+    ((cons h0 _) (right (:=* h0 (cons ia history) 'history)))))
 
 (define test-iactions (map interaction-new test-terms))
 
