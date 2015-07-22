@@ -137,6 +137,7 @@ later, attempt to design a low-level language
     http://mlton.org/pipermail/mlton/2003-March/023325.html
     http://mlton.org/pipermail/mlton/2003-March/023326.html
     http://mlton.org/pipermail/mlton/2003-January/023054.html
+    related: http://research.microsoft.com/en-us/um/people/akenn/sml/CompilingWithContinuationsContinued.pdf
   hopefully not just a compilation target
     use to describe runtime support (such as gc)
     use to describe a kernel
