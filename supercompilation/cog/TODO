@@ -1,13 +1,6 @@
 ===============================================================================
 = more notes
 ===============================================================================
-current tasks:
-  other
-    redo buffer: U
-    C-c in general
-    full ascend/descend: J, K
-    jump to next/prev (): i/I
-
 later tasks:
   deal with edit.rkt
   pull workspace.rkt apart, then rename *-model.rkt to *.rkt
