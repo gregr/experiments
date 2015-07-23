@@ -243,16 +243,12 @@
     (lets
       threads = (list (keypress-thread event-chan)
                       (display-view-thread 0.1 display-chan))
+      react = (compose1 (lambda (_) (channel-get event-chan))
+                        (curry channel-put display-chan)
+                        workspace-preview->str-thunk
+                        (curry workspace-preview ws-name))
       result =
-      (gen-loop
-        (gen-compose*
-          handle-events
-          (fn->gen (lambda (_) (channel-get event-chan)))
-          (fn->gen (curry channel-put display-chan))
-          (fn->gen workspace-preview->str-thunk)
-          (fn->gen (curry workspace-preview ws-name))
-          check-quit)
-        db)
+      (gen-loop (gen-compose* handle-events (fn->gen react) check-quit) db)
       _ = (for-each kill-thread threads)
       result))))
 
