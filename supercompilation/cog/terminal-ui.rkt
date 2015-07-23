@@ -174,12 +174,6 @@
 (def (workspace-preview->str-thunk (list msg cmd-desc fidx idocs))
   (thunk (view->string (tabular-view msg cmd-desc fidx idocs))))
 
-(define (keypress-thread chan)
-  (thread
-    (thunk (gen-loop (apply gen-compose* (map fn->gen
-      (list (curry channel-put chan) event-keypress (lambda (_) (read-char)))))
-      (void)))))
-
 (define (display-view-thread latency chan)
   (define fetch-chan (make-channel))
   (def (display-view view)
