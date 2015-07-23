@@ -12,11 +12,9 @@
   "workspace-model.rkt"
   gregr-misc/cursor
   gregr-misc/dict
-  gregr-misc/generator
   gregr-misc/list
   gregr-misc/maybe
   gregr-misc/monad
-  gregr-misc/record
   gregr-misc/sugar
   gregr-misc/terminal
   gregr-misc/ui
