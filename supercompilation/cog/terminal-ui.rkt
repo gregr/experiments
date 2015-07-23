@@ -250,11 +250,7 @@
           (fn->gen (lambda (_) (channel-get event-chan)))
           (fn->gen (curry channel-put display-chan))
           (fn->gen workspace-preview->str-thunk)
-          (gn yield (db)
-              (letn loop (values cur-preview db) =
-                         (values (make-list 4 (void)) db)
-                preview = (workspace-preview ws-name db)
-                (loop preview (yield preview))))
+          (fn->gen (curry workspace-preview ws-name))
           check-quit)
         db)
       _ = (for-each kill-thread threads)
