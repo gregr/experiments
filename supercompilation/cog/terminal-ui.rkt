@@ -205,52 +205,46 @@
 (define (ui-loop ws-name db)
   (define event-chan (make-channel))
   (define display-chan (make-channel))
-  (define (check-quit db)
-    (if (empty? (:.* db 'workspaces ws-name 'layout))
-      (gen-result "quitting: all interactions closed")
-      (gen-susp db check-quit)))
+  (define react (compose1 (lambda (_) (channel-get event-chan))
+                          (curry channel-put display-chan)
+                          workspace-preview->str-thunk
+                          (curry workspace-preview ws-name)))
   (define event->cmd (event->workspace-command ws-name))
-  (define handle-events
-    (gn yield (event)
-      (letn loop (values db (event-keypress char)) = (values db event)
-        (values db (list ws result)) =
-        (:** db
-          kpm-path = `(workspaces ,ws-name keypress-mode)
-          :. kpmode kpm-path
-          (values kpmode result) = (keypress-add kpmode char)
-          := kpmode kpm-path
-          := (match result ((keypress-pending msg) msg) (_ ""))
-            `(workspaces ,ws-name notification)
-          :. ws `(workspaces ,ws-name)
-          (list ws result))
-        db = (match result
-               ((keypress-cmd chr _)
-                (match (event->cmd db result)
-                  ((nothing)
-                   (:=* db "invalid choice" 'workspaces ws-name 'notification))
-                  ((just cmd) (editor-update cmd db))))
-               ((keypress-text-entry text)
-                (match (workspace->focus-interaction-name ws)
-                  ((nothing) db)
-                  ((just name)
-                   (editor-update
-                     (interaction-command
-                       ws-name name (ici-rename-binder
-                                      (string->symbol text))) db))))
-               (_ db))
-        (loop db (yield db)))))
+  (def (handle-events db (event-keypress char))
+    (values db (list ws result)) =
+    (:** db
+      kpm-path = `(workspaces ,ws-name keypress-mode)
+      :. kpmode kpm-path
+      (values kpmode result) = (keypress-add kpmode char)
+      := kpmode kpm-path
+      := (match result ((keypress-pending msg) msg) (_ ""))
+      `(workspaces ,ws-name notification)
+      :. ws `(workspaces ,ws-name)
+      (list ws result))
+    (match result
+      ((keypress-cmd chr _)
+       (match (event->cmd db result)
+         ((nothing)
+          (:=* db "invalid choice" 'workspaces ws-name 'notification))
+         ((just cmd) (editor-update cmd db))))
+      ((keypress-text-entry text)
+       (match (workspace->focus-interaction-name ws)
+         ((nothing) db)
+         ((just name)
+          (editor-update
+            (interaction-command
+              ws-name name (ici-rename-binder (string->symbol text))) db))))
+      (_ db)))
+  (define (loop db)
+    (if (empty? (:.* db 'workspaces ws-name 'layout))
+      "quitting: all interactions closed"
+      (loop (handle-events db (react db)))))
   (with-cursor-hidden (with-stty-direct
-    (lets
-      threads = (list (keypress-thread event-chan)
-                      (display-view-thread 0.1 display-chan))
-      react = (compose1 (lambda (_) (channel-get event-chan))
-                        (curry channel-put display-chan)
-                        workspace-preview->str-thunk
-                        (curry workspace-preview ws-name))
-      result =
-      (gen-loop (gen-compose* handle-events (fn->gen react) check-quit) db)
-      _ = (for-each kill-thread threads)
-      result))))
+    (lets threads = (list (keypress-thread event-chan)
+                          (display-view-thread 0.1 display-chan))
+          result = (loop db)
+          _ = (for-each kill-thread threads)
+          result))))
 
 (def (interact-with terms)
   ws-name = 'terminal-ui:interact-with
