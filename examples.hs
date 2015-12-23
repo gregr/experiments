@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, RankNTypes, ExistentialQuantification, MultiParamTypeClasses, FlexibleInstances, TypeFamilies #-}
+{-# LANGUAGE GADTs, StandaloneDeriving, FlexibleContexts, NamedFieldPuns, RankNTypes, ExistentialQuantification, MultiParamTypeClasses, FlexibleInstances, TypeFamilies #-}
 
 module Examples where
 
@@ -54,3 +54,26 @@ applyTupPairMethod (next, cont) f (arg, rest) = next cont (f arg) rest
 testMethod = (applyTupPairMethod, (applyTupPairMethod, (applyTupPairMethod, (applyTupUnitMethod, ()))))
 testArgs = (True, ((), (4, ())))
 testApplyTupEx = applyTupEx testMethod (\x () y -> (x, y)) testArgs
+
+-- gadt translation
+data LL r where
+  LLNil :: LL ()
+  LLCons :: a -> LL bs -> LL (a, bs)
+-- can these be derived?
+instance Show (LL ()) where
+  show LLNil = "LLNil"
+instance (Show a, Show (LL bs)) => Show (LL (a, bs)) where
+  show (LLCons a bs) = "(LLCons " ++ show a ++ " " ++ show bs ++ ")"
+-- this does not work
+{-deriving instance Show (LL ())-}
+{-deriving instance (Show a, Show (LL b)) => Show (LL (a, b))-}
+
+-- cleaner than the class-based version?
+type family ApplyFuncLL tup result where
+  ApplyFuncLL () result = result
+  ApplyFuncLL (a, b) result = a -> ApplyFuncLL b result
+applyLL :: ApplyFuncLL ab result -> LL ab -> result
+applyLL f LLNil = f
+applyLL f (LLCons a bs) = applyLL (f a) bs
+-- applyLL ((,) . (+ 1)) (LLCons 3 (LLCons 'c' LLNil))
+-- ===> (4, 'c')
