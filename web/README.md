@@ -43,9 +43,15 @@
 
 ### Misc
 
+[FEDevelopment tutorials](https://www.youtube.com/channel/UCGm4F5WYB4Y9tFwUHAsR44A)
+
 What are all the possible `<input>` types?
 
 [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
+
+[https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries)
+
+[https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute](https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute)
 
 ## TODO
 
