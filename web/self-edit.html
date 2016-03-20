@@ -1,0 +1,41 @@
+<head>
+  <meta charset="utf-8">
+  <title>self-edit</title>
+<script src="http://codemirror.net/lib/codemirror.js"> </script> <link rel="stylesheet" href="http://codemirror.net/lib/codemirror.css" /> <script src="http://codemirror.net/mode/xml/xml.js"> </script> <script src="http://codemirror.net/mode/javascript/javascript.js"> </script> <script src="http://codemirror.net/mode/css/css.js"> </script> <script src="http://codemirror.net/mode/htmlmixed/htmlmixed.js"> </script> <script src="http://codemirror.net/mode/markdown/markdown.js"> </script> </head>
+<body>
+  <div id="editor"></div> <div> <input type="submit" value="js" onclick="myCodeMirror.setOption('mode', 'javascript');"> <input type="submit" value="html" onclick="myCodeMirror.setOption('mode', 'htmlmixed');"> <input type="submit" value="markdown" onclick="myCodeMirror.setOption('mode', 'markdown');"> </div>
+  <input type="file" onchange="localLoad(this.files);"/>
+  <input type="submit" value="save" onclick="window.open(localSave());"/>
+  <input type="submit" value="re-seat" onclick="reseat();"/>
+  </body>
+  <script>
+    myCodeMirror = CodeMirror( document.getElementById('editor'), { lineNumbers: true });
+    function reseat() {
+      var content = myCodeMirror.getValue();
+      var escaped = "'" + content.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/script/g, "scr'+'ipt") + "'";
+      var script = '<scr'+'ipt>myCodeMirror.setValue(' + escaped + ')</scr'+'ipt>';
+      location.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(wrap(content + script));
+    }
+    //LOCAL
+    function wrap(content) {
+      return '<!DOCTYPE html><html lang="en">' + content + '</html>';
+    }
+
+  function localSave() {
+      return 'data:text/plain;charset=utf-8,' //'data:application/octet-stream;charset=utf-8,'
+          + encodeURIComponent(wrap(myCodeMirror.getValue()));
+  }
+
+    function localLoad(files) {
+      if (files.length === 1) {
+        document.title = escape(files[0].name);
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          myCodeMirror.setValue(e.target.result);
+        };
+        reader.readAsText(files[0]);
+      }
+    }
+  </script>
+
+// TODO: set initial content
