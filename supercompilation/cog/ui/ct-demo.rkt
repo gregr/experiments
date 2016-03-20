@@ -1,0 +1,83 @@
+#lang racket
+;(require (planet neil/charterm))
+;(require "ansi.rkt")
+
+;(define-struct ct-frame (tl tr bl br top bottom left right) #:transparent)
+
+;(define (ct-boxed-display frame strs)
+  ;(match-let* (((ct-frame tl tr bl br top bottom left right) frame)
+               ;(width (apply max (map string-length strs)))
+               ;(height (length strs))
+               ;(top (string->immutable-string (make-string width top)))
+               ;(bottom (string->immutable-string (make-string width bottom))))
+    ;(display tl)
+    ;(display top)
+    ;(displayln tr)
+    ;(for ((str strs) (idx (in-naturals)))
+      ;(display left)
+      ;(display (~a str #:width width))
+      ;(displayln right)
+      ;)
+    ;(display bl)
+    ;(display bottom)
+    ;(displayln br)
+    ;))
+
+;(define ct-frame-normal (ct-frame #\┌ #\┐ #\└ #\┘ #\─ #\─ #\│ #\│))
+
+;(with-stty-raw
+  ;(displayln (~v (maybe-read-char)))
+  ;(display "\e[s")
+  ;(display "\e[10;10H")
+  ;(display "\e[2J")
+  ;(displayln "where does this end up?")
+  ;(display "\e[12;8H")
+  ;(displayln "and this?")
+  ;(display "\e[u")
+;)
+
+;(define stty-state (with-output-to-string (lambda () (system "stty -g"))))
+;(system "stty raw -echo opost")
+;(read-char)
+;(system (~a "stty " stty-state))
+
+;(with-charterm
+  ;(charterm-clear-screen)
+  ;(charterm-cursor 1 1)
+  ;(void))
+;(ct-boxed-display ct-frame-normal (list "testing" "does this work?"))
+
+;(with-charterm
+  ;(charterm-clear-screen)
+  ;(charterm-cursor 1 2)
+  ;(ct-boxed-display ct-frame-normal (list "testing" "does this work?")))
+
+;(with-charterm
+ ;(charterm-clear-screen)
+ ;(charterm-cursor 10 5)
+ ;(charterm-display "Hello, ")
+ ;(charterm-bold)
+ ;(charterm-display "you")
+ ;(charterm-normal)
+ ;(charterm-display ".")
+ ;(charterm-cursor 1 1)
+ ;(charterm-display "Press a key...")
+ ;(let ((key (charterm-read-key)))
+   ;(charterm-cursor 1 1)
+   ;(charterm-clear-line)
+   ;(printf "You pressed: ~S\r\n" key)))
+
+;(with-charterm
+   ;(charterm-clear-screen)
+   ;(charterm-insert-line 4)
+   ;;(charterm-bell)
+   ;;(charterm-read-key)
+   ;(charterm-bell)
+   ;(charterm-inverse)
+   ;(charterm-display "hoo\033[94mray\033[0m!")
+   ;(charterm-display " hoo\033[94mray\033[0m!")
+   ;(charterm-newline)
+   ;(charterm-display "\033[0;34mhoo\033[4;5moo\033[22;1mray\033[0m!")
+   ;(charterm-newline)
+   ;(void)
+  ;)
