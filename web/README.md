@@ -46,3 +46,19 @@
 What are all the possible `<input>` types?
 
 [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
+
+## TODO
+
+* appcache
+* indexedDB
+* tab synchronization
+* end-to-end encryption
+* event handler hijacking
+* websockets
+* webRTC
+
+* drag and drop
+* file upload/re-seating
+* file download/dump
+
+* misc DOM manipulation/diffing
