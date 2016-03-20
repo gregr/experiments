@@ -27,7 +27,15 @@
 * [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-201/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-201/)
 * [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-301/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-301/)
 
-### [Unhosted Apps](https://unhosted.org/apps/)
+### Web apps without web servers
+
+* [https://www.youtube.com/watch?v=WqV5kqaFRDU](https://www.youtube.com/watch?v=WqV5kqaFRDU)
+
+* [https://unhosted.org/adventures/2/An-unhosted-editor.html](https://unhosted.org/adventures/2/An-unhosted-editor.html)
+* [http://nobackend.org/](http://nobackend.org/)
+* [http://offlinefirst.org/](http://offlinefirst.org/)
+
+#### [Unhosted Apps](https://unhosted.org/apps/)
 
 * [http://tiddlywiki.com/](http://tiddlywiki.com/)
 * [https://dspace-nilclass.5apps.com/](https://dspace-nilclass.5apps.com/)
