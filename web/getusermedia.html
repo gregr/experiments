@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  </head>
+  <body>
+    <video id="feed" width="320" height="240" autoplay></video>
+  </body>
+  <script>
+    //document.body.innerHTML = '<video id="feed" width="320" height="240" autoplay></video>'
+    var video = document.getElementById('feed');
+    var stream = null;
+    function onFail() { alert('it broke'); }
+    function onSuccess(stm) { alert('got a stream'); video.src = window.URL.createObjectURL(stm); stream = stm; }
+    navigator.webkitGetUserMedia({video: true}, onSuccess, onFail);
+    //navigator.webkitGetUserMedia({video: true, audio: true}, onSuccess, onFail);
+  </script>
+</html>
