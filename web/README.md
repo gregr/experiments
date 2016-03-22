@@ -4,6 +4,8 @@
 
 [W3C Markup Validator](https://validator.w3.org/)
 
+[https://google.github.io/styleguide/htmlcssguide.xml](https://google.github.io/styleguide/htmlcssguide.xml)
+
 ### HTML5
 
 * [http://www.html5rocks.com/en/tutorials/dnd/basics/](http://www.html5rocks.com/en/tutorials/dnd/basics/)
@@ -26,6 +28,11 @@
 * [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom/)
 * [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-201/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-201/)
 * [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-301/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-301/)
+
+* [https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos)
+* [http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/](http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/)
+* [http://www.html5rocks.com/en/tutorials/three/intro/](http://www.html5rocks.com/en/tutorials/three/intro/)
+* [http://www.html5rocks.com/en/tutorials/webaudio/intro/](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
 
 ### Web apps without web servers
 
@@ -60,6 +67,14 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [http://www.csszengarden.com/](http://www.csszengarden.com/)
 * [http://getbootstrap.com/](http://getbootstrap.com/)
 * [https://www.amazon.ca/The-Non-Designers-Design-Book-Edition/dp/0321534042](https://www.amazon.ca/The-Non-Designers-Design-Book-Edition/dp/0321534042)
+
+### JavaScript
+
+[https://dorey.github.io/JavaScript-Equality-Table/](https://dorey.github.io/JavaScript-Equality-Table/)
+
+[https://kangax.github.io/compat-table/es6/](https://kangax.github.io/compat-table/es6/)
+
+[Promise PolyFill](https://www.promisejs.org/)
 
 ### Misc
 
