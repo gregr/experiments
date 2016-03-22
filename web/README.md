@@ -41,6 +41,26 @@
 * [https://dspace-nilclass.5apps.com/](https://dspace-nilclass.5apps.com/)
 * [http://cloudwall.me/](http://cloudwall.me/)
 
+### Design
+
+#### Inspiring visualizations
+
+mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](http://liamoc.net/posts/2014-01-01-context-split.html)
+
+[http://sediment.io/](http://sediment.io/)
+
+* [http://worrydream.com/MediaForThinkingTheUnthinkable/](http://worrydream.com/MediaForThinkingTheUnthinkable/)
+* [http://worrydream.com/ExplorableExplanations/](http://worrydream.com/ExplorableExplanations/)
+* [http://worrydream.com/VisualizingEdgeWeights/](http://worrydream.com/VisualizingEdgeWeights/)
+* [http://worrydream.com/LearnableProgramming/](http://worrydream.com/LearnableProgramming/)
+
+#### CSS quirks
+
+* [https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries)
+* [http://www.csszengarden.com/](http://www.csszengarden.com/)
+* [http://getbootstrap.com/](http://getbootstrap.com/)
+* [https://www.amazon.ca/The-Non-Designers-Design-Book-Edition/dp/0321534042](https://www.amazon.ca/The-Non-Designers-Design-Book-Edition/dp/0321534042)
+
 ### Misc
 
 [FEDevelopment tutorials](https://www.youtube.com/channel/UCGm4F5WYB4Y9tFwUHAsR44A)
@@ -48,8 +68,6 @@
 What are all the possible `<input>` types?
 
 [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
-
-[https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries)
 
 [https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute](https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute)
 
