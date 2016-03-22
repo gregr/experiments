@@ -94,6 +94,7 @@ What are all the possible `<input>` types?
 * event handler hijacking
     * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
 * indexedDB
+    * performance concerns
     * [https://www.w3.org/TR/IndexedDB/](https://www.w3.org/TR/IndexedDB/)
     * [https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB)
     * [http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/](http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/)
@@ -110,4 +111,13 @@ What are all the possible `<input>` types?
 * drag and drop
 * file upload/re-seating
 * file download/dump
+* overlays: z-index?
+* graphics
+    * filters
+    * canvas
+    * WebGL
+* audio
+* webcam
+    * [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
+* geolocation
 * misc DOM manipulation/diffing
