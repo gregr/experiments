@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<script src="https://fb.me/react-0.13.3.js"></script>
+<script src="https://fb.me/JSXTransformer-0.13.3.js"></script>
+
+<div id="example"></div>
+<script type="text/jsx">
+
+var Temperature = React.createClass({
+  getInitialState: function() { return {F: 32, C: 0}; },
+  changeC: function (e) {
+    var c = e.target.value;
+    this.setState({C: c, F: 32 + (c * 9/5)});
+  },
+  changeF: function (e) {
+    var f = e.target.value;
+    this.setState({F: f, C: (f - 32) * 5/9});
+  },
+  render: function() {
+    return <div><div><label htmlFor="C">Celsius</label><input id="C" type="text" value={this.state.C} onChange={this.changeC} /></div><div><label htmlFor="F">Fahrenheit</label><input id="F" type="text" value={this.state.F} onChange={this.changeF} /></div></div>;
+  }
+});
+
+React.render(
+  <Temperature />,
+  document.getElementById('example')
+);
+
+</script>
