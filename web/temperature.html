@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<div>
+  <label for="C">Celsius</label>
+  <input type="text" id="C" value="0" onchange="changeC();">
+</div>
+<div>
+  <label for="F">Fahrenheit</label>
+  <input type="text" id="F" value="32" onchange="changeF();">
+</div>
+<script>
+var iC = document.getElementById('C');
+var iF = document.getElementById('F');
+function changeC() {
+  iF.value = 32 + (iC.value * 9/5);
+}
+function changeF() {
+  iC.value = (iF.value - 32) * 5/9;
+}
+</script>
