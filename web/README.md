@@ -63,6 +63,7 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 #### CSS quirks
 
+* http://colintoh.com/blog/display-table-anti-hero
 * [https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries)
 * [http://www.csszengarden.com/](http://www.csszengarden.com/)
 * [http://getbootstrap.com/](http://getbootstrap.com/)
@@ -92,6 +93,7 @@ What are all the possible `<input>` types?
 * tab synchronization (see web apps w/o web servers talk: how was this done?)
 * end-to-end encryption
 * event handler hijacking
+    * [http://www.quirksmode.org/js/contents.html](http://www.quirksmode.org/js/contents.html)
     * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
 * indexedDB
     * performance concerns
