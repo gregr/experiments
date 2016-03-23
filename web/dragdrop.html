@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<style>
+.col {
+  height: 150px;
+  width: 150px;
+  display: inline-block;
+  border: 2px solid #666666;
+  background-color: #ccc;
+  margin-right: 5px;
+  -webkit-border-radius: 10px;
+  -ms-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  -webkit-box-shadow: inset 0 0 3px #000;
+  -ms-box-shadow: inset 0 0 3px #000;
+  box-shadow: inset 0 0 3px #000;
+  text-align: center;
+  cursor: move;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+  cursor: grab;
+}
+.col header {
+  color: #fff;
+  text-shadow: #000 0 1px;
+  box-shadow: 5px;
+  padding: 5px;
+  background: -moz-linear-gradient(left center, rgb(0,0,0), rgb(79,79,79), rgb(21,21,21));
+  background: -webkit-gradient(linear, left top, right top,
+                               color-stop(0, rgb(0,0,0)),
+                               color-stop(0.50, rgb(79,79,79)),
+                               color-stop(1, rgb(21,21,21)));
+  background: -webkit-linear-gradient(left center, rgb(0,0,0), rgb(79,79,79), rgb(21,21,21));
+  background: -ms-linear-gradient(left center, rgb(0,0,0), rgb(79,79,79), rgb(21,21,21));
+  border-bottom: 1px solid #ddd;
+  -webkit-border-top-left-radius: 10px;
+  -moz-border-radius-topleft: 10px;
+  -ms-border-radius-topleft: 10px;
+  border-top-left-radius: 10px;
+  -webkit-border-top-right-radius: 10px;
+  -ms-border-top-right-radius: 10px;
+  -moz-border-radius-topright: 10px;
+  border-top-right-radius: 10px;
+}
+.col.over {
+  border: 2px dashed #000;
+}
+</style>
+<div id="cols">
+  <div class="col" draggable="true"><header>A</header></div>
+  <div class="col" draggable="true"><header>B</header></div>
+  <div class="col" draggable="true"><header>C</header></div>
+</div>
+<script>
+var dragged = null;
+function onDragStart(e) {
+  dragged = this;
+  dragged.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.innerHTML);
+}
+function onDragEnd(e) {
+  [].forEach.call(cols, function(col) {
+    col.classList.remove('over');
+  });
+  dragged.style.opacity = '1.0';
+  dragged = null;
+}
+function onDragEnter(e) {
+  this.classList.add('over');
+}
+function onDragLeave(e) {
+  this.classList.remove('over');
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (dragged !== this) {
+    dragged.innerHTML = this.innerHTML;
+    this.innerHTML = e.dataTransfer.getData('text/html');
+  }
+}
+
+var cols = document.querySelectorAll('#cols .col');
+[].forEach.call(cols, function(col) {
+  var ehs = [['dragstart', onDragStart], ['dragend', onDragEnd],
+             ['dragenter', onDragEnter], ['dragleave', onDragLeave],
+             ['dragover', onDragOver], ['drop', onDrop]];
+  [].forEach.call(ehs, function(eh) { col.addEventListener(eh[0], eh[1], false); });
+});
+</script>
