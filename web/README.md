@@ -129,6 +129,9 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * drag and drop
 * file upload/re-seating
 * file download/dump
+* fullscreen
+    * [https://fullscreen.spec.whatwg.org/](https://fullscreen.spec.whatwg.org/)
+    * [https://stackoverflow.com/questions/1125084/how-to-make-in-javascript-full-screen-windows-stretching-all-over-the-screen](https://stackoverflow.com/questions/1125084/how-to-make-in-javascript-full-screen-windows-stretching-all-over-the-screen)
 * graphics
     * filters
     * canvas
