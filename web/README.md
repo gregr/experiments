@@ -104,8 +104,11 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 * appcache
 * tab synchronization (see web apps w/o web servers talk: how was this done?)
-* end-to-end encryption
+* web workers
+    * [https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
+    * [https://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file](https://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file)
 * event handler hijacking
+    * requestAnimationFrame
     * [http://www.quirksmode.org/js/contents.html](http://www.quirksmode.org/js/contents.html)
     * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
 * indexedDB
@@ -134,4 +137,5 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * webcam
     * [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
 * geolocation
+* end-to-end encryption
 * misc DOM manipulation/diffing
