@@ -79,9 +79,9 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 ### Misc
 
-[FEDevelopment tutorials](https://www.youtube.com/channel/UCGm4F5WYB4Y9tFwUHAsR44A)
+[https://www.kirupa.com/learn/index.htm](https://www.kirupa.com/learn/index.htm)
 
-What are all the possible `<input>` types?
+[FEDevelopment tutorials](https://www.youtube.com/channel/UCGm4F5WYB4Y9tFwUHAsR44A)
 
 [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
 
