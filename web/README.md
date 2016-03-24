@@ -67,6 +67,10 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [http://learn.shayhowe.com/advanced-html-css/responsive-web-design/](http://learn.shayhowe.com/advanced-html-css/responsive-web-design/)
 * [https://bradfrost.github.io/this-is-responsive/patterns.html](https://bradfrost.github.io/this-is-responsive/patterns.html)
 
+#### Overlays
+
+[http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/](http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/)
+
 #### CSS quirks
 
 * http://colintoh.com/blog/display-table-anti-hero
@@ -119,7 +123,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * drag and drop
 * file upload/re-seating
 * file download/dump
-* overlays: z-index?
 * graphics
     * filters
     * canvas
