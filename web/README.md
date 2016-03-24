@@ -61,6 +61,12 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [http://worrydream.com/VisualizingEdgeWeights/](http://worrydream.com/VisualizingEdgeWeights/)
 * [http://worrydream.com/LearnableProgramming/](http://worrydream.com/LearnableProgramming/)
 
+#### Responsiveness
+
+* [https://developers.google.com/web/fundamentals/design-and-ui/responsive/fundamentals/?hl=en](https://developers.google.com/web/fundamentals/design-and-ui/responsive/fundamentals/?hl=en)
+* [http://learn.shayhowe.com/advanced-html-css/responsive-web-design/](http://learn.shayhowe.com/advanced-html-css/responsive-web-design/)
+* [https://bradfrost.github.io/this-is-responsive/patterns.html](https://bradfrost.github.io/this-is-responsive/patterns.html)
+
 #### CSS quirks
 
 * http://colintoh.com/blog/display-table-anti-hero
