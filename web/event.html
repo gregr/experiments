@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<div id="top">
+  top
+  <div id="child0">
+    child 0
+    <div id="child1">child 1</div>
+  </div>
+</div>
+<script>
+function onTop(e) {
+  alert('top');
+}
+function onChild(msg) {
+  return function(e) { alert('child: ' + msg); };
+}
+function stop(e) { e.stopPropagation(); }
+var top = document.getElementById('top');
+var c0 = document.getElementById('child0');
+var c1 = document.getElementById('child1');
+top.addEventListener('click', onTop, false);
+top.addEventListener('click', onChild(-1), true);
+c0.addEventListener('click', onChild(0), false);
+c0.addEventListener('click', onChild(1), true);
+//c0.addEventListener('click', stop, false);
+//c0.addEventListener('click', stop, true);
+c0.addEventListener('click', onChild(2), false);
+c1.addEventListener('click', onChild(3), false);
+c1.addEventListener('click', onChild(4), false);
+c1.addEventListener('click', onChild(5), false);
+</script>
