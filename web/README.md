@@ -87,6 +87,9 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 [Promise PolyFill](https://www.promisejs.org/)
 
+* [http://www.quirksmode.org/js/dragdrop.html](http://www.quirksmode.org/js/dragdrop.html)
+* [http://www.quirksmode.org/js/events_properties.html#position](http://www.quirksmode.org/js/events_properties.html#position)
+
 ### Misc
 
 [https://www.kirupa.com/learn/index.htm](https://www.kirupa.com/learn/index.htm)
