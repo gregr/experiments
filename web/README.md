@@ -120,6 +120,12 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 [Promise PolyFill](https://www.promisejs.org/)
 
+#### Event handling
+
+* requestAnimationFrame
+* [http://www.quirksmode.org/js/contents.html](http://www.quirksmode.org/js/contents.html)
+* [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
+
 ### Misc
 
 [https://www.kirupa.com/learn/index.htm](https://www.kirupa.com/learn/index.htm)
@@ -137,10 +143,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * web workers
     * [https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
     * [https://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file](https://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file)
-* event handler hijacking
-    * requestAnimationFrame
-    * [http://www.quirksmode.org/js/contents.html](http://www.quirksmode.org/js/contents.html)
-    * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
 * file upload/re-seating
 * file download/dump
 * graphics
