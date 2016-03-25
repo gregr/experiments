@@ -8,8 +8,6 @@
 
 ### HTML5
 
-* [http://www.html5rocks.com/en/tutorials/dnd/basics/](http://www.html5rocks.com/en/tutorials/dnd/basics/)
-* [http://www.html5rocks.com/en/tutorials/file/dndfiles/](http://www.html5rocks.com/en/tutorials/file/dndfiles/)
 * [http://www.html5rocks.com/en/tutorials/file/filesystem-sync/](http://www.html5rocks.com/en/tutorials/file/filesystem-sync/)
 
 * [http://www.html5rocks.com/en/tutorials/getusermedia/intro/](http://www.html5rocks.com/en/tutorials/getusermedia/intro/)
@@ -67,6 +65,13 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [http://learn.shayhowe.com/advanced-html-css/responsive-web-design/](http://learn.shayhowe.com/advanced-html-css/responsive-web-design/)
 * [https://bradfrost.github.io/this-is-responsive/patterns.html](https://bradfrost.github.io/this-is-responsive/patterns.html)
 
+#### Drag and drop
+
+* [http://www.html5rocks.com/en/tutorials/dnd/basics/](http://www.html5rocks.com/en/tutorials/dnd/basics/)
+* [http://www.html5rocks.com/en/tutorials/file/dndfiles/](http://www.html5rocks.com/en/tutorials/file/dndfiles/)
+* [http://www.quirksmode.org/js/dragdrop.html](http://www.quirksmode.org/js/dragdrop.html)
+* [http://www.quirksmode.org/js/events_properties.html#position](http://www.quirksmode.org/js/events_properties.html#position)
+
 #### Overlays
 
 [http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/](http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/)
@@ -91,9 +96,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 [https://kangax.github.io/compat-table/es6/](https://kangax.github.io/compat-table/es6/)
 
 [Promise PolyFill](https://www.promisejs.org/)
-
-* [http://www.quirksmode.org/js/dragdrop.html](http://www.quirksmode.org/js/dragdrop.html)
-* [http://www.quirksmode.org/js/events_properties.html#position](http://www.quirksmode.org/js/events_properties.html#position)
 
 ### Misc
 
@@ -131,7 +133,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
     * [https://github.com/js-platform/p2p](https://github.com/js-platform/p2p)
     * voice and video
         * [https://web.archive.org/web/20140102203544/https://labs.ericsson.com/developer-community/blog/beyond-html5-peer-peer-conversational-video](https://web.archive.org/web/20140102203544/https://labs.ericsson.com/developer-community/blog/beyond-html5-peer-peer-conversational-video)
-* drag and drop
 * file upload/re-seating
 * file download/dump
 * graphics
