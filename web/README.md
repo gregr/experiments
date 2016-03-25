@@ -35,7 +35,6 @@
 ### Web apps without web servers
 
 * [https://www.youtube.com/watch?v=WqV5kqaFRDU](https://www.youtube.com/watch?v=WqV5kqaFRDU)
-
 * [https://unhosted.org/adventures/2/An-unhosted-editor.html](https://unhosted.org/adventures/2/An-unhosted-editor.html)
 * [http://nobackend.org/](http://nobackend.org/)
 * [http://offlinefirst.org/](http://offlinefirst.org/)
@@ -45,6 +44,13 @@
 * [http://tiddlywiki.com/](http://tiddlywiki.com/)
 * [https://dspace-nilclass.5apps.com/](https://dspace-nilclass.5apps.com/)
 * [http://cloudwall.me/](http://cloudwall.me/)
+
+#### IndexedDB
+
+* performance concerns
+* [https://www.w3.org/TR/IndexedDB/](https://www.w3.org/TR/IndexedDB/)
+* [https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB)
+* [http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/](http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/)
 
 ### Design
 
@@ -118,11 +124,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
     * requestAnimationFrame
     * [http://www.quirksmode.org/js/contents.html](http://www.quirksmode.org/js/contents.html)
     * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
-* indexedDB
-    * performance concerns
-    * [https://www.w3.org/TR/IndexedDB/](https://www.w3.org/TR/IndexedDB/)
-    * [https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB)
-    * [http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/](http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/)
 * websockets
     * [https://devcenter.heroku.com/articles/websocket-security](https://devcenter.heroku.com/articles/websocket-security)
         * "If the response is JSON, always use JSON.parse() to safely parse the data."
