@@ -10,7 +10,6 @@
 
 * [http://www.html5rocks.com/en/tutorials/file/filesystem-sync/](http://www.html5rocks.com/en/tutorials/file/filesystem-sync/)
 
-* [http://www.html5rocks.com/en/tutorials/getusermedia/intro/](http://www.html5rocks.com/en/tutorials/getusermedia/intro/)
 * [http://www.html5rocks.com/en/tutorials/streaming/screenshare/](http://www.html5rocks.com/en/tutorials/streaming/screenshare/)
 
 * [http://www.html5rocks.com/en/tutorials/workers/basics/](http://www.html5rocks.com/en/tutorials/workers/basics/)
@@ -68,6 +67,14 @@
 * [https://github.com/js-platform/p2p](https://github.com/js-platform/p2p)
 * voice and video
     * [https://web.archive.org/web/20140102203544/https://labs.ericsson.com/developer-community/blog/beyond-html5-peer-peer-conversational-video](https://web.archive.org/web/20140102203544/https://labs.ericsson.com/developer-community/blog/beyond-html5-peer-peer-conversational-video)
+
+### Media
+
+[http://www.html5rocks.com/en/tutorials/getusermedia/intro/](http://www.html5rocks.com/en/tutorials/getusermedia/intro/)
+
+#### Webcam
+
+[https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
 
 ### Design
 
@@ -152,8 +159,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
     * canvas
     * WebGL
 * audio
-* webcam
-    * [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
 * geolocation
 * end-to-end encryption
 * misc DOM manipulation/diffing
