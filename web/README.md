@@ -8,8 +8,6 @@
 
 ### HTML5
 
-* [http://www.html5rocks.com/en/tutorials/file/filesystem-sync/](http://www.html5rocks.com/en/tutorials/file/filesystem-sync/)
-
 * [http://www.html5rocks.com/en/tutorials/streaming/screenshare/](http://www.html5rocks.com/en/tutorials/streaming/screenshare/)
 
 * [http://www.html5rocks.com/en/tutorials/workers/basics/](http://www.html5rocks.com/en/tutorials/workers/basics/)
@@ -34,6 +32,13 @@
 ### Web apps without web servers
 
 * [https://www.youtube.com/watch?v=WqV5kqaFRDU](https://www.youtube.com/watch?v=WqV5kqaFRDU)
+    * Load while offline
+        * appcache
+    * Open file from disk
+    * Save file to disk
+        * [https://github.com/eligrey/FileSaver.js/](https://github.com/eligrey/FileSaver.js/)
+    * New tabs open with current state
+    * Old tabs recognize being out of sync
 * [https://unhosted.org/adventures/2/An-unhosted-editor.html](https://unhosted.org/adventures/2/An-unhosted-editor.html)
 * [http://nobackend.org/](http://nobackend.org/)
 * [http://offlinefirst.org/](http://offlinefirst.org/)
@@ -151,7 +156,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 ## TODO
 
 * appcache
-* tab synchronization (see web apps w/o web servers talk: how was this done?)
 * file upload/re-seating
 * file download/dump
 * graphics
