@@ -130,7 +130,7 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 #### Event handling
 
 * requestAnimationFrame
-* [http://www.quirksmode.org/js/contents.html](http://www.quirksmode.org/js/contents.html)
+* [http://www.quirksmode.org/js/contents.html#events](http://www.quirksmode.org/js/contents.html#events)
 * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
 
 #### Web workers
