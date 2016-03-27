@@ -15,7 +15,6 @@
 
 * [http://www.html5rocks.com/en/tutorials/workers/basics/](http://www.html5rocks.com/en/tutorials/workers/basics/)
 * [http://www.html5rocks.com/en/tutorials/eventsource/basics/](http://www.html5rocks.com/en/tutorials/eventsource/basics/)
-* [http://www.html5rocks.com/en/tutorials/appcache/beginner/](http://www.html5rocks.com/en/tutorials/appcache/beginner/)
 * [http://www.html5rocks.com/en/tutorials/file/xhr2/](http://www.html5rocks.com/en/tutorials/file/xhr2/)
 
 * [http://www.html5rocks.com/en/mobile/mobifying/](http://www.html5rocks.com/en/mobile/mobifying/)
@@ -36,7 +35,6 @@
 
 * [https://www.youtube.com/watch?v=WqV5kqaFRDU](https://www.youtube.com/watch?v=WqV5kqaFRDU)
     * Load while offline
-        * appcache
     * Open file from disk
     * Save file to disk
         * [https://github.com/eligrey/FileSaver.js/](https://github.com/eligrey/FileSaver.js/)
@@ -51,6 +49,14 @@
 * [http://tiddlywiki.com/](http://tiddlywiki.com/)
 * [https://dspace-nilclass.5apps.com/](https://dspace-nilclass.5apps.com/)
 * [http://cloudwall.me/](http://cloudwall.me/)
+
+#### AppCache
+
+* [http://www.andygup.net/application-cache-is-not-gone-oh-my-or-is-it/](http://www.andygup.net/application-cache-is-not-gone-oh-my-or-is-it/)
+* [https://stackoverflow.com/questions/28271843/is-service-worker-intended-to-replace-or-coexist-with-appcache](https://stackoverflow.com/questions/28271843/is-service-worker-intended-to-replace-or-coexist-with-appcache)
+* [http://appcache.offline.technology/](http://appcache.offline.technology/)
+* [http://alistapart.com/article/application-cache-is-a-douchebag](http://alistapart.com/article/application-cache-is-a-douchebag)
+* [http://labs.ft.com/2012/11/using-an-iframe-to-stop-app-cache-storing-masters/](http://labs.ft.com/2012/11/using-an-iframe-to-stop-app-cache-storing-masters/)
 
 #### IndexedDB
 
