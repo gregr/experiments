@@ -8,6 +8,9 @@
 
 ### HTML5
 
+* [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
+* [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
+
 * [http://www.html5rocks.com/en/tutorials/streaming/screenshare/](http://www.html5rocks.com/en/tutorials/streaming/screenshare/)
 
 * [http://www.html5rocks.com/en/tutorials/workers/basics/](http://www.html5rocks.com/en/tutorials/workers/basics/)
