@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html manifest="/test.appcache">
+<link rel="stylesheet" href="appcache.css" />
+<div class="test">test</div>
+<script>
+applicationCache.addEventListener('updateready', function() {
+    if (confirm('Manifest updated. Reload?')) {
+        location.reload();
+    }
+});
+applicationCache.addEventListener("error", function(e) { alert('offline'); });
+</script>
+</html>
