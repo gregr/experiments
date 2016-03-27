@@ -1,0 +1,19 @@
+#!/usr/bin/python
+
+import SimpleHTTPServer
+
+class AppcacheHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    def guess_type(self, path):
+        mimetype = SimpleHTTPServer.SimpleHTTPRequestHandler.guess_type(
+            self, path)
+        if mimetype == 'application/octet-stream':
+            if path.endswith('appcache'):
+                mimetype = 'text/cache-manifest'
+        return mimetype
+
+if __name__ == '__main__':
+    import SocketServer
+    PORT = 8000
+    httpd = SocketServer.TCPServer(('', PORT), AppcacheHandler)
+    print "Serving HTTP on port", PORT
+    httpd.serve_forever()
