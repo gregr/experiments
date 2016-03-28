@@ -12,8 +12,6 @@
 * [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
 
 * [https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos)
-* [http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/](http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/)
-* [http://www.html5rocks.com/en/tutorials/three/intro/](http://www.html5rocks.com/en/tutorials/three/intro/)
 * [http://www.html5rocks.com/en/tutorials/webaudio/intro/](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
 
 ### Web apps without web servers
@@ -86,6 +84,13 @@
 #### Webcam
 
 [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
+
+#### Graphics
+
+##### WebGL
+
+* [http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/](http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/)
+* [http://www.html5rocks.com/en/tutorials/three/intro/](http://www.html5rocks.com/en/tutorials/three/intro/)
 
 ### Design
 
@@ -166,7 +171,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * graphics
     * filters
     * canvas
-    * WebGL
 * audio
 * geolocation
 * end-to-end encryption
