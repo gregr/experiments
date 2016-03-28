@@ -12,7 +12,6 @@
 * [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
 
 * [https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos)
-* [http://www.html5rocks.com/en/tutorials/webaudio/intro/](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
 
 ### Web apps without web servers
 
@@ -84,6 +83,10 @@
 #### Webcam
 
 [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
+
+#### Audio
+
+[http://www.html5rocks.com/en/tutorials/webaudio/intro/](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
 
 #### Graphics
 
@@ -171,7 +174,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * graphics
     * filters
     * canvas
-* audio
 * geolocation
 * end-to-end encryption
 * misc DOM manipulation/diffing
