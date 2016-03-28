@@ -11,14 +11,6 @@
 * [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
 * [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
 
-* [http://www.html5rocks.com/en/tutorials/webcomponents/imports/](http://www.html5rocks.com/en/tutorials/webcomponents/imports/)
-* [http://www.html5rocks.com/en/tutorials/webcomponents/customelements/](http://www.html5rocks.com/en/tutorials/webcomponents/customelements/)
-* [http://www.html5rocks.com/en/tutorials/webcomponents/template/](http://www.html5rocks.com/en/tutorials/webcomponents/template/)
-
-* [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom/)
-* [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-201/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-201/)
-* [http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-301/](http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom-301/)
-
 * [https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos)
 * [http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/](http://learningthreejs.com/blog/2012/02/07/live-video-in-webgl/)
 * [http://www.html5rocks.com/en/tutorials/three/intro/](http://www.html5rocks.com/en/tutorials/three/intro/)
