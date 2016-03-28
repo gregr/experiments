@@ -6,20 +6,12 @@
 
 [https://google.github.io/styleguide/htmlcssguide.xml](https://google.github.io/styleguide/htmlcssguide.xml)
 
-### HTML5
-
-* [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
-* [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
-
-* [https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos)
-
 ### Web apps without web servers
 
 * [https://www.youtube.com/watch?v=WqV5kqaFRDU](https://www.youtube.com/watch?v=WqV5kqaFRDU)
     * Load while offline
     * Open file from disk
     * Save file to disk
-        * [https://github.com/eligrey/FileSaver.js/](https://github.com/eligrey/FileSaver.js/)
     * New tabs open with current state
     * Old tabs recognize being out of sync
 * [https://unhosted.org/adventures/2/An-unhosted-editor.html](https://unhosted.org/adventures/2/An-unhosted-editor.html)
@@ -31,6 +23,10 @@
 * [http://tiddlywiki.com/](http://tiddlywiki.com/)
 * [https://dspace-nilclass.5apps.com/](https://dspace-nilclass.5apps.com/)
 * [http://cloudwall.me/](http://cloudwall.me/)
+
+#### Files
+
+[https://github.com/eligrey/FileSaver.js/](https://github.com/eligrey/FileSaver.js/)
 
 #### AppCache
 
@@ -82,13 +78,17 @@
 
 #### Webcam
 
-[https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
+* [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
+* [https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos)
 
 #### Audio
 
 [http://www.html5rocks.com/en/tutorials/webaudio/intro/](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
 
 #### Graphics
+
+* filters
+* canvas
 
 ##### WebGL
 
@@ -159,9 +159,9 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 ### Misc
 
-[https://www.kirupa.com/learn/index.htm](https://www.kirupa.com/learn/index.htm)
-
-[FEDevelopment tutorials](https://www.youtube.com/channel/UCGm4F5WYB4Y9tFwUHAsR44A)
+* [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
+* [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
+* [https://www.kirupa.com/learn/index.htm](https://www.kirupa.com/learn/index.htm)
 
 [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
 
@@ -170,10 +170,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 ## TODO
 
 * file upload/re-seating
-* file download/dump
-* graphics
-    * filters
-    * canvas
 * geolocation
 * end-to-end encryption
 * misc DOM manipulation/diffing
