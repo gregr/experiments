@@ -11,13 +11,6 @@
 * [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
 * [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
 
-* [http://www.html5rocks.com/en/tutorials/streaming/screenshare/](http://www.html5rocks.com/en/tutorials/streaming/screenshare/)
-
-* [http://www.html5rocks.com/en/tutorials/workers/basics/](http://www.html5rocks.com/en/tutorials/workers/basics/)
-* [http://www.html5rocks.com/en/tutorials/eventsource/basics/](http://www.html5rocks.com/en/tutorials/eventsource/basics/)
-* [http://www.html5rocks.com/en/tutorials/file/xhr2/](http://www.html5rocks.com/en/tutorials/file/xhr2/)
-
-* [http://www.html5rocks.com/en/mobile/mobifying/](http://www.html5rocks.com/en/mobile/mobifying/)
 * [http://www.html5rocks.com/en/tutorials/webcomponents/imports/](http://www.html5rocks.com/en/tutorials/webcomponents/imports/)
 * [http://www.html5rocks.com/en/tutorials/webcomponents/customelements/](http://www.html5rocks.com/en/tutorials/webcomponents/customelements/)
 * [http://www.html5rocks.com/en/tutorials/webcomponents/template/](http://www.html5rocks.com/en/tutorials/webcomponents/template/)
@@ -70,8 +63,17 @@
 
 ### Communication
 
+#### XHR
+
+[http://www.html5rocks.com/en/tutorials/file/xhr2/](http://www.html5rocks.com/en/tutorials/file/xhr2/)
+
+#### Server sent events
+
+[http://www.html5rocks.com/en/tutorials/eventsource/basics/](http://www.html5rocks.com/en/tutorials/eventsource/basics/)
+
 #### WebSockets
 
+* [http://www.html5rocks.com/en/tutorials/websockets/basics/](http://www.html5rocks.com/en/tutorials/websockets/basics/)
 * [https://devcenter.heroku.com/articles/websocket-security](https://devcenter.heroku.com/articles/websocket-security)
     * "If the response is JSON, always use JSON.parse() to safely parse the data."
     * check Origin header
