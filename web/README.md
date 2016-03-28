@@ -53,10 +53,13 @@
 #### AppCache
 
 * [http://www.andygup.net/application-cache-is-not-gone-oh-my-or-is-it/](http://www.andygup.net/application-cache-is-not-gone-oh-my-or-is-it/)
-* [https://stackoverflow.com/questions/28271843/is-service-worker-intended-to-replace-or-coexist-with-appcache](https://stackoverflow.com/questions/28271843/is-service-worker-intended-to-replace-or-coexist-with-appcache)
 * [http://appcache.offline.technology/](http://appcache.offline.technology/)
 * [http://alistapart.com/article/application-cache-is-a-douchebag](http://alistapart.com/article/application-cache-is-a-douchebag)
 * [http://labs.ft.com/2012/11/using-an-iframe-to-stop-app-cache-storing-masters/](http://labs.ft.com/2012/11/using-an-iframe-to-stop-app-cache-storing-masters/)
+
+#### Service workers
+
+[https://jakearchibald.github.io/isserviceworkerready/resources.html](https://jakearchibald.github.io/isserviceworkerready/resources.html)
 
 #### IndexedDB
 
@@ -164,7 +167,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 ## TODO
 
-* appcache
 * file upload/re-seating
 * file download/dump
 * graphics
