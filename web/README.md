@@ -4,7 +4,8 @@
 
 [W3C Markup Validator](https://validator.w3.org/)
 
-[https://google.github.io/styleguide/htmlcssguide.xml](https://google.github.io/styleguide/htmlcssguide.xml)
+* [https://google.github.io/styleguide/htmlcssguide.xml](https://google.github.io/styleguide/htmlcssguide.xml)
+* [https://google.github.io/styleguide/javascriptguide.xml](https://google.github.io/styleguide/javascriptguide.xml)
 
 ### Web apps without web servers
 
