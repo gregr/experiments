@@ -98,6 +98,8 @@
 
 ### Design
 
+https://github.com/eugenkiss/7guis/wiki
+
 #### Inspiring visualizations
 
 mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](http://liamoc.net/posts/2014-01-01-context-split.html)
