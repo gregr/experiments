@@ -142,7 +142,8 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 #### CSS quirks
 
-* http://colintoh.com/blog/display-table-anti-hero
+* [http://designshack.net/articles/css/everything-you-never-knew-about-css-floats/](http://designshack.net/articles/css/everything-you-never-knew-about-css-floats/)
+* [http://colintoh.com/blog/display-table-anti-hero](http://colintoh.com/blog/display-table-anti-hero)
 * [https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Media_queries)
 * [http://www.csszengarden.com/](http://www.csszengarden.com/)
 * [http://getbootstrap.com/](http://getbootstrap.com/)
