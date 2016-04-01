@@ -119,6 +119,7 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 #### Responsiveness
 
+* [http://www.quirksmode.org/mobile/](http://www.quirksmode.org/mobile/)
 * [https://developers.google.com/web/fundamentals/design-and-ui/responsive/fundamentals/?hl=en](https://developers.google.com/web/fundamentals/design-and-ui/responsive/fundamentals/?hl=en)
 * [http://learn.shayhowe.com/advanced-html-css/responsive-web-design/](http://learn.shayhowe.com/advanced-html-css/responsive-web-design/)
 * [https://bradfrost.github.io/this-is-responsive/patterns.html](https://bradfrost.github.io/this-is-responsive/patterns.html)
