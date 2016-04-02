@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<style>
+.parent {
+  position: relative;
+  display: inline-block;
+  background-color: #999;
+}
+.ib {
+  display: inline-block;
+  background-color: #0cf;
+}
+.static {
+  display: inline-block;
+  vertical-align: top;
+  width: 50px;
+  height: 50px;
+  background-color: #00a;
+}
+.sb {
+  display: block;
+  width: 70px;
+  height: 70px;
+  background-color: #0a0;
+}
+.big {
+  display: block;
+  width: 200px;
+  height: 200px;
+  background-color: #aa0;
+}
+.abs {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  display: inline-block;
+  width: 80px;
+  height: 50px;
+  background-color: #a00;
+}
+.layer0 {
+  position: relative;
+  z-index: 0;
+}
+.layer1 {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+}
+.layer2 {
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 2;
+}
+.layer3 {
+  overflow: hidden;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  z-index: 4;
+  opacity: 0.4;
+  background-color: #333;
+}
+</style>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+<div class="ib">first</div>
+<div class="parent">
+  <div class="layer0">
+    <div class="big"></div>
+  </div>
+  <div class="layer1">
+    <div class="static"></div>
+    <div class="static"></div>
+    <div class="sb"></div>
+  </div>
+  <div class="layer2">
+    <div class="abs"></div>
+  </div>
+  <div class="layer3">
+    <div class="abs"></div>
+  </div>
+</div>
