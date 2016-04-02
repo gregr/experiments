@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <style>
+.viewport {
+  position: relative;
+}
 .parent {
   overflow: auto;
   position: relative;
   display: inline-block;
+  vertical-align: top;
   background-color: #999;
 }
 .ib {
@@ -68,22 +72,47 @@
   opacity: 0.4;
   background-color: #333;
 }
+.fixed {
+  position: absolute;
+  top: 80px;
+  left: 80px;
+  z-index: 5;
+  opacity: 0.8;
+  background-color: #a0a;
+}
+.passthru {
+  pointer-events: none;
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  width: 160px;
+  height: 100px;
+  background-color: #a0a;
+  opacity: 0.2;
+  z-index: 5;
+}
 </style>
 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-<div class="ib">first</div>
-<div class="parent">
-  <div class="layer0">
-    <div class="big"></div>
+<div class="viewport">
+  <div class="ib">first</div>
+  <div class="parent">
+    <div class="layer0">
+      <div class="big"></div>
+    </div>
+    <div class="layer1">
+      <div class="static"></div>
+      <div class="static"></div>
+      <div class="sb"></div>
+    </div>
+    <div class="layer2">
+      <div class="abs"></div>
+    </div>
+    <div class="layer3">
+      <div class="abs"></div>
+    </div>
   </div>
-  <div class="layer1">
-    <div class="static"></div>
-    <div class="static"></div>
-    <div class="sb"></div>
-  </div>
-  <div class="layer2">
-    <div class="abs"></div>
-  </div>
-  <div class="layer3">
-    <div class="abs"></div>
+  <div class="fixed">
+    simulated modal
+    <div class="passthru"></div>
   </div>
 </div>
