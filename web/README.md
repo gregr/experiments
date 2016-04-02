@@ -136,6 +136,13 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/](http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/)
 * [https://stackoverflow.com/questions/1401658/html-overlay-which-allows-clicks-to-fall-through-to-elements-behind-it](https://stackoverflow.com/questions/1401658/html-overlay-which-allows-clicks-to-fall-through-to-elements-behind-it)
 
+#### Layout
+
+* [http://adamschwartz.co/magic-of-css/chapters/2-layout/](http://adamschwartz.co/magic-of-css/chapters/2-layout/)
+* [http://adamschwartz.co/magic-of-css/chapters/3-tables/](http://adamschwartz.co/magic-of-css/chapters/3-tables/)
+* [https://css-tricks.com/snippets/css/a-guide-to-flexbox/](https://css-tricks.com/snippets/css/a-guide-to-flexbox/)
+* [https://drafts.csswg.org/css-align/](https://drafts.csswg.org/css-align/)
+
 #### Fullscreen
 
 * [https://fullscreen.spec.whatwg.org/](https://fullscreen.spec.whatwg.org/)
