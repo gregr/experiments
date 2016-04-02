@@ -133,7 +133,8 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 #### Overlays
 
-[http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/](http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/)
+* [http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/](http://tympanus.net/codrops/2013/11/07/css-overlay-techniques/)
+* [https://stackoverflow.com/questions/1401658/html-overlay-which-allows-clicks-to-fall-through-to-elements-behind-it](https://stackoverflow.com/questions/1401658/html-overlay-which-allows-clicks-to-fall-through-to-elements-behind-it)
 
 #### Fullscreen
 
