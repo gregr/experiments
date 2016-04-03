@@ -161,6 +161,11 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [http://getbootstrap.com/](http://getbootstrap.com/)
 * [https://www.amazon.ca/The-Non-Designers-Design-Book-Edition/dp/0321534042](https://www.amazon.ca/The-Non-Designers-Design-Book-Edition/dp/0321534042)
 
+#### Accessibility
+
+* [https://w3c.github.io/aria-in-html/](https://w3c.github.io/aria-in-html/)
+* [https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA)
+
 ### JavaScript
 
 [https://dorey.github.io/JavaScript-Equality-Table/](https://dorey.github.io/JavaScript-Equality-Table/)
@@ -198,8 +203,6 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * visibility, collapsing
 * transitions
 * editable content
-* accessibility
-    * aria
 * progressive enhancement
 * file upload/re-seating
 * geolocation
