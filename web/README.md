@@ -198,6 +198,11 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 [https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute](https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute)
 
+#### HTML attributes
+
+* [elements to attributes](https://simon.html5.org/html-elements)
+* [attributes to elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes)
+
 ## TODO
 
 * visibility, collapsing
