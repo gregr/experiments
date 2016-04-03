@@ -180,13 +180,16 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
 * [https://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file](https://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file)
 
+#### Content editable
+
+* [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
+* [https://stackoverflow.com/questions/16050762/jquery-contenteditable-new-paragraph-on-keypress-works-on-original-but-not-g](https://stackoverflow.com/questions/16050762/jquery-contenteditable-new-paragraph-on-keypress-works-on-original-but-not-g)
+
 ### Misc
 
 * [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
 * [http://diveintohtml5.info/table-of-contents.html](http://diveintohtml5.info/table-of-contents.html)
 * [https://www.kirupa.com/learn/index.htm](https://www.kirupa.com/learn/index.htm)
-
-[https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
 
 [https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute](https://stackoverflow.com/questions/4112289/what-is-the-html-tabindex-attribute)
 
