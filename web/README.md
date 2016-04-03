@@ -203,6 +203,12 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [elements to attributes](https://simon.html5.org/html-elements)
 * [attributes to elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes)
 
+#### CSS Properties
+
+* [CSS 2.1](https://www.w3.org/TR/CSS21/propidx.html)
+* [CSS 3](http://www.quackit.com/css/css3/properties/)
+* [https://developer.mozilla.org/en-US/docs/Web/CSS/Reference](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference)
+
 ## TODO
 
 * visibility, collapsing
