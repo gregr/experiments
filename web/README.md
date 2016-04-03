@@ -143,6 +143,10 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 * [https://css-tricks.com/snippets/css/a-guide-to-flexbox/](https://css-tricks.com/snippets/css/a-guide-to-flexbox/)
 * [https://drafts.csswg.org/css-align/](https://drafts.csswg.org/css-align/)
 
+#### Transitions
+
+* [http://adamschwartz.co/magic-of-css/chapters/6-transitions/](http://adamschwartz.co/magic-of-css/chapters/6-transitions/)
+
 #### Fullscreen
 
 * [https://fullscreen.spec.whatwg.org/](https://fullscreen.spec.whatwg.org/)
