@@ -195,7 +195,13 @@ mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](h
 
 ## TODO
 
+* visibility, collapsing
+* transitions
+* editable content
+* accessibility
+    * aria
+* progressive enhancement
 * file upload/re-seating
 * geolocation
 * end-to-end encryption
-* misc DOM manipulation/diffing
+* efficient DOM update
