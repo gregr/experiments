@@ -73,6 +73,11 @@
 * voice and video
     * [https://web.archive.org/web/20140102203544/https://labs.ericsson.com/developer-community/blog/beyond-html5-peer-peer-conversational-video](https://web.archive.org/web/20140102203544/https://labs.ericsson.com/developer-community/blog/beyond-html5-peer-peer-conversational-video)
 
+#### postMessage
+
+* [https://stackoverflow.com/questions/25271243/window-postmessage-to-communicate-between-applications-in-different-tabs/27234441#27234441](https://stackoverflow.com/questions/25271243/window-postmessage-to-communicate-between-applications-in-different-tabs/27234441#27234441)
+* [http://apress.jensimmons.com/v5/pro-html5-programming/ch6.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch6.html)
+
 ### Media
 
 [http://www.html5rocks.com/en/tutorials/getusermedia/intro/](http://www.html5rocks.com/en/tutorials/getusermedia/intro/)
