@@ -221,8 +221,7 @@ https://github.com/eugenkiss/7guis/wiki
 
 ## TODO
 
-* visibility, collapsing
-* transitions
+* mouse/keyboard position selection
 * editable content
 * progressive enhancement
 * file upload/re-seating
