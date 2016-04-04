@@ -105,16 +105,21 @@
 
 https://github.com/eugenkiss/7guis/wiki
 
-#### Inspiring visualizations
+#### Inspirations
 
-mathematical formulae: [http://liamoc.net/posts/2014-01-01-context-split.html](http://liamoc.net/posts/2014-01-01-context-split.html)
-
-[http://sediment.io/](http://sediment.io/)
-
+* [mathematical formulae](http://liamoc.net/posts/2014-01-01-context-split.html)
 * [http://worrydream.com/MediaForThinkingTheUnthinkable/](http://worrydream.com/MediaForThinkingTheUnthinkable/)
 * [http://worrydream.com/ExplorableExplanations/](http://worrydream.com/ExplorableExplanations/)
 * [http://worrydream.com/VisualizingEdgeWeights/](http://worrydream.com/VisualizingEdgeWeights/)
 * [http://worrydream.com/LearnableProgramming/](http://worrydream.com/LearnableProgramming/)
+* [http://sediment.io/](http://sediment.io/)
+* [http://ckeditor.com/](http://ckeditor.com/)
+* [https://www.notion.so/](https://www.notion.so/)
+* [http://www.luna-lang.org/](http://www.luna-lang.org/)
+* [https://www.spacetime.me/blog/future-programming-workshop-2015](https://www.spacetime.me/blog/future-programming-workshop-2015)
+* [http://www.loper-os.org/?p=568](http://www.loper-os.org/?p=568)
+* [http://chrisnovello.com/teaching/risd/computer-utopias/](http://chrisnovello.com/teaching/risd/computer-utopias/)
+* [https://en.wikipedia.org/wiki/Project_Xanadu](https://en.wikipedia.org/wiki/Project_Xanadu)
 
 #### Bootstrap
 
