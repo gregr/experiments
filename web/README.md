@@ -221,6 +221,27 @@
 
 ## UI ideas
 
+### Term visualization
+
+* source vs. computed
+    * computed adjacent to computing formulas
+    * boolean
+        * source: checkbox
+        * derivative?
+    * string
+        * source: textarea
+        * derivative: label
+    * number, color, date/time: corresponding input
+    * spatial vector, graphic: canvas
+* alternative formulations selectable via radio button
+* aggregates/compounds: framed/bordered panels
+    * unordered: separated terms
+    * ordered: tightly packed terms, optionally numbered
+    * associated: terms have labels
+* context holes point to dependencies
+* derivatives point to originals
+* conflicts and their traces: highlighted
+
 ### Test cases
 
 * [7GUIs](https://github.com/eugenkiss/7guis/wiki)
