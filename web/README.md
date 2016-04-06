@@ -103,8 +103,6 @@
 
 ### Design
 
-https://github.com/eugenkiss/7guis/wiki
-
 #### Inspirations
 
 * [mathematical formulae](http://liamoc.net/posts/2014-01-01-context-split.html)
@@ -220,6 +218,19 @@ https://github.com/eugenkiss/7guis/wiki
 * [CSS 2.1](https://www.w3.org/TR/CSS21/propidx.html)
 * [CSS 3](http://www.quackit.com/css/css3/properties/)
 * [https://developer.mozilla.org/en-US/docs/Web/CSS/Reference](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference)
+
+## UI ideas
+
+### Test cases
+
+* [7GUIs](https://github.com/eugenkiss/7guis/wiki)
+* spreadsheets
+* databases
+* simulations
+* grammar of graphics
+* input-dependent animation (time and space)
+* machine learning algorithms
+* interactive goban
 
 ## TODO
 
