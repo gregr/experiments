@@ -108,6 +108,8 @@ https://github.com/eugenkiss/7guis/wiki
 #### Inspirations
 
 * [mathematical formulae](http://liamoc.net/posts/2014-01-01-context-split.html)
+* [MathBox](https://acko.net/files/gltalks/toolsforthought)
+* [http://worrydream.com/substroke/](http://worrydream.com/substroke/)
 * [http://worrydream.com/MediaForThinkingTheUnthinkable/](http://worrydream.com/MediaForThinkingTheUnthinkable/)
 * [http://worrydream.com/ExplorableExplanations/](http://worrydream.com/ExplorableExplanations/)
 * [http://worrydream.com/VisualizingEdgeWeights/](http://worrydream.com/VisualizingEdgeWeights/)
