@@ -251,6 +251,43 @@
 * stacked sheets for spatial compression
     * tabbed or [multi-]accordion selection
 
+### Actions
+
+* sheet-level
+    * introduce paragraphs of descriptive text
+    * introduce links
+    * new term
+    * label term
+    * edit term formula/source
+        * include alternative formula (for quick toggling when testing multiple ideas)
+    * wrap/group terms as compound
+    * dissolve compound elements into its surroundings
+    * toggle compound layout orientation; horizontal, vertical
+    * reorder terms within compound
+    * move term into compound
+    * extract term from compound
+    * retract/extend compound summaries
+    * derive new term from an existing one
+    * detach derivative from original to form an independent copy
+    * generate a series of derivations along the length of an ordered compound
+        * similar to a combination of zip and map
+    * prepend an independent term to the head of a derivation series
+        * supports accumulator-passing fold/scan computations
+    * set, list, and relational operations
+        * union, difference, filter/select, project, join
+* formula-level
+    * reference by label/name
+        * dropdown selection to resolve name ambiguity
+    * reference by pointing
+    * embed literal atom
+    * introduce function application
+    * introduce case analysis or conditional; designate branch results (see: functions)
+    * expand/inline/descend-into function application; w/ corresponding ascend
+    * introduce function
+        * parameterize a group of terms over a subset of its sources
+        * designate a [group of] term[s] as the externally-visible output
+    * introduce algebraic data constructors
+
 ### Test cases
 
 * [7GUIs](https://github.com/eugenkiss/7guis/wiki)
