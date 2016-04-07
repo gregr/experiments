@@ -230,7 +230,7 @@
 
 ### Tools
 
-* part selector for terms and embeddable controls
+* palette for terms and embeddable controls
 * dictionary: searchable list of reference-able names and their meanings
 * bookmarks: anchor points in the workspace that can be quickly jumped to
     * also summarizes embedded links for convenience
@@ -265,6 +265,8 @@
     * panel chooses horizontal or vertical layout for its elements
 * stacked sheets for spatial compression
     * tabbed or [multi-]accordion selection
+* layers
+* spacers
 
 ### Actions
 
