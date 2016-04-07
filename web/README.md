@@ -268,6 +268,13 @@
 
 ### Actions
 
+* halo menus
+    * grab/move for two-click (start and end) drag and drop
+    * rotate
+    * resize
+    * style
+    * delete
+    * derive/copy
 * sheet-level
     * introduce paragraphs of descriptive text
     * introduce links
