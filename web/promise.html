@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<div id="result">Computing ...</div>
+<script>
+function setResult(result) {
+  document.getElementById('result').innerHTML = result;
+  return result;
+}
+function delayed(op, delay) {
+  if (delay || delay === 0) {
+    var original = op;
+    op = function(fulfill, reject) {
+      setTimeout(function() { original(fulfill, reject); }, delay);
+    };
+  }
+  return new Promise(op);
+}
+function promiseAdd(a, b, delay) {
+  return delayed(function(fulfill, reject) { fulfill(a + b); }, delay);
+}
+function promiseDivide(a, b, delay) {
+  return delayed(function (fulfill, reject) {
+    if (b === 0) {
+      reject(['division by zero', a, b]);
+    } else {
+      fulfill(a / b);
+    }
+  }, delay);
+}
+
+promiseDivide(14, 2, 1000).then(function(res) { return 2 * (res + 3); }).then(function(res) {
+  return promiseDivide(res, 4, 1000).then(setResult);
+}).catch(function (err) { alert('error: ' + err); });
+</script>
