@@ -221,6 +221,13 @@
 
 ## UI ideas
 
+### Input
+
+* device agnosticism
+    * onactivate/onfocus/oninput/onchange vs. onclick/onmouseX/onkeypress
+    * accessibility: optional keyboard versions of mouse uses
+* explicit event interception: stopPopagation the default
+
 ### Tools
 
 * part selector for terms and embeddable controls
