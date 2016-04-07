@@ -242,6 +242,15 @@
 * derivatives point to originals
 * conflicts and their traces: highlighted
 
+### Layout
+
+* default to wrapping, horizontal layout
+* allow forced vertical breaks
+* panels/sheets to group terms and descriptions without affecting namespaces
+    * panel chooses horizontal or vertical layout for its elements
+* stacked sheets for spatial compression
+    * tabbed or [multi-]accordion selection
+
 ### Test cases
 
 * [7GUIs](https://github.com/eugenkiss/7guis/wiki)
