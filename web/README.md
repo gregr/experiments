@@ -221,6 +221,14 @@
 
 ## UI ideas
 
+### Tools
+
+* part selector for terms and embeddable controls
+* dictionary: searchable list of reference-able names and their meanings
+* bookmarks: anchor points in the workspace that can be quickly jumped to
+    * also summarizes embedded links for convenience
+* workspace: initially a single sheet
+
 ### Term visualization
 
 * source vs. computed
