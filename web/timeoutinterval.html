@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<p>setTimeout: <span id="tresult">Computing ...</span></p>
+<p>setInterval: <span id="iresult">Computing ...</span></p>
+<script>
+var tcount = 2000;
+var icount = tcount;
+var start = new Date();
+function elapsed() {
+  return ((new Date()).getTime() - start.getTime()) / 1000;
+}
+function setResult(id, otherCount) {
+  var result = elapsed().toString() + ' seconds; ' + otherCount.toString();
+  document.getElementById(id).innerHTML = result;
+  return result;
+}
+function testTimeout() {
+  setTimeout(function() {
+    --tcount;
+    if (tcount === 0) {
+      setResult('tresult', icount);
+    } else { testTimeout(); } }, 0);
+}
+function testInterval() {
+  var iid = setInterval(function() {
+    --icount;
+    if (icount === 0) {
+      clearInterval(iid);
+      setResult('iresult', tcount);
+    } }, 0);
+}
+testTimeout();
+testInterval();
+</script>
