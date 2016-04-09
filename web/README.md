@@ -111,6 +111,7 @@
 * [http://worrydream.com/MediaForThinkingTheUnthinkable/](http://worrydream.com/MediaForThinkingTheUnthinkable/)
 * [http://worrydream.com/ExplorableExplanations/](http://worrydream.com/ExplorableExplanations/)
 * [http://worrydream.com/VisualizingEdgeWeights/](http://worrydream.com/VisualizingEdgeWeights/)
+* [http://worrydream.com/DrawingDynamicVisualizationsTalkAddendum/](http://worrydream.com/DrawingDynamicVisualizationsTalkAddendum/)
 * [http://worrydream.com/LearnableProgramming/](http://worrydream.com/LearnableProgramming/)
 * [http://sediment.io/](http://sediment.io/)
 * [http://ckeditor.com/](http://ckeditor.com/)
