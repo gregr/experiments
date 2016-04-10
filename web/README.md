@@ -231,11 +231,13 @@
 
 ### Tools
 
-* palette for terms and embeddable controls
+* context-sensitive, categorized input command menu
 * dictionary: searchable list of reference-able names and their meanings
+    * includes palette for primitive and user-defined terms and embeddable controls
 * bookmarks: anchor points in the workspace that can be quickly jumped to
     * also summarizes embedded links for convenience
-* workspace: initially a single sheet
+* workspace: initially a single sheet; sheets may be embedded in other sheets
+* explanation: an automatically-built sheet describing a context's provenance
 
 ### Term visualization
 
