@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<style>
+pre {
+  display: inline-block;
+  background-color: #cccccc;
+}
+.block {
+  position: absolute;
+  top: 50px;
+  left: 100px;
+  width: 300px;
+  height: 200px;
+  background-color: #ff3300;
+}
+</style>
+<pre>Mouse position: <span id="position"></span></pre>
+<div class="block"></div>
+<script>
+var position = document.getElementById('position');
+function setPos(x, y) { position.innerHTML = x.toString() + ',' + y.toString(); }
+function onMouseMove(event) {
+  event = event || window.event;
+  var target = event.target || event.srcElement;
+  var rect = target.getBoundingClientRect();
+  var offsetX = event.clientX - rect.left;
+  var offsetY = event.clientY - rect.top;
+  setPos(offsetX, offsetY);
+}
+
+document.addEventListener('mousemove', onMouseMove, true);
+</script>
