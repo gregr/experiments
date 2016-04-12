@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<style>
+html {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  height: 100%;
+  margin: 0;
+}
+#viewport {
+  height: 100%;
+}
+.sheet {
+  display: inline-block;
+  vertical-align: top;
+  background-color: #eeeeee;
+  min-height: 10px;
+  min-width: 20px;
+}
+.chassis {
+  display: inline-block;
+  vertical-align: top;
+  border-collapse: collapse;
+  margin: 1px;
+  border: 2px solid #0000ff;
+}
+.hframe {
+  display: table-cell;
+  border: 1px solid;
+}
+.vframe {
+  display: table-row;
+  border: 1px solid #00ee00;
+}
+.term {
+  background-color: #cccccc;
+  font-family: monospace;
+  white-space: pre;
+  min-width: 10px;
+  min-height: 10px;
+}
+</style>
+<div id="viewport"><div id="main" class="sheet"></div></div>
+<script>
+var main = document.getElementById('main');
+var focus = main;
+function newChassis() {
+  var chassis = document.createElement('div');
+  chassis.classList.add('chassis');
+  return chassis;
+}
+function newTerm() {
+  var term = document.createElement('div');
+  term.classList.add('term');
+  var frame = document.createElement('div');
+  frame.classList.add('vframe');
+  frame.insertBefore(term, null);
+  return frame;
+}
+function termSingle() {
+  var chassis = newChassis();
+  chassis.insertBefore(newTerm(), null);
+  return chassis;
+}
+function listOnClick(ev) {
+  ev.stopPropagation();
+  layoutHorizontal(this);
+}
+function termList(count) {
+  var chassis = newChassis();
+  for (; count > 0; --count) {
+    chassis.insertBefore(newTerm(), null);
+  }
+  chassis.addEventListener('click', listOnClick, false);
+  return chassis;
+}
+function frameReplace(chassis, fcold, fcnew) {
+  var frames = chassis.children;
+  for (var idx = 0, frame; frame = frames[idx]; ++idx) {
+    frame.classList.remove(fcold);
+    frame.classList.add(fcnew);
+  }
+}
+function layoutHorizontal(chassis) { frameReplace(chassis, 'vframe', 'hframe'); }
+function layoutVertical(chassis) { frameReplace(chassis, 'hframe', 'vframe'); }
+function sheetAddTerm(sheet) {
+  var chassis = termList(3);
+  //var chassis = termSingle();
+  sheet.insertBefore(chassis, null);
+  return chassis;
+}
+
+function mainOnClick() { sheetAddTerm(main); }
+main.addEventListener('click', mainOnClick, false);
+</script>
