@@ -23,7 +23,7 @@ body {
   vertical-align: top;
   border-collapse: collapse;
   margin: 1px;
-  border: 2px solid #0000ff;
+  border: 2px solid #336666;
 }
 .hframe {
   display: table-cell;
@@ -31,7 +31,7 @@ body {
 }
 .vframe {
   display: table-row;
-  border: 1px solid #00ee00;
+  border: 1px solid #000000;
 }
 .term {
   background-color: #cccccc;
@@ -41,7 +41,7 @@ body {
   min-height: 10px;
 }
 </style>
-<div id="viewport"><div id="main" class="sheet"></div></div>
+<div id="viewport"><div id="main" class="sheet" tabindex="0"></div></div>
 <script>
 var main = document.getElementById('main');
 var focus = main;
@@ -84,13 +84,46 @@ function frameReplace(chassis, fcold, fcnew) {
 }
 function layoutHorizontal(chassis) { frameReplace(chassis, 'vframe', 'hframe'); }
 function layoutVertical(chassis) { frameReplace(chassis, 'hframe', 'vframe'); }
-function sheetAddTerm(sheet) {
+function sheetAddSingle(sheet) {
+  var chassis = termSingle();
+  sheet.insertBefore(chassis, null);
+  return chassis;
+}
+function sheetAddList(sheet) {
   var chassis = termList(3);
-  //var chassis = termSingle();
   sheet.insertBefore(chassis, null);
   return chassis;
 }
 
 function mainOnClick() { sheetAddTerm(main); }
+function mainOnKeyPress(ev) {
+  ev = ev || window.event;
+  var code = ev.keyCode || ev.which;
+  var dispatch = {
+    s: function() { sheetAddSingle(main); },
+    l: function() { sheetAddList(main); },
+    '\n': function() { alert('enter'); }
+  };
+  var key = (code === 13) ? '\n' : (code === 9) ? '\t' : String.fromCharCode(code);
+  var handle = dispatch[key];
+  if (handle) { handle(); }
+}
 main.addEventListener('click', mainOnClick, false);
+main.addEventListener('keypress', mainOnKeyPress, false);
+
+//function sheetRemoveTerm(sheet, term) {
+//}
+
+// var position = document.getElementById('position');
+// function setPos(x, y) { position.innerHTML = x.toString() + ',' + y.toString(); }
+// function onMouseMove(event) {
+//   event = event || window.event;
+//   var target = event.target || event.srcElement;
+//   var rect = target.getBoundingClientRect();
+//   var offsetX = event.clientX - rect.left;
+//   var offsetY = event.clientY - rect.top;
+//   setPos(offsetX, offsetY);
+// }
+//
+// document.addEventListener('mousemove', onMouseMove, true);
 </script>
