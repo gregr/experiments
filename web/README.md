@@ -176,6 +176,7 @@
 
 * [https://w3c.github.io/aria-in-html/](https://w3c.github.io/aria-in-html/)
 * [https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA)
+* [https://developer.mozilla.org/en-US/docs/Web/Accessibility/Keyboard-navigable_JavaScript_widgets](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Keyboard-navigable_JavaScript_widgets)
 
 ### JavaScript
 
@@ -200,6 +201,8 @@
 
 * [https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_Editable)
 * [https://stackoverflow.com/questions/16050762/jquery-contenteditable-new-paragraph-on-keypress-works-on-original-but-not-g](https://stackoverflow.com/questions/16050762/jquery-contenteditable-new-paragraph-on-keypress-works-on-original-but-not-g)
+* [http://www.quirksmode.org/js/keys.html](http://www.quirksmode.org/js/keys.html)
+* [http://www.cambiaresearch.com/articles/15/javascript-key-codes](http://www.cambiaresearch.com/articles/15/javascript-key-codes)
 
 ### Misc
 
