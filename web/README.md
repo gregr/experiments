@@ -333,6 +333,7 @@
 
 ## TODO
 
+* strict mode
 * mouse/keyboard position selection
 * editable content
 * progressive enhancement
