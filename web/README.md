@@ -186,6 +186,8 @@
 
 [Promise PolyFill](https://www.promisejs.org/)
 
+[Tail-call optimization without trampoline](http://glat.info/jscheck/tomrec.html)
+
 #### Event handling
 
 * requestAnimationFrame
