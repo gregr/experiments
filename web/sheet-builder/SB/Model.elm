@@ -40,7 +40,10 @@ type alias Identifier ref = { namespace : ref, nref : NamedRef ref }
 type alias NamedRef ref = { name : Name, ref : ref }
 
 type Value = VAtom (Atom Ref) | VList (List Ref) | VSheet (Sheet Ref)
-type ListConstruction ref = LCLiteral (List ref) | LCIterated (Iteration ref)
+type ListConstruction ref
+  = LCElement (Atom ref)
+  | LCIteration (Iteration ref)
+  | LCSplice ref
 type alias Sheet ref =
   { orientation : LayoutOrientation
   , elements : List (NamedRef ref)
