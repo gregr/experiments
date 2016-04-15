@@ -24,10 +24,7 @@ type BOp
   | BCompareLTE
   | BCompareGT
   | BCompareGTE
-  | BAdd
-  | BSubtract
-  | BMultiply
-  | BDivide
+  | BArithmetic (Float -> Float -> Float)
   | BStringConcat
   | BStringSubrange
   | BStringReplace
@@ -78,24 +75,25 @@ type alias Iteration ref =
   }
 
 afloat atom = case atom of
-  AInt int -> toFloat int
-  AFloat float -> float
+  AInt int -> Just <| toFloat int
+  AFloat float -> Just float
   -- ARef ref -> -- TODO: recurse on referenced value
-  _ -> 0  -- TODO: Nothing
+  _ -> Nothing
+
+arithApply op vlhs vrhs =
+  afloat vlhs `Maybe.andThen`
+  \flhs -> afloat vrhs `Maybe.andThen`
+  \frhs -> Just <| AFloat <| op flhs frhs
 
 eval term = case term of
-  Literal atom -> atom
+  Literal atom -> Just atom
   BinaryOp op lhs rhs ->
-    let vlhs = afloat <| eval lhs
-        vrhs = afloat <| eval rhs
-        vres = case op of
-          BAdd -> vlhs + vrhs
-          BSubtract -> vlhs - vrhs
-          BMultiply -> vlhs * vrhs
-          BDivide -> vlhs / vrhs
-          _ -> 0  -- TODO
-    in AFloat vres
-  _ -> AUnit
+    eval lhs `Maybe.andThen`
+    \vlhs -> eval rhs `Maybe.andThen`
+    \vrhs -> case op of
+               BArithmetic op -> arithApply op vlhs vrhs
+               _ -> Just <| AUnit  -- TODO
+  _ -> Nothing
 
-example = BinaryOp BMultiply (Literal <| AFloat 4.1) (Literal <| AInt 3)
+example = BinaryOp (BArithmetic (*)) (Literal <| AFloat 4.1) (Literal <| AInt 3)
 test = eval example
