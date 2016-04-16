@@ -44,10 +44,7 @@ type ListConstruction ref
   = LCElement (Atom ref)
   | LCIteration (Iteration ref)
   | LCSplice ref
-type alias Sheet ref =
-  { orientation : LayoutOrientation
-  , elements : List (NamedRef ref)
-  }
+type alias Sheet ref = { elements : List (NamedRef ref) }
 type LayoutOrientation = Vertical | Horizontal
 
 type alias Name = String
