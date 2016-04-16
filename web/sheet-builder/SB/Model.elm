@@ -9,8 +9,8 @@ type TermT ref
   | TSheet (Sheet ref)
   | Identify (Identifier ref)
   | Access (Accessor ref)
-  | UnaryOp UOp (TermT ref)
-  | BinaryOp BOp (TermT ref) (TermT ref)
+  | UnaryOp UOp (Atom ref)
+  | BinaryOp BOp (Atom ref) (Atom ref)
   --| Apply
 type UOp
   = UNot
@@ -51,15 +51,6 @@ type alias Name = String
 type alias Ref = Int
 
 type alias FlatTerm = TermT Ref
--- TODO: alternative terms
---type alias Program = Dict Ref FlatTerm
---type alias ProgramState = Dict Ref TermState
---type alias TermState =
-  --{ term : FlatTerm
-  --, result : Maybe Value
-  ----, dependencies : Set Ref
-  ----, dependants : Set Ref
-  --}
 
 -- TODO:
 -- deletion, (partial)transferring dependencies
@@ -114,16 +105,11 @@ arithApply op vlhs vrhs =
 eval env term = case term of
   Literal atom -> (env, Ok atom)
   BinaryOp op lhs rhs ->
-    let (env', mlhs) = eval env lhs
-        (env'', mrhs) = eval env rhs
-        mresult =
-          mlhs `Result.andThen`
-          \vlhs -> mrhs `Result.andThen`
-          \vrhs -> case op of
-            BArithmetic op -> arithApply op vlhs vrhs  -- TODO
-            _ -> Err "TODO"
-    in (env'', mresult)
+    let result = case op of
+      BArithmetic op -> arithApply op lhs rhs  -- TODO
+      _ -> Err "TODO"
+    in (env, result)
   _ -> (env, Err "TODO")
 
-example = BinaryOp (BArithmetic (*)) (Literal <| AFloat 4.1) (Literal <| AInt 3)
+example = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
 test = eval envEmpty example
