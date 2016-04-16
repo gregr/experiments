@@ -74,26 +74,56 @@ type alias Iteration ref =
   , length : ref
   }
 
+type alias Environment =
+  { terms : Dict Ref FlatTerm
+  , finished : Dict Ref (Maybe Value)
+  , dormant : Set Ref
+  , pending : Set Ref
+  , schedule : List Ref
+  }
+envEmpty =
+  { terms = Dict.empty
+  , finished = Dict.empty
+  , dormant = Set.empty
+  , pending = Set.empty
+  , schedule = []
+  }
+
+-- TODO: needs to eval ...
+--aderef env atom = case atom of
+  --ARef ref -> case Dict.get env ref of
+    --Nothing -> (env, AUnit)
+    --Just value -> case value of
+      --VAtom (ARef ref) -> aderef env ref
+      --VAtom atom -> (env, atom)
+      --_ -> -- TODO: compute
+  --_ -> (env, atom)
+
 afloat atom = case atom of
-  AInt int -> Just <| toFloat int
-  AFloat float -> Just float
+  AInt int -> Ok <| toFloat int
+  AFloat float -> Ok float
   -- ARef ref -> -- TODO: recurse on referenced value
-  _ -> Nothing
+  _ -> Err "type error: afloat"
 
 arithApply op vlhs vrhs =
-  afloat vlhs `Maybe.andThen`
-  \flhs -> afloat vrhs `Maybe.andThen`
-  \frhs -> Just <| AFloat <| op flhs frhs
+  afloat vlhs `Result.andThen`
+  \flhs -> afloat vrhs `Result.andThen`
+  \frhs -> Ok <| AFloat <| op flhs frhs
 
-eval term = case term of
-  Literal atom -> Just atom
+-- TODO: separate pending computation scheduling
+eval env term = case term of
+  Literal atom -> (env, Ok atom)
   BinaryOp op lhs rhs ->
-    eval lhs `Maybe.andThen`
-    \vlhs -> eval rhs `Maybe.andThen`
-    \vrhs -> case op of
-               BArithmetic op -> arithApply op vlhs vrhs
-               _ -> Just <| AUnit  -- TODO
-  _ -> Nothing
+    let (env', mlhs) = eval env lhs
+        (env'', mrhs) = eval env rhs
+        mresult =
+          mlhs `Result.andThen`
+          \vlhs -> mrhs `Result.andThen`
+          \vrhs -> case op of
+            BArithmetic op -> arithApply op vlhs vrhs  -- TODO
+            _ -> Err "TODO"
+    in (env'', mresult)
+  _ -> (env, Err "TODO")
 
 example = BinaryOp (BArithmetic (*)) (Literal <| AFloat 4.1) (Literal <| AInt 3)
-test = eval example
+test = eval envEmpty example
