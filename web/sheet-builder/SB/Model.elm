@@ -113,3 +113,33 @@ eval env term = case term of
 
 example = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
 test = eval envEmpty example
+
+{-
+Notes:
+
+new nodes
+  mirror identical ref
+  new ref wrapping another (default behavior)
+  shallow copy of term head and locally-defined refs
+    preserves subterm structure
+    supports instantiation of procedural abstractions without local refs
+
+example-oriented abstraction by extending sheets
+  sheet structure
+    parameters with arguments they're currently bound to
+      can be thought of as publicly visible properties, and as example inputs
+    encapsulated internal definitions, like a haskell where-clause
+      likely provides most of a sheet's spatial workspace
+      definitions are possibly labeled
+    result body, which can refer to the encapsulated definitions
+  operations
+    with: replace some arguments; arguments may be added even if unused
+    input: retrieve arguments
+    output: retrieve result
+  ultimately all operations could use this approach
+    primitives having opaque internals
+
+multiple dormant alternative terms may live inside a ref entry
+
+what is the right label structure to support auto-updating renamed identifiers?
+-}
