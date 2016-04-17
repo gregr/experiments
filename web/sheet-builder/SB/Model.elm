@@ -142,4 +142,28 @@ example-oriented abstraction by extending sheets
 multiple dormant alternative terms may live inside a ref entry
 
 what is the right label structure to support auto-updating renamed identifiers?
+
+optional compositional visual representations provided by default?
+  numbers
+    points on a scale
+    circular/rectangular areas
+      bars a special case of this
+    angles
+    color
+  numeric lists
+    plotted on a chart: cartesian or polar coordinates
+    vectors
+    rectangular areas
+    angular sweeps
+  generic lists
+    visualized change or difference
+      juxtaposition
+      superimposition
+      deltas
+      paths
+      motion
+    stat summaries
+      brackets
+      candlesticks
+      histograms
 -}
