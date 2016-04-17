@@ -143,6 +143,9 @@ multiple dormant alternative terms may live inside a ref entry
 
 what is the right label structure to support auto-updating renamed identifiers?
 
+pattern matching case analysis? at least simple boolean conditionals
+  [sealed] algebraic data?
+
 optional compositional visual representations provided by default?
   numbers
     points on a scale
