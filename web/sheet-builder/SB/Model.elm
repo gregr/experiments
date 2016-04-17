@@ -62,17 +62,56 @@ type alias Iteration =
 type alias Environment =
   { terms : Dict Ref Term
   , finished : Dict Ref (Maybe Value)
-  , dormant : Set Ref
   , pending : Set Ref
   , schedule : List Ref
+  , uid : Int
   }
 envEmpty =
   { terms = Dict.empty
   , finished = Dict.empty
-  , dormant = Set.empty
   , pending = Set.empty
   , schedule = []
+  , uid = 0
   }
+
+nextRef env = (env.uid, { env | uid = env.uid + 1 })
+updateTerm ref term env = { env | terms = Dict.insert ref term env.terms }
+newTerm term env =
+  let (ref, env') = nextRef env
+      env'' = updateTerm ref term env'
+  in (ref, env'')
+refTerm ref { terms } = case Dict.get ref terms of
+  Just term -> term
+  Nothing -> Literal AUnit
+
+dependencyRefs term = case term of
+  Literal (ARef ref) -> Set.singleton ref
+  BinaryOp _ lhs rhs ->
+    Set.union (dependencyRefs <| Literal lhs) (dependencyRefs <| Literal rhs)
+  _ -> Set.empty
+-- TODO: account for visibility
+rootRefs term = case term of
+  --TList lcs ->
+  --TSheet sheet ->
+  _ -> dependencyRefs term
+
+resultFoldl op acc xs = case xs of
+  [] -> Ok acc
+  yy :: ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
+
+schedule root env =
+  let schedulePush ref env = { env | pending = Set.insert ref env.pending,
+                                     schedule = ref :: env.schedule }
+      loop ref (seen, env) =
+        if (Set.member ref env.pending || Dict.member ref env.finished) then
+           Ok (seen, env)
+        else if Set.member ref seen then Err "TODO: cyclic dependency"
+        else
+          let seen' = Set.insert ref seen
+              deps = dependencyRefs <| refTerm ref env
+          in resultFoldl loop (seen', env) (Set.toList deps) `Result.andThen`
+             \(seen'', env') -> Ok (seen'', schedulePush ref env')
+  in loop root (Set.empty, env) `Result.andThen` \(_, env') -> Ok env'
 
 -- TODO: needs to eval ...
 --aderef env atom = case atom of
