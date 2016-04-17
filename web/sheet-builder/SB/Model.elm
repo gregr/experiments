@@ -52,8 +52,6 @@ type alias Ref = Int
 
 type alias FlatTerm = TermT Ref
 
--- TODO:
--- deletion, (partial)transferring dependencies
 
 type alias Level = Int
 type IRef = IAbsRef Ref | IRelRef (Level, Ref) | IPos Level
@@ -134,6 +132,7 @@ example-oriented abstraction by extending sheets
     result body, which can refer to the encapsulated definitions
   operations
     with: replace some arguments; arguments may be added even if unused
+      need a convenient way to support keyword args for descriptiveness
     input: retrieve arguments
     output: retrieve result
   ultimately all operations could use this approach
@@ -145,6 +144,10 @@ what is the right label structure to support auto-updating renamed identifiers?
 
 pattern matching case analysis? at least simple boolean conditionals
   [sealed] algebraic data?
+
+deletion, (partial)transferring dependencies
+
+ref-counting gc (that can recognize embedded cycles)?
 
 optional compositional visual representations provided by default?
   numbers
