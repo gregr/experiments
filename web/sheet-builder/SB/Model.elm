@@ -3,15 +3,15 @@ module SB.Model where
 import Dict exposing (Dict)
 import Set exposing (Set)
 
-type TermT ref
-  = Literal (Atom ref)
-  | TList (List (ListConstruction ref))
-  | TSheet (Sheet ref)
-  | Identify (Identifier ref)
-  | Access (Accessor ref)
-  | UnaryOp UOp (Atom ref)
-  | BinaryOp BOp (Atom ref) (Atom ref)
+type Term
+  = Literal Atom
+  | TList (List ListConstruction)
+  | TSheet Sheet
+  | UnaryOp UOp Atom
+  | BinaryOp BOp Atom Atom
+  --| Access Accessor
   --| Apply
+  --| Identify (Identifier ref)  TODO: need to be able to push name changes
 type UOp
   = UNot
   | UAddInvert
@@ -28,8 +28,8 @@ type BOp
   | BStringConcat
   | BStringSubrange
   | BStringReplace
-type Atom ref
-  = ARef ref
+type Atom
+  = ARef Ref
   | AUnit
   | ABool Bool
   | AString String
@@ -39,32 +39,28 @@ type alias Accessor ref = { collection : ref, key : Atom ref }
 type alias Identifier ref = { namespace : ref, nref : NamedRef ref }
 type alias NamedRef ref = { name : Name, ref : ref }
 
-type Value = VAtom (Atom Ref) | VList (List Ref) | VSheet (Sheet Ref)
-type ListConstruction ref
-  = LCElement (Atom ref)
-  | LCIteration (Iteration ref)
-  | LCSplice ref
-type alias Sheet ref = { elements : List (NamedRef ref) }
+type Value = VAtom Atom | VList (List Ref) | VSheet Sheet
+type ListConstruction
+  = LCElement Atom
+  | LCSplice Ref
+  | LCIteration Iteration
+type alias Sheet =
+  { elements : List Ref, -- TODO: labels
+    input : List Ref,  -- each parameter comes with an example
+    output : Ref
+  }
 type LayoutOrientation = Vertical | Horizontal
 
 type alias Name = String
 type alias Ref = Int
 
-type alias FlatTerm = TermT Ref
-
-
-type alias Level = Int
-type IRef = IAbsRef Ref | IRelRef (Level, Ref) | IPos Level
-type alias IterTerm = TermT IRef
-
-type alias Iteration ref =
-  { body : IterTerm
-  , locals : List IterTerm
-  , length : ref
+type alias Iteration =
+  { procedure : Ref
+  , length : Ref
   }
 
 type alias Environment =
-  { terms : Dict Ref FlatTerm
+  { terms : Dict Ref Term
   , finished : Dict Ref (Maybe Value)
   , dormant : Set Ref
   , pending : Set Ref
