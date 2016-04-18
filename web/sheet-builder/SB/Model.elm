@@ -9,6 +9,9 @@ type Term
   | TSheet Sheet
   | UnaryOp UOp Atom
   | BinaryOp BOp Atom Atom
+  --| SheetWith Ref Atom
+  --| SheetInput Ref
+  --| SheetOutput Ref
   --| Access Accessor
   --| Apply
   --| Identify (Identifier ref)  TODO: need to be able to push name changes
@@ -137,40 +140,52 @@ schedule ref env =
 --evalSchedule1 env = schedulePop env `Maybe.andThen`
   --\(ref, env') -> Just <| evalRef ref env'
 
-
--- TODO: needs to eval ...
---aderef env atom = case atom of
-  --ARef ref -> case Dict.get env ref of
-    --Nothing -> (env, AUnit)
-    --Just value -> case value of
-      --VAtom (ARef ref) -> aderef env ref
-      --VAtom atom -> (env, atom)
-      --_ -> -- TODO: compute
-  --_ -> (env, atom)
-
 afloat atom = case atom of
   AInt int -> Ok <| toFloat int
   AFloat float -> Ok float
-  -- ARef ref -> -- TODO: recurse on referenced value
   _ -> Err "type error: afloat"
 
-arithApply op vlhs vrhs =
-  afloat vlhs `Result.andThen`
-  \flhs -> afloat vrhs `Result.andThen`
+arithApply op alhs arhs =
+  afloat alhs `Result.andThen`
+  \flhs -> afloat arhs `Result.andThen`
   \frhs -> Ok <| AFloat <| op flhs frhs
 
 -- TODO: separate pending computation scheduling
-eval env term = case term of
-  Literal atom -> (env, Ok atom)
-  BinaryOp op lhs rhs ->
-    let result = case op of
-      BArithmetic op -> arithApply op lhs rhs  -- TODO
-      _ -> Err "TODO"
-    in (env, result)
-  _ -> (env, Err "TODO")
+evalAtom atom pending env = case atom of
+  ARef ref -> case Dict.get ref env.finished of
+    Just value -> case value of
+      VAtom atom -> (Ok atom, env)
+      _ -> (Ok <| ARef ref, env)
+    Nothing ->
+      if Set.member ref pending then (Err "TODO: cyclic computation", env)
+      else case Dict.get ref env.terms of
+        Nothing -> (Err "TODO: missing term for ref", env)
+        Just term ->
+          let (result, env') = eval term (Set.insert ref pending) env
+          in case result of
+            Err _ -> (result, env')
+            Ok atom ->
+              let finished' = Dict.insert ref (VAtom atom) env'.finished
+              in (Ok atom, { env' | finished = finished' })
+  _ -> (Ok <| atom, env)
 
-example = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
-test = eval envEmpty example
+eval term pending env = case term of
+  Literal atom -> evalAtom atom pending env
+  BinaryOp op lhs rhs ->
+    let (rlhs, env') = evalAtom lhs pending env
+        (rrhs, env'') = evalAtom rhs pending env'
+        result = rlhs `Result.andThen`
+        \alhs -> rrhs `Result.andThen`
+        \arhs -> case op of
+          BArithmetic op -> arithApply op alhs arhs
+          _ -> Err "TODO: eval binary op"
+    in (result, env'')
+  _ -> (Err "TODO: eval term", env)
+
+example0 = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
+(r0, exampleEnv) = newTerm example0 envEmpty
+example = BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)
+test = eval example Set.empty exampleEnv
 
 {-
 Notes:
