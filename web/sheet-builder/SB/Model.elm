@@ -195,7 +195,7 @@ evalAtom atom pending env =
         else case Dict.get ref env.terms of
           Nothing -> (,) <| Err "TODO: missing term for ref"
           Just term -> eval term (Set.insert ref pending) >>=
-          \value -> (,) (Ok <| valueAtom ref value) << finishRef ref value
+          \value env -> (Ok <| valueAtom ref value, finishRef ref value env)
     _ -> (,) <| Ok atom) env
 
 asheet atom env = case atom of
@@ -249,8 +249,14 @@ example5 = SheetOutput r4
 (r5, exampleEnv5) = newTerm example5 exampleEnv4
 example6 = SheetWith r4 <| ARef r5
 (r6, exampleEnv6) = newTerm example6 exampleEnv5
-example = Literal <| ARef r6
-test = eval example Set.empty exampleEnv6
+example7 = Literal <| ARef r6
+(r7, exampleEnv7) = newTerm example7 exampleEnv6
+example8 = Literal <| ARef r7
+(r8, exampleEnv8) = newTerm example8 exampleEnv7
+example9 = Literal <| ARef r8
+(r9, exampleEnv9) = newTerm example9 exampleEnv8
+example = SheetInput r8
+test = eval example Set.empty exampleEnv9
 
 {-
 Notes:
