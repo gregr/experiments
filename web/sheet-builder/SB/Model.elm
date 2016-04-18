@@ -41,13 +41,14 @@ type alias NamedRef ref = { name : Name, ref : ref }
 
 type Value = VAtom Atom | VList (List Ref) | VSheet Sheet
 type ListConstruction
-  = LCElement Atom
+  = LCElements (List Atom)
   | LCSplice Ref
   | LCIteration Iteration
 type alias Sheet =
-  { elements : List Ref, -- TODO: labels
-    input : List Ref,  -- each parameter comes with an example
-    output : Ref
+  { elements : List Ref -- TODO: labels
+  , owned : Set Ref -- not all embedded elements are owned
+  , input : List Ref  -- each parameter comes with an example
+  , output : Ref
   }
 type LayoutOrientation = Vertical | Horizontal
 
@@ -63,16 +64,26 @@ type alias Environment =
   { terms : Dict Ref Term
   , finished : Dict Ref (Maybe Value)
   , pending : Set Ref
-  , schedule : List Ref
+  , scheduleIn : List Ref
+  , scheduleOut : List Ref
   , uid : Int
   }
 envEmpty =
   { terms = Dict.empty
   , finished = Dict.empty
   , pending = Set.empty
-  , schedule = []
+  , scheduleIn = []
+  , scheduleOut = []
   , uid = 0
   }
+schedulePush ref env = { env | pending = Set.insert ref env.pending,
+                               scheduleIn = ref :: env.scheduleIn }
+schedulePop env = case env.scheduleOut of
+  [] -> case List.reverse env.scheduleIn of
+          [] -> Nothing
+          refs -> schedulePop { env | scheduleIn = [], scheduleOut = refs }
+  ref::refs -> Just (ref, { env | scheduleOut = refs,
+                                  pending = Set.remove ref env.pending})
 
 nextRef env = (env.uid, { env | uid = env.uid + 1 })
 updateTerm ref term env = { env | terms = Dict.insert ref term env.terms }
@@ -97,12 +108,10 @@ rootRefs term = case term of
 
 resultFoldl op acc xs = case xs of
   [] -> Ok acc
-  yy :: ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
+  yy::ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
 
-schedule root env =
-  let schedulePush ref env = { env | pending = Set.insert ref env.pending,
-                                     schedule = ref :: env.schedule }
-      loop ref (seen, env) =
+schedule ref env =
+  let loop ref (seen, env) =
         if (Set.member ref env.pending || Dict.member ref env.finished) then
            Ok (seen, env)
         else if Set.member ref seen then Err "TODO: cyclic dependency"
@@ -111,7 +120,23 @@ schedule root env =
               deps = dependencyRefs <| refTerm ref env
           in resultFoldl loop (seen', env) (Set.toList deps) `Result.andThen`
              \(seen'', env') -> Ok (seen'', schedulePush ref env')
-  in loop root (Set.empty, env) `Result.andThen` \(_, env') -> Ok env'
+  in loop ref (Set.empty, env) `Result.andThen` \(_, env') -> Ok env'
+
+--evalTerm term env = case term of
+  --Literal atom -> (Ok atom, env)
+  --BinaryOp op lhs rhs ->
+    --let result = case op of
+      --BArithmetic op -> arithApply op lhs rhs  -- TODO
+      --_ -> Err "TODO"
+    --in (result, env)
+  --_ -> (Err "TODO", env)
+--evalRef ref env = case Dict.get ref env.terms of
+  --Nothing -> (Err "TODO: missing term for ref", env)
+  --Just term -> evalTerm term env `Result.andThen`
+    --\atom -> ... value ...
+--evalSchedule1 env = schedulePop env `Maybe.andThen`
+  --\(ref, env') -> Just <| evalRef ref env'
+
 
 -- TODO: needs to eval ...
 --aderef env atom = case atom of
