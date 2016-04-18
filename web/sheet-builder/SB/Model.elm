@@ -9,9 +9,9 @@ type Term
   | TSheet Sheet
   | UnaryOp UOp Atom
   | BinaryOp BOp Atom Atom
-  --| SheetWith Ref Atom
-  --| SheetInput Ref
-  --| SheetOutput Ref
+  | SheetWith Ref Atom
+  | SheetInput Ref
+  | SheetOutput Ref
   --| Access Accessor
   --| Apply
   --| Identify (Identifier ref)  TODO: need to be able to push name changes
@@ -97,6 +97,7 @@ newTerm term env =
 refTerm ref { terms } = case Dict.get ref terms of
   Just term -> term
   Nothing -> Literal AUnit
+refValue ref { finished } = Dict.get ref finished
 finishRef ref val env = { env | finished = Dict.insert ref val env.finished }
 
 dependencyRefs term = case term of
@@ -147,7 +148,7 @@ mapSnd f (a, b) = (a, f b)
 afloat atom = case atom of
   AInt int -> Ok <| toFloat int
   AFloat float -> Ok float
-  _ -> Err "type error: afloat"
+  _ -> Err "afloat: expected a number"
 
 arithApply op alhs arhs =
   afloat alhs `Result.andThen`
@@ -175,6 +176,19 @@ evalAtom atom pending env = case atom of
             Ok value -> (Ok <| valueAtom ref value, finishRef ref value env')
   _ -> (Ok <| atom, env)
 
+asheet atom env = case atom of
+  ARef ref -> case refValue ref env of
+    Nothing -> Err "asheet: reference points to nothing"
+    Just value -> case value of
+      VSheet sheet -> Ok sheet
+      _ -> Err "asheet: expected reference to point to a sheet"
+  _ -> Err "asheet: expected a reference"
+
+evalSheet sref pending env =
+  let (ratom, env') = evalAtom (ARef sref) pending env
+      result = ratom `Result.andThen` \atom -> asheet atom env'
+  in (result, env')
+
 eval term pending env = case term of
   Literal atom -> (Result.map VAtom) `mapFst` evalAtom atom pending env
   BinaryOp op lhs rhs ->
@@ -188,6 +202,23 @@ eval term pending env = case term of
     in (result, env'')
   TList lcs -> (Ok <| VList lcs, env)
   TSheet sheet -> (Ok <| VSheet sheet, env)
+  SheetWith sref arg ->
+    let (rsheet, env') = evalSheet sref pending env
+        result = rsheet `Result.andThen`
+        \sheet -> Ok <| VSheet { sheet | input = arg }
+    in (result, env')
+  SheetInput sref ->
+    let (rsheet, env') = evalSheet sref pending env
+    in case rsheet of
+      Err err -> (Err err, env')
+      Ok sheet -> let (ratom, env'') = evalAtom sheet.output pending env'
+                  in (VAtom `Result.map` ratom, env'')
+  SheetOutput sref ->
+    let (rsheet, env') = evalSheet sref pending env
+    in case rsheet of
+      Err err -> (Err err, env')
+      Ok sheet -> let (ratom, env'') = evalAtom sheet.output pending env'
+                  in (VAtom `Result.map` ratom, env'')
   _ -> (Err "TODO: eval term", env)
 
 example0 = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
@@ -204,8 +235,12 @@ example4 = TSheet { elements = [r3, r2]
                   , output = ARef r3
                   }
 (r4, exampleEnv4) = newTerm example4 exampleEnv3
-example = Literal <| ARef r4
-test = eval example Set.empty exampleEnv4
+example5 = SheetOutput r4
+(r5, exampleEnv5) = newTerm example5 exampleEnv4
+example6 = SheetWith r4 <| ARef r5
+(r6, exampleEnv6) = newTerm example6 exampleEnv5
+example = Literal <| ARef r6
+test = eval example Set.empty exampleEnv6
 
 {-
 Notes:
