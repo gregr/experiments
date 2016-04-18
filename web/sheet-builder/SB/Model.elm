@@ -145,36 +145,58 @@ schedule ref env =
 mapFst f (a, b) = (f a, b)
 mapSnd f (a, b) = (a, f b)
 
+pure0 = Ok
+(@>>=) = Result.andThen
+infixl 1 @>>=
+(@*>) p0 p1 = p0 @>>= \_ -> p1
+infixl 4 @*>
+(@<*) p0 p1 = p0 @>>= \r0 -> p1 @>>= \_ -> pure0 r0
+infixl 4 @<*
+(@<*>) p0 p1 = p0 @>>= \f0 -> p1 @>>= \r1 -> pure0 (f0 r1)
+infixl 4 @<*>
+(@<$>) f0 p1 = pure0 f0 @<*> p1
+infixl 4 @<$>
+
+pure val state = (Ok val, state)
+(>>=) p0 fp1 state = let (result, state') = p0 state
+                     in case result of
+                       Err err -> (Err err, state')
+                       Ok ok -> fp1 ok state'
+infixl 1 >>=
+(*>) p0 p1 = p0 >>= \_ -> p1
+infixl 4 *>
+(<*) p0 p1 = p0 >>= \r0 -> p1 >>= \_ -> pure r0
+infixl 4 <*
+(<*>) p0 p1 = p0 >>= \f0 -> p1 >>= \r1 -> pure (f0 r1)
+infixl 4 <*>
+(<$>) f0 p1 = pure f0 <*> p1
+infixl 4 <$>
+
 afloat atom = case atom of
   AInt int -> Ok <| toFloat int
   AFloat float -> Ok float
   _ -> Err "afloat: expected a number"
 
-arithApply op alhs arhs =
-  afloat alhs `Result.andThen`
-  \flhs -> afloat arhs `Result.andThen`
-  \frhs -> Ok <| AFloat <| op flhs frhs
+arithApply op alhs arhs = AFloat @<$> (op @<$> afloat alhs @<*> afloat arhs)
 
 valueAtom ref value = case value of
   VAtom atom -> atom
   _ -> ARef ref
 
 -- TODO: separate pending computation scheduling
-evalAtom atom pending env = case atom of
-  ARef ref -> case Dict.get ref env.finished of
-    Just value -> case value of
-      VAtom atom -> (Ok atom, env)
-      _ -> (Ok <| ARef ref, env)
-    Nothing ->
-      if Set.member ref pending then (Err "TODO: cyclic computation", env)
-      else case Dict.get ref env.terms of
-        Nothing -> (Err "TODO: missing term for ref", env)
-        Just term ->
-          let (result, env') = eval term (Set.insert ref pending) env
-          in case result of
-            Err err -> (Err err, env')
-            Ok value -> (Ok <| valueAtom ref value, finishRef ref value env')
-  _ -> (Ok <| atom, env)
+evalAtom atom pending env =
+  (case atom of
+    ARef ref -> case Dict.get ref env.finished of
+      Just value -> (,) << Ok <| case value of
+        VAtom atom -> atom
+        _ -> ARef ref
+      Nothing ->
+        if Set.member ref pending then (,) <| Err "TODO: cyclic computation"
+        else case Dict.get ref env.terms of
+          Nothing -> (,) <| Err "TODO: missing term for ref"
+          Just term -> eval term (Set.insert ref pending) >>=
+          \value -> (,) (Ok <| valueAtom ref value) << finishRef ref value
+    _ -> (,) <| Ok atom) env
 
 asheet atom env = case atom of
   ARef ref -> case refValue ref env of
@@ -184,42 +206,30 @@ asheet atom env = case atom of
       _ -> Err "asheet: expected reference to point to a sheet"
   _ -> Err "asheet: expected a reference"
 
-evalSheet sref pending env =
-  let (ratom, env') = evalAtom (ARef sref) pending env
-      result = ratom `Result.andThen` \atom -> asheet atom env'
-  in (result, env')
+evalSheet sref pending =
+  evalAtom (ARef sref) pending >>= \atom env -> (asheet atom env, env)
 
-eval term pending env = case term of
-  Literal atom -> (Result.map VAtom) `mapFst` evalAtom atom pending env
+resultFlatten result = case result of
+  Err err -> Err err
+  Ok ok -> ok
+
+eval term pending = case term of
+  Literal atom -> VAtom <$> evalAtom atom pending
   BinaryOp op lhs rhs ->
-    let (rlhs, env') = evalAtom lhs pending env
-        (rrhs, env'') = evalAtom rhs pending env'
-        result = rlhs `Result.andThen`
-        \alhs -> rrhs `Result.andThen`
-        \arhs -> case op of
+    let bop = \alhs arhs -> case op of
           BArithmetic op -> VAtom `Result.map` arithApply op alhs arhs
           _ -> Err "TODO: eval binary op"
-    in (result, env'')
-  TList lcs -> (Ok <| VList lcs, env)
-  TSheet sheet -> (Ok <| VSheet sheet, env)
+        compute = bop <$> evalAtom lhs pending <*> evalAtom rhs pending
+    in mapFst resultFlatten << compute
+  TList lcs -> (,) <| Ok <| VList lcs
+  TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
-    let (rsheet, env') = evalSheet sref pending env
-        result = rsheet `Result.andThen`
-        \sheet -> Ok <| VSheet { sheet | input = arg }
-    in (result, env')
-  SheetInput sref ->
-    let (rsheet, env') = evalSheet sref pending env
-    in case rsheet of
-      Err err -> (Err err, env')
-      Ok sheet -> let (ratom, env'') = evalAtom sheet.output pending env'
-                  in (VAtom `Result.map` ratom, env'')
-  SheetOutput sref ->
-    let (rsheet, env') = evalSheet sref pending env
-    in case rsheet of
-      Err err -> (Err err, env')
-      Ok sheet -> let (ratom, env'') = evalAtom sheet.output pending env'
-                  in (VAtom `Result.map` ratom, env'')
-  _ -> (Err "TODO: eval term", env)
+    (\sheet -> VSheet { sheet | input = arg }) <$> evalSheet sref pending
+  SheetInput sref -> evalSheet sref pending >>=
+    \sheet -> VAtom <$> evalAtom sheet.input pending
+  SheetOutput sref -> evalSheet sref pending >>=
+    \sheet -> VAtom <$> evalAtom sheet.output pending
+  _ -> (,) <| Err "TODO: eval term"
 
 example0 = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
 (r0, exampleEnv0) = newTerm example0 envEmpty
