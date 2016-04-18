@@ -50,6 +50,7 @@ type ListComponent
 type alias Sheet =
   { elements : List Ref -- TODO: labels
   , owned : Set Ref -- not all embedded elements are owned
+  , parameter : Ref
   , input : Atom  -- the parameter comes with an example
   , output : Atom
   }
@@ -157,6 +158,19 @@ infixl 4 @<*>
 (@<$>) f0 p1 = pure0 f0 @<*> p1
 infixl 4 @<$>
 
+pure1 val state = (val, state)
+($>>=) p0 fp1 state = let (result, state') = p0 state
+                      in fp1 result state'
+infixl 1 $>>=
+($*>) p0 p1 = p0 $>>= \_ -> p1
+infixl 4 $*>
+($<*) p0 p1 = p0 $>>= \r0 -> p1 $>>= \_ -> pure1 r0
+infixl 4 $<*
+($<*>) p0 p1 = p0 $>>= \f0 -> p1 $>>= \r1 -> pure1 (f0 r1)
+infixl 4 $<*>
+($<$>) f0 p1 = pure1 f0 $<*> p1
+infixl 4 $<$>
+
 pure val state = (Ok val, state)
 (>>=) p0 fp1 state = let (result, state') = p0 state
                      in case result of
@@ -224,6 +238,7 @@ eval term pending = case term of
   TList lcs -> (,) <| Ok <| VList lcs
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
+    -- TODO: copy elements while preserving local structure of owned refs
     (\sheet -> VSheet { sheet | input = arg }) <$> evalSheet sref pending
   SheetInput sref -> evalSheet sref pending >>=
     \sheet -> VAtom <$> evalAtom sheet.input pending
@@ -231,32 +246,26 @@ eval term pending = case term of
     \sheet -> VAtom <$> evalAtom sheet.output pending
   _ -> (,) <| Err "TODO: eval term"
 
-example0 = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
-(r0, exampleEnv0) = newTerm example0 envEmpty
-example1 = BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)
-(r1, exampleEnv1) = newTerm example1 exampleEnv0
-example2 = TList [LCElements [ARef r0, AString "and", ARef r1]]
-(r2, exampleEnv2) = newTerm example2 exampleEnv1
-example3 = Literal <| AString "example sheet"
-(r3, exampleEnv3) = newTerm example3 exampleEnv2
-example4 = TSheet { elements = [r3, r2]
+example =
+  newTerm (BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)) $>>= \r0 ->
+  newTerm (BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)) $>>= \r1 ->
+  newTerm (TList [LCElements [ARef r0, AString "and", ARef r1]]) $>>= \r2 ->
+  newTerm (Literal <| AString "example sheet") $>>= \r3 ->
+  nextRef $>>= \rparam ->
+  newTerm (TSheet { elements = [r3, r2]
                   , owned = Set.singleton r3
+                  , parameter = rparam
                   , input = AUnit
                   , output = ARef r3
-                  }
-(r4, exampleEnv4) = newTerm example4 exampleEnv3
-example5 = SheetOutput r4
-(r5, exampleEnv5) = newTerm example5 exampleEnv4
-example6 = SheetWith r4 <| ARef r5
-(r6, exampleEnv6) = newTerm example6 exampleEnv5
-example7 = Literal <| ARef r6
-(r7, exampleEnv7) = newTerm example7 exampleEnv6
-example8 = Literal <| ARef r7
-(r8, exampleEnv8) = newTerm example8 exampleEnv7
-example9 = Literal <| ARef r8
-(r9, exampleEnv9) = newTerm example9 exampleEnv8
-example = SheetInput r8
-test = eval example Set.empty exampleEnv9
+                  }) $>>= \r4 ->
+  newTerm (SheetOutput r4) $>>= \r5 ->
+  newTerm (SheetWith r4 (ARef r5)) $>>= \r6 ->
+  newTerm (Literal <| ARef r6) $>>= \r7 ->
+  newTerm (Literal <| ARef r7) $>>= \r8 ->
+  newTerm (Literal <| ARef r8) $>>= \r9 ->
+  newTerm (SheetInput r9)
+(testRef, testEnv) = example envEmpty
+test = eval (Literal <| ARef testRef) Set.empty testEnv
 
 {-
 Notes:
