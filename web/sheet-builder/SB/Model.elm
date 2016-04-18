@@ -5,7 +5,7 @@ import Set exposing (Set)
 
 type Term
   = Literal Atom
-  | TList (List ListConstruction)
+  | TList (List ListComponent)
   | TSheet Sheet
   | UnaryOp UOp Atom
   | BinaryOp BOp Atom Atom
@@ -42,16 +42,16 @@ type alias Accessor ref = { collection : ref, key : Atom ref }
 type alias Identifier ref = { namespace : ref, nref : NamedRef ref }
 type alias NamedRef ref = { name : Name, ref : ref }
 
-type Value = VAtom Atom | VList (List Ref) | VSheet Sheet
-type ListConstruction
+type Value = VAtom Atom | VList (List ListComponent) | VSheet Sheet
+type ListComponent
   = LCElements (List Atom)
   | LCSplice Ref
   | LCIteration Iteration
 type alias Sheet =
   { elements : List Ref -- TODO: labels
   , owned : Set Ref -- not all embedded elements are owned
-  , input : List Ref  -- each parameter comes with an example
-  , output : Ref
+  , input : Atom  -- the parameter comes with an example
+  , output : Atom
   }
 type LayoutOrientation = Vertical | Horizontal
 
@@ -97,6 +97,7 @@ newTerm term env =
 refTerm ref { terms } = case Dict.get ref terms of
   Just term -> term
   Nothing -> Literal AUnit
+finishRef ref val env = { env | finished = Dict.insert ref val env.finished }
 
 dependencyRefs term = case term of
   Literal (ARef ref) -> Set.singleton ref
@@ -140,6 +141,9 @@ schedule ref env =
 --evalSchedule1 env = schedulePop env `Maybe.andThen`
   --\(ref, env') -> Just <| evalRef ref env'
 
+mapFst f (a, b) = (f a, b)
+mapSnd f (a, b) = (a, f b)
+
 afloat atom = case atom of
   AInt int -> Ok <| toFloat int
   AFloat float -> Ok float
@@ -149,6 +153,10 @@ arithApply op alhs arhs =
   afloat alhs `Result.andThen`
   \flhs -> afloat arhs `Result.andThen`
   \frhs -> Ok <| AFloat <| op flhs frhs
+
+valueAtom ref value = case value of
+  VAtom atom -> atom
+  _ -> ARef ref
 
 -- TODO: separate pending computation scheduling
 evalAtom atom pending env = case atom of
@@ -163,29 +171,41 @@ evalAtom atom pending env = case atom of
         Just term ->
           let (result, env') = eval term (Set.insert ref pending) env
           in case result of
-            Err _ -> (result, env')
-            Ok atom ->
-              let finished' = Dict.insert ref (VAtom atom) env'.finished
-              in (Ok atom, { env' | finished = finished' })
+            Err err -> (Err err, env')
+            Ok value -> (Ok <| valueAtom ref value, finishRef ref value env')
   _ -> (Ok <| atom, env)
 
 eval term pending env = case term of
-  Literal atom -> evalAtom atom pending env
+  Literal atom -> (Result.map VAtom) `mapFst` evalAtom atom pending env
   BinaryOp op lhs rhs ->
     let (rlhs, env') = evalAtom lhs pending env
         (rrhs, env'') = evalAtom rhs pending env'
         result = rlhs `Result.andThen`
         \alhs -> rrhs `Result.andThen`
         \arhs -> case op of
-          BArithmetic op -> arithApply op alhs arhs
+          BArithmetic op -> VAtom `Result.map` arithApply op alhs arhs
           _ -> Err "TODO: eval binary op"
     in (result, env'')
+  TList lcs -> (Ok <| VList lcs, env)
+  TSheet sheet -> (Ok <| VSheet sheet, env)
   _ -> (Err "TODO: eval term", env)
 
 example0 = BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)
-(r0, exampleEnv) = newTerm example0 envEmpty
-example = BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)
-test = eval example Set.empty exampleEnv
+(r0, exampleEnv0) = newTerm example0 envEmpty
+example1 = BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)
+(r1, exampleEnv1) = newTerm example1 exampleEnv0
+example2 = TList [LCElements [ARef r0, AString "and", ARef r1]]
+(r2, exampleEnv2) = newTerm example2 exampleEnv1
+example3 = Literal <| AString "example sheet"
+(r3, exampleEnv3) = newTerm example3 exampleEnv2
+example4 = TSheet { elements = [r3, r2]
+                  , owned = Set.singleton r3
+                  , input = AUnit
+                  , output = ARef r3
+                  }
+(r4, exampleEnv4) = newTerm example4 exampleEnv3
+example = Literal <| ARef r4
+test = eval example Set.empty exampleEnv4
 
 {-
 Notes:
