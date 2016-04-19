@@ -186,6 +186,10 @@ infixl 4 <*>
 (<$>) f0 p1 = pure f0 <*> p1
 infixl 4 <$>
 
+resultFlatten result = case result of
+  Err err -> Err err
+  Ok ok -> ok
+
 afloat atom = case atom of
   AInt int -> Ok <| toFloat int
   AFloat float -> Ok float
@@ -198,19 +202,16 @@ valueAtom ref value = case value of
   _ -> ARef ref
 
 -- TODO: separate pending computation scheduling
-evalAtom atom pending env =
-  (case atom of
-    ARef ref -> case refValue ref env of
-      Just value -> (,) << Ok <| case value of
-        VAtom atom -> atom
-        _ -> ARef ref
-      Nothing ->
-        if Set.member ref pending then (,) <| Err "TODO: cyclic computation"
-        else case refTerm ref env of
-          Nothing -> (,) <| Err "TODO: missing term for ref"
-          Just term -> eval term (Set.insert ref pending) >>=
-          \value env -> (Ok <| valueAtom ref value, finishRef ref value env)
-    _ -> (,) <| Ok atom) env
+evalRef ref pending env = (case refValue ref env of
+  Just value -> pure <| valueAtom ref value
+  Nothing ->
+    if Set.member ref pending then pure1 <| Err "TODO: cyclic computation"
+    else eval (refTerm ref env) (Set.insert ref pending) >>=
+    \value env -> pure (valueAtom ref value) (finishRef ref value env)) env
+
+evalAtom atom pending = case atom of
+  ARef ref -> evalRef ref pending
+  _ -> pure atom
 
 asheet atom env = case atom of
   ARef ref -> case refValue ref env of
@@ -221,11 +222,7 @@ asheet atom env = case atom of
   _ -> Err "asheet: expected a reference"
 
 evalSheet sref pending =
-  evalAtom (ARef sref) pending >>= \atom env -> (asheet atom env, env)
-
-resultFlatten result = case result of
-  Err err -> Err err
-  Ok ok -> ok
+  evalRef sref pending >>= \atom env -> (asheet atom env, env)
 
 refCopy refmap ref = Maybe.withDefault ref <| Dict.get ref refmap
 atomCopy refmap atom = case atom of
@@ -270,9 +267,9 @@ sheetInstantiate refmap sheet =
                              input = arg,
                              output = output }
                   , List.foldl (refInstantiate refmap1) env sheet.elements)
-termInstantiate refmap term env = case term of
-  TSheet sheet -> (TSheet $<$> sheetInstantiate refmap sheet) env
-  _ -> (termCopy refmap term, env)
+termInstantiate refmap term = case term of
+  TSheet sheet -> TSheet $<$> sheetInstantiate refmap sheet
+  _ -> pure1 <| termCopy refmap term
 
 eval term pending = case term of
   Literal atom -> VAtom <$> evalAtom atom pending
