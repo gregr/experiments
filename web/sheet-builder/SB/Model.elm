@@ -61,7 +61,7 @@ type alias Ref = Int
 
 type alias Iteration =
   { procedure : Ref
-  , length : Ref
+  , length : Atom
   }
 
 type alias Environment =
@@ -227,6 +227,32 @@ resultFlatten result = case result of
   Err err -> Err err
   Ok ok -> ok
 
+refCopy refmap ref = Maybe.withDefault ref <| Dict.get ref refmap
+atomCopy refmap atom = case atom of
+  ARef ref -> ARef <| refCopy refmap ref
+  _ -> atom
+lcCopy refmap lc = case lc of
+  LCElements atoms -> LCElements <| List.map (atomCopy refmap) atoms
+  LCSplice ref -> LCSplice <| refCopy refmap ref
+  LCIteration { procedure, length } ->
+    LCIteration { procedure = refCopy refmap procedure,
+                  length = atomCopy refmap length }
+sheetCopy refmap sheet =
+  { sheet | elements = List.map (refCopy refmap) sheet.elements,
+            parameter = refCopy refmap sheet.parameter,
+            input = atomCopy refmap sheet.input,
+            output = atomCopy refmap sheet.output }
+termCopy refmap term = case term of
+  Literal atom -> Literal <| atomCopy refmap atom
+  BinaryOp op lhs rhs ->
+    BinaryOp op (atomCopy refmap lhs) (atomCopy refmap rhs)
+  TList lcs -> TList <| List.map (lcCopy refmap) lcs
+  TSheet sheet -> TSheet <| sheetCopy refmap sheet
+  SheetWith sref arg -> SheetWith (refCopy refmap sref) (atomCopy refmap arg)
+  SheetInput sref -> SheetInput (refCopy refmap sref)
+  SheetOutput sref -> SheetOutput (refCopy refmap sref)
+  _ -> term
+
 eval term pending = case term of
   Literal atom -> VAtom <$> evalAtom atom pending
   BinaryOp op lhs rhs ->
@@ -238,8 +264,14 @@ eval term pending = case term of
   TList lcs -> (,) <| Ok <| VList lcs
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
-    -- TODO: copy elements while preserving local structure of owned refs
-    (\sheet -> VSheet { sheet | input = arg }) <$> evalSheet sref pending
+    evalSheet sref pending >>= \sheet env ->
+      let genref oref (rmap, env) =
+            (nextRef $>>= \nref -> pure1 <| Dict.insert oref nref rmap) env
+      in ((\env -> Set.foldl genref (Dict.empty, env) sheet.owned) $>>= \refmap0 ->
+          newTerm (Literal arg) $>>= \nparam ->
+          let refmap = Dict.insert sheet.parameter nparam refmap0
+              sheet' = sheetCopy refmap sheet
+          in pure <| VSheet { sheet' | input = arg }) env
   SheetInput sref -> evalSheet sref pending >>=
     \sheet -> VAtom <$> evalAtom sheet.input pending
   SheetOutput sref -> evalSheet sref pending >>=
