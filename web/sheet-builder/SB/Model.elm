@@ -237,21 +237,42 @@ lcCopy refmap lc = case lc of
   LCIteration { procedure, length } ->
     LCIteration { procedure = refCopy refmap procedure,
                   length = atomCopy refmap length }
-sheetCopy refmap sheet =
-  { sheet | elements = List.map (refCopy refmap) sheet.elements,
-            parameter = refCopy refmap sheet.parameter,
-            input = atomCopy refmap sheet.input,
-            output = atomCopy refmap sheet.output }
 termCopy refmap term = case term of
   Literal atom -> Literal <| atomCopy refmap atom
   BinaryOp op lhs rhs ->
     BinaryOp op (atomCopy refmap lhs) (atomCopy refmap rhs)
   TList lcs -> TList <| List.map (lcCopy refmap) lcs
-  TSheet sheet -> TSheet <| sheetCopy refmap sheet
   SheetWith sref arg -> SheetWith (refCopy refmap sref) (atomCopy refmap arg)
   SheetInput sref -> SheetInput (refCopy refmap sref)
   SheetOutput sref -> SheetOutput (refCopy refmap sref)
   _ -> term
+
+refInstantiate refmap ref env = case Dict.get ref refmap of
+  Nothing -> env
+  Just nref -> let term = refTerm ref env
+               in uncurry (updateTerm nref) <| termInstantiate refmap term env
+atomInstantiate refmap atom env = case atom of
+  ARef ref -> refInstantiate refmap ref env
+  _ -> env
+sheetInstantiate refmap sheet =
+  let arg = atomCopy refmap sheet.input
+      genref oref (rmap, env) =
+        (nextRef $>>= \nref -> pure1 <| Dict.insert oref nref rmap) env
+  in (\env -> Set.foldl genref (refmap, env) sheet.owned) $>>= \refmap0 ->
+     newTerm (Literal arg) $>>= \param ->
+       let refmap1 = Dict.insert sheet.parameter param refmap0
+           output = atomCopy refmap1 sheet.output
+           elements = List.map (refCopy refmap1) sheet.elements
+           owned = Set.map (refCopy refmap1) sheet.owned
+       in \env -> ({ sheet | elements = elements,
+                             owned = owned,
+                             parameter = param,
+                             input = arg,
+                             output = output }
+                  , List.foldl (refInstantiate refmap1) env sheet.elements)
+termInstantiate refmap term env = case term of
+  TSheet sheet -> (TSheet $<$> sheetInstantiate refmap sheet) env
+  _ -> (termCopy refmap term, env)
 
 eval term pending = case term of
   Literal atom -> VAtom <$> evalAtom atom pending
@@ -264,14 +285,8 @@ eval term pending = case term of
   TList lcs -> (,) <| Ok <| VList lcs
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
-    evalSheet sref pending >>= \sheet env ->
-      let genref oref (rmap, env) =
-            (nextRef $>>= \nref -> pure1 <| Dict.insert oref nref rmap) env
-      in ((\env -> Set.foldl genref (Dict.empty, env) sheet.owned) $>>= \refmap0 ->
-          newTerm (Literal arg) $>>= \nparam ->
-          let refmap = Dict.insert sheet.parameter nparam refmap0
-              sheet' = sheetCopy refmap sheet
-          in pure <| VSheet { sheet' | input = arg }) env
+    evalSheet sref pending >>= \sheet ->
+      ((pure0 << VSheet) $<$> sheetInstantiate Dict.empty { sheet | input = arg })
   SheetInput sref -> evalSheet sref pending >>=
     \sheet -> VAtom <$> evalAtom sheet.input pending
   SheetOutput sref -> evalSheet sref pending >>=
