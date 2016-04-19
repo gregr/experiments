@@ -200,13 +200,13 @@ valueAtom ref value = case value of
 -- TODO: separate pending computation scheduling
 evalAtom atom pending env =
   (case atom of
-    ARef ref -> case Dict.get ref env.finished of
+    ARef ref -> case refValue ref env of
       Just value -> (,) << Ok <| case value of
         VAtom atom -> atom
         _ -> ARef ref
       Nothing ->
         if Set.member ref pending then (,) <| Err "TODO: cyclic computation"
-        else case Dict.get ref env.terms of
+        else case refTerm ref env of
           Nothing -> (,) <| Err "TODO: missing term for ref"
           Just term -> eval term (Set.insert ref pending) >>=
           \value env -> (Ok <| valueAtom ref value, finishRef ref value env)
