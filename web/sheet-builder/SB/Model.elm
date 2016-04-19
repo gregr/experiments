@@ -294,23 +294,24 @@ eval term pending = case term of
   _ -> (,) <| Err "TODO: eval term"
 
 example =
-  newTerm (BinaryOp (BArithmetic (*)) (AFloat 4.1) (AInt 3)) $>>= \r0 ->
+  newTerm (Literal <| AInt 3) $>>= \rparam ->
+  newTerm (BinaryOp (BArithmetic (*)) (AFloat 4.1) (ARef rparam)) $>>= \r0 ->
   newTerm (BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)) $>>= \r1 ->
   newTerm (TList [LCElements [ARef r0, AString "and", ARef r1]]) $>>= \r2 ->
   newTerm (Literal <| AString "example sheet") $>>= \r3 ->
-  nextRef $>>= \rparam ->
-  newTerm (TSheet { elements = [r3, r2]
-                  , owned = Set.singleton r3
+  newTerm (TSheet { elements = [r3, r0, r1, r2]
+                  , owned = Set.fromList [r0, r1, r2]
                   , parameter = rparam
-                  , input = AUnit
-                  , output = ARef r3
+                  , input = ARef rparam
+                  , output = ARef r1
                   }) $>>= \r4 ->
   newTerm (SheetOutput r4) $>>= \r5 ->
   newTerm (SheetWith r4 (ARef r5)) $>>= \r6 ->
   newTerm (Literal <| ARef r6) $>>= \r7 ->
   newTerm (Literal <| ARef r7) $>>= \r8 ->
   newTerm (Literal <| ARef r8) $>>= \r9 ->
-  newTerm (SheetInput r9)
+  newTerm (SheetInput r9) $>>= \r10 ->
+  newTerm (SheetOutput r9)
 (testRef, testEnv) = example envEmpty
 test = eval (Literal <| ARef testRef) Set.empty testEnv
 
