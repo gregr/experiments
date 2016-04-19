@@ -67,27 +67,19 @@ type alias Iteration =
 type alias Environment =
   { terms : Dict Ref Term
   , finished : Dict Ref (Maybe Value)
-  , pending : Set Ref
-  , scheduleIn : List Ref
-  , scheduleOut : List Ref
+  --, pending : Set Ref
+  --, scheduleIn : List Ref
+  --, scheduleOut : List Ref
   , uid : Int
   }
 envEmpty =
   { terms = Dict.empty
   , finished = Dict.empty
-  , pending = Set.empty
-  , scheduleIn = []
-  , scheduleOut = []
+  --, pending = Set.empty
+  --, scheduleIn = []
+  --, scheduleOut = []
   , uid = 0
   }
-schedulePush ref env = { env | pending = Set.insert ref env.pending,
-                               scheduleIn = ref :: env.scheduleIn }
-schedulePop env = case env.scheduleOut of
-  [] -> case List.reverse env.scheduleIn of
-          [] -> Nothing
-          refs -> schedulePop { env | scheduleIn = [], scheduleOut = refs }
-  ref::refs -> Just (ref, { env | scheduleOut = refs,
-                                  pending = Set.remove ref env.pending})
 
 nextRef env = (env.uid, { env | uid = env.uid + 1 })
 updateTerm ref term env = { env | terms = Dict.insert ref term env.terms }
@@ -101,32 +93,36 @@ refTerm ref { terms } = case Dict.get ref terms of
 refValue ref { finished } = Dict.get ref finished
 finishRef ref val env = { env | finished = Dict.insert ref val env.finished }
 
-dependencyRefs term = case term of
-  Literal (ARef ref) -> Set.singleton ref
-  BinaryOp _ lhs rhs ->
-    Set.union (dependencyRefs <| Literal lhs) (dependencyRefs <| Literal rhs)
-  _ -> Set.empty
+--schedulePush ref env = { env | pending = Set.insert ref env.pending,
+                               --scheduleIn = ref :: env.scheduleIn }
+--schedulePop env = case env.scheduleOut of
+  --[] -> case List.reverse env.scheduleIn of
+          --[] -> Nothing
+          --refs -> schedulePop { env | scheduleIn = [], scheduleOut = refs }
+  --ref::refs -> Just (ref, { env | scheduleOut = refs,
+                                  --pending = Set.remove ref env.pending})
+
+--dependencyRefs term = case term of
+  --Literal (ARef ref) -> Set.singleton ref
+  --BinaryOp _ lhs rhs ->
+    --Set.union (dependencyRefs <| Literal lhs) (dependencyRefs <| Literal rhs)
+  --_ -> Set.empty
+
 -- TODO: account for visibility
-rootRefs term = case term of
-  --TList lcs ->
-  --TSheet sheet ->
-  _ -> dependencyRefs term
+--rootRefs term = case term of
+  --_ -> dependencyRefs term
 
-resultFoldl op acc xs = case xs of
-  [] -> Ok acc
-  yy::ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
-
-schedule ref env =
-  let loop ref (seen, env) =
-        if (Set.member ref env.pending || Dict.member ref env.finished) then
-           Ok (seen, env)
-        else if Set.member ref seen then Err "TODO: cyclic dependency"
-        else
-          let seen' = Set.insert ref seen
-              deps = dependencyRefs <| refTerm ref env
-          in resultFoldl loop (seen', env) (Set.toList deps) `Result.andThen`
-             \(seen'', env') -> Ok (seen'', schedulePush ref env')
-  in loop ref (Set.empty, env) `Result.andThen` \(_, env') -> Ok env'
+--schedule ref env =
+  --let loop ref (seen, env) =
+        --if (Set.member ref env.pending || Dict.member ref env.finished) then
+           --Ok (seen, env)
+        --else if Set.member ref seen then Err "TODO: cyclic dependency"
+        --else
+          --let seen' = Set.insert ref seen
+              --deps = dependencyRefs <| refTerm ref env
+          --in resultFoldl loop (seen', env) (Set.toList deps) `Result.andThen`
+             --\(seen'', env') -> Ok (seen'', schedulePush ref env')
+  --in loop ref (Set.empty, env) `Result.andThen` \(_, env') -> Ok env'
 
 --evalTerm term env = case term of
   --Literal atom -> (Ok atom, env)
@@ -142,6 +138,10 @@ schedule ref env =
     --\atom -> ... value ...
 --evalSchedule1 env = schedulePop env `Maybe.andThen`
   --\(ref, env') -> Just <| evalRef ref env'
+
+resultFoldl op acc xs = case xs of
+  [] -> Ok acc
+  yy::ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
 
 mapFst f (a, b) = (f a, b)
 mapSnd f (a, b) = (a, f b)
