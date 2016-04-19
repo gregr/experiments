@@ -213,16 +213,28 @@ evalAtom atom pending = case atom of
   ARef ref -> evalRef ref pending
   _ -> pure atom
 
-asheet atom env = case atom of
-  ARef ref -> case refValue ref env of
-    Nothing -> Err "asheet: reference points to nothing"
-    Just value -> case value of
-      VSheet sheet -> Ok sheet
-      _ -> Err "asheet: expected reference to point to a sheet"
-  _ -> Err "asheet: expected a reference"
+vlist value = case value of
+  VList parts -> Ok parts
+  _ -> Err "expected reference to point to a list"
+vsheet value = case value of
+  VSheet sheet -> Ok sheet
+  _ -> Err "expected reference to point to a sheet"
 
-evalSheet sref pending =
-  evalRef sref pending >>= \atom env -> (asheet atom env, env)
+acompound vcompound atom env = case atom of
+  ARef ref -> case refValue ref env of
+    Nothing -> Err "reference points to nothing"
+    Just value -> vcompound value
+  _ -> Err "expected a reference"
+alist = acompound vlist
+asheet = acompound vsheet
+
+-- TODO: how do we use this without a tediously-large type annotation?
+--evalCompound ac cref pending z =
+  --(evalRef cref pending >>= \atom env -> (ac atom env, env)) z
+--evalList x = evalCompound alist x
+--evalSheet x = evalCompound asheet x
+evalList cref pending = evalRef cref pending >>= \atom env -> (alist atom env, env)
+evalSheet cref pending = evalRef cref pending >>= \atom env -> (asheet atom env, env)
 
 refCopy refmap ref = Maybe.withDefault ref <| Dict.get ref refmap
 atomCopy refmap atom = case atom of
