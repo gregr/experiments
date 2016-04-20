@@ -190,6 +190,11 @@ resultFlatten result = case result of
   Err err -> Err err
   Ok ok -> ok
 
+aint atom = case atom of
+  AInt int -> Ok int
+  AFloat float -> Ok <| round float
+  _ -> Err "aint: expected a number"
+
 afloat atom = case atom of
   AInt int -> Ok <| toFloat int
   AFloat float -> Ok float
