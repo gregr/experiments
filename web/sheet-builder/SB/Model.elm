@@ -134,10 +134,13 @@ finishRef ref val env = { env | finished = Dict.insert ref val env.finished }
     --\atom -> ... value ...
 --evalSchedule1 env = schedulePop env `Maybe.andThen`
   --\(ref, env') -> Just <| evalRef ref env'
+--resultFoldl = foldM pure0 (@>>=)
 
-resultFoldl op acc xs = case xs of
-  [] -> Ok acc
-  yy::ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
+forM_ pure bind acc xs op =
+  let loop acc xs = case xs of
+    [] -> pure acc
+    yy::ys -> bind (op yy acc) (\next -> loop next ys)
+  in loop acc xs
 
 pure0 = Ok
 join0 result = case result of
@@ -305,7 +308,7 @@ eval pending term = case term of
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
     evalSheet pending sref >>= \sheet ->
-      ((pure0 << VSheet) $<$> sheetInstantiate Dict.empty { sheet | input = arg })
+      pure0 << VSheet $<$> sheetInstantiate Dict.empty { sheet | input = arg }
   SheetInput sref -> evalSheet pending sref >>=
     \sheet -> VAtom <$> evalAtom pending sheet.input
   SheetOutput sref -> evalSheet pending sref >>=
