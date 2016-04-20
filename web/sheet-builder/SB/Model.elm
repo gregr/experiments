@@ -12,8 +12,7 @@ type Term
   | SheetWith Ref Atom
   | SheetInput Ref
   | SheetOutput Ref
-  --| Access Accessor
-  --| Apply
+  | Access Ref Atom
   --| Identify (Identifier ref)  TODO: need to be able to push name changes
 type UOp
   = UNot
@@ -38,9 +37,8 @@ type Atom
   | AString String
   | AInt Int
   | AFloat Float
-type alias Accessor ref = { collection : ref, key : Atom ref }
-type alias Identifier ref = { namespace : ref, nref : NamedRef ref }
-type alias NamedRef ref = { name : Name, ref : ref }
+type alias Identifier = { namespace : Ref, nref : NamedRef }
+type alias NamedRef = { name : Name, ref : Ref }
 
 type Value = VAtom Atom | VList (List ListComponent) | VSheet Sheet
 type ListComponent
