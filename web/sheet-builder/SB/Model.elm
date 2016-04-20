@@ -169,6 +169,7 @@ infixl 4 $<*
 infixl 4 $<*>
 ($<$>) f0 p1 = pure1 f0 $<*> p1
 infixl 4 $<$>
+forM1 = forM_ pure1 ($>>=)
 
 pure val state = (Ok val, state)
 (>>=) p0 fp1 state = let (result, state') = p0 state
@@ -297,6 +298,14 @@ termInstantiate refmap term = case term of
   TSheet sheet -> TSheet $<$> sheetInstantiate refmap sheet
   _ -> pure1 <| termCopy refmap term
 
+iterate pending procedure count =
+  let sheetAt index = newTerm <| SheetWith procedure <| AInt index
+      elementAt index = ARef $<$> (sheetAt index $>>= newTerm << SheetOutput)
+      relements = forM1 [] [0..count - 1]
+        (\index acc -> flip (::) acc $<$> elementAt index)
+      elements = List.reverse $<$> relements
+  in pure0 << VList << flip (::) [] << LCElements $<$> elements
+
 eval pending term = case term of
   Literal atom -> VAtom <$> evalAtom pending atom
   BinaryOp op lhs rhs ->
@@ -305,6 +314,8 @@ eval pending term = case term of
           _ -> Err "TODO: eval binary op"
     in join0 $<$> (bop <$> evalAtom pending lhs <*> evalAtom pending rhs)
   TList lcs -> (,) <| Ok <| VList lcs
+  TIteration { procedure, length } ->
+    join0 $<$> (aint <$> evalAtom pending length) >>= iterate pending procedure
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
     evalSheet pending sref >>= \sheet ->
@@ -337,7 +348,17 @@ example =
   newTerm (Literal <| ARef r8) $>>= \r9 ->
   newTerm (SheetInput r9) $>>= \r10 ->
   newTerm (SheetOutput r9) $>>= \r11 ->
-  newTerm (Access r11 <| AFloat 2.1)
+  newTerm (Access r11 <| AFloat 2.1) $>>= \r12 ->
+  newTerm (Literal <| AUnit) $>>= \rparam1 ->
+  newTerm (BinaryOp (BArithmetic (*)) (AFloat 1.5) (ARef rparam1)) $>>= \r13 ->
+  newTerm (TSheet { elements = [r13]
+                  , owned = Set.fromList [r13]
+                  , parameter = rparam1
+                  , input = ARef rparam1
+                  , output = ARef r13
+                  }) $>>= \r14 ->
+  newTerm (TIteration { procedure = r14, length = AInt 10 }) $>>= \r15 ->
+  newTerm (Access r15 (AInt 7))
 (testRef, testEnv) = example envEmpty
 test = eval Set.empty (Literal <| ARef testRef) testEnv
 
