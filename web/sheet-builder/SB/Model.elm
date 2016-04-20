@@ -239,6 +239,21 @@ asheet = acompound vsheet
 evalList pending cref = evalRef pending cref >>= \atom env -> (alist atom env, env)
 evalSheet pending cref = evalRef pending cref >>= \atom env -> (asheet atom env, env)
 
+-- TODO: negative indices, iterations
+listAccess pending lref index =
+  let access ref index parts =
+        evalList pending ref >>= \prefix -> retrieve index (prefix ++ parts)
+      retrieve index parts = case parts of
+        [] -> pure1 <| Err "index out of bounds"
+        LCElements elements::parts ->
+          let len = List.length elements
+          in if index < len
+             then pure1 <| Result.fromMaybe "impossible?" <| List.head <| List.drop index elements
+             else retrieve (index - len) parts
+        LCSplice ref::parts -> access ref index parts
+        _ -> pure1 <| Err "TODO: iteration"
+  in access lref index [] >>= (<$>) VAtom << evalAtom pending
+
 refCopy refmap ref = Maybe.withDefault ref <| Dict.get ref refmap
 atomCopy refmap atom = case atom of
   ARef ref -> ARef <| refCopy refmap ref
@@ -303,6 +318,9 @@ eval pending term = case term of
     \sheet -> VAtom <$> evalAtom pending sheet.input
   SheetOutput sref -> evalSheet pending sref >>=
     \sheet -> VAtom <$> evalAtom pending sheet.output
+  Access lref index ->
+     mapFst resultFlatten << (aint <$> evalAtom pending index) >>=
+       listAccess pending lref
   _ -> (,) <| Err "TODO: eval term"
 
 example =
@@ -315,15 +333,17 @@ example =
                   , owned = Set.fromList [r0, r1, r2]
                   , parameter = rparam
                   , input = ARef rparam
-                  , output = ARef r1
+                  , output = ARef r2
                   }) $>>= \r4 ->
   newTerm (SheetOutput r4) $>>= \r5 ->
-  newTerm (SheetWith r4 (ARef r5)) $>>= \r6 ->
+  newTerm (Access r5 <| AInt 2) $>>= \raccess0 ->
+  newTerm (SheetWith r4 (ARef raccess0)) $>>= \r6 ->
   newTerm (Literal <| ARef r6) $>>= \r7 ->
   newTerm (Literal <| ARef r7) $>>= \r8 ->
   newTerm (Literal <| ARef r8) $>>= \r9 ->
   newTerm (SheetInput r9) $>>= \r10 ->
-  newTerm (SheetOutput r9)
+  newTerm (SheetOutput r9) $>>= \r11 ->
+  newTerm (Access r11 <| AFloat 2.1)
 (testRef, testEnv) = example envEmpty
 test = eval Set.empty (Literal <| ARef testRef) testEnv
 
