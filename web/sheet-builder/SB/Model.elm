@@ -141,10 +141,10 @@ resultFoldl op acc xs = case xs of
   [] -> Ok acc
   yy::ys -> op yy acc `Result.andThen` \acc' -> resultFoldl op acc' ys
 
-mapFst f (a, b) = (f a, b)
-mapSnd f (a, b) = (a, f b)
-
 pure0 = Ok
+join0 result = case result of
+  Err err -> Err err
+  Ok ok -> ok
 (@>>=) = Result.andThen
 infixl 1 @>>=
 (@*>) p0 p1 = p0 @>>= \_ -> p1
@@ -183,10 +183,6 @@ infixl 4 <*
 infixl 4 <*>
 (<$>) f0 p1 = pure f0 <*> p1
 infixl 4 <$>
-
-resultFlatten result = case result of
-  Err err -> Err err
-  Ok ok -> ok
 
 aint atom = case atom of
   AInt int -> Ok int
@@ -307,8 +303,7 @@ eval pending term = case term of
     let bop = \alhs arhs -> case op of
           BArithmetic op -> VAtom `Result.map` arithApply op alhs arhs
           _ -> Err "TODO: eval binary op"
-        compute = bop <$> evalAtom pending lhs <*> evalAtom pending rhs
-    in mapFst resultFlatten << compute
+    in join0 $<$> (bop <$> evalAtom pending lhs <*> evalAtom pending rhs)
   TList lcs -> (,) <| Ok <| VList lcs
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
@@ -319,8 +314,7 @@ eval pending term = case term of
   SheetOutput sref -> evalSheet pending sref >>=
     \sheet -> VAtom <$> evalAtom pending sheet.output
   Access lref index ->
-     mapFst resultFlatten << (aint <$> evalAtom pending index) >>=
-       listAccess pending lref
+    join0 $<$> (aint <$> evalAtom pending index) >>= listAccess pending lref
   _ -> (,) <| Err "TODO: eval term"
 
 example =
