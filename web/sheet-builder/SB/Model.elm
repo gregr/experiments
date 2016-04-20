@@ -6,6 +6,7 @@ import Set exposing (Set)
 type Term
   = Literal Atom
   | TList (List ListComponent)
+  | TIteration Iteration
   | TSheet Sheet
   | UnaryOp UOp Atom
   | BinaryOp BOp Atom Atom
@@ -41,10 +42,7 @@ type alias Identifier = { namespace : Ref, nref : NamedRef }
 type alias NamedRef = { name : Name, ref : Ref }
 
 type Value = VAtom Atom | VList (List ListComponent) | VSheet Sheet
-type ListComponent
-  = LCElements (List Atom)
-  | LCSplice Ref
-  | LCIteration Iteration
+type ListComponent = LCElements (List Atom) | LCSplice Ref
 type alias Sheet =
   { elements : List Ref -- TODO: labels
   , owned : Set Ref -- not all embedded elements are owned
@@ -247,7 +245,6 @@ listAccess pending lref index =
              then pure1 <| Result.fromMaybe "impossible?" <| List.head <| List.drop index elements
              else retrieve (index - len) parts
         LCSplice ref::parts -> access ref index parts
-        _ -> pure1 <| Err "TODO: iteration"
   in access lref index [] >>= (<$>) VAtom << evalAtom pending
 
 refCopy refmap ref = Maybe.withDefault ref <| Dict.get ref refmap
@@ -257,14 +254,14 @@ atomCopy refmap atom = case atom of
 lcCopy refmap lc = case lc of
   LCElements atoms -> LCElements <| List.map (atomCopy refmap) atoms
   LCSplice ref -> LCSplice <| refCopy refmap ref
-  LCIteration { procedure, length } ->
-    LCIteration { procedure = refCopy refmap procedure,
-                  length = atomCopy refmap length }
 termCopy refmap term = case term of
   Literal atom -> Literal <| atomCopy refmap atom
   BinaryOp op lhs rhs ->
     BinaryOp op (atomCopy refmap lhs) (atomCopy refmap rhs)
   TList lcs -> TList <| List.map (lcCopy refmap) lcs
+  TIteration { procedure, length } ->
+    TIteration { procedure = refCopy refmap procedure,
+                 length = atomCopy refmap length }
   SheetWith sref arg -> SheetWith (refCopy refmap sref) (atomCopy refmap arg)
   SheetInput sref -> SheetInput (refCopy refmap sref)
   SheetOutput sref -> SheetOutput (refCopy refmap sref)
