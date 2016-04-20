@@ -202,15 +202,15 @@ valueAtom ref value = case value of
   _ -> ARef ref
 
 -- TODO: separate pending computation scheduling
-evalRef ref pending env = (case refValue ref env of
+evalRef pending ref env = (case refValue ref env of
   Just value -> pure <| valueAtom ref value
   Nothing ->
     if Set.member ref pending then pure1 <| Err "TODO: cyclic computation"
-    else eval (refTerm ref env) (Set.insert ref pending) >>=
+    else eval (Set.insert ref pending) (refTerm ref env) >>=
     \value env -> pure (valueAtom ref value) (finishRef ref value env)) env
 
-evalAtom atom pending = case atom of
-  ARef ref -> evalRef ref pending
+evalAtom pending atom = case atom of
+  ARef ref -> evalRef pending ref
   _ -> pure atom
 
 vlist value = case value of
@@ -233,8 +233,8 @@ asheet = acompound vsheet
   --(evalRef cref pending >>= \atom env -> (ac atom env, env)) z
 --evalList x = evalCompound alist x
 --evalSheet x = evalCompound asheet x
-evalList cref pending = evalRef cref pending >>= \atom env -> (alist atom env, env)
-evalSheet cref pending = evalRef cref pending >>= \atom env -> (asheet atom env, env)
+evalList pending cref = evalRef pending cref >>= \atom env -> (alist atom env, env)
+evalSheet pending cref = evalRef pending cref >>= \atom env -> (asheet atom env, env)
 
 refCopy refmap ref = Maybe.withDefault ref <| Dict.get ref refmap
 atomCopy refmap atom = case atom of
@@ -283,23 +283,23 @@ termInstantiate refmap term = case term of
   TSheet sheet -> TSheet $<$> sheetInstantiate refmap sheet
   _ -> pure1 <| termCopy refmap term
 
-eval term pending = case term of
-  Literal atom -> VAtom <$> evalAtom atom pending
+eval pending term = case term of
+  Literal atom -> VAtom <$> evalAtom pending atom
   BinaryOp op lhs rhs ->
     let bop = \alhs arhs -> case op of
           BArithmetic op -> VAtom `Result.map` arithApply op alhs arhs
           _ -> Err "TODO: eval binary op"
-        compute = bop <$> evalAtom lhs pending <*> evalAtom rhs pending
+        compute = bop <$> evalAtom pending lhs <*> evalAtom pending rhs
     in mapFst resultFlatten << compute
   TList lcs -> (,) <| Ok <| VList lcs
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
-    evalSheet sref pending >>= \sheet ->
+    evalSheet pending sref >>= \sheet ->
       ((pure0 << VSheet) $<$> sheetInstantiate Dict.empty { sheet | input = arg })
-  SheetInput sref -> evalSheet sref pending >>=
-    \sheet -> VAtom <$> evalAtom sheet.input pending
-  SheetOutput sref -> evalSheet sref pending >>=
-    \sheet -> VAtom <$> evalAtom sheet.output pending
+  SheetInput sref -> evalSheet pending sref >>=
+    \sheet -> VAtom <$> evalAtom pending sheet.input
+  SheetOutput sref -> evalSheet pending sref >>=
+    \sheet -> VAtom <$> evalAtom pending sheet.output
   _ -> (,) <| Err "TODO: eval term"
 
 example =
@@ -322,7 +322,7 @@ example =
   newTerm (SheetInput r9) $>>= \r10 ->
   newTerm (SheetOutput r9)
 (testRef, testEnv) = example envEmpty
-test = eval (Literal <| ARef testRef) Set.empty testEnv
+test = eval Set.empty (Literal <| ARef testRef) testEnv
 
 {-
 Notes:
