@@ -141,6 +141,7 @@
 * [http://www.html5rocks.com/en/tutorials/file/dndfiles/](http://www.html5rocks.com/en/tutorials/file/dndfiles/)
 * [http://www.quirksmode.org/js/dragdrop.html](http://www.quirksmode.org/js/dragdrop.html)
 * [http://www.quirksmode.org/js/events_properties.html#position](http://www.quirksmode.org/js/events_properties.html#position)
+* [http://www.petercollingridge.co.uk/interactive-svg-components/draggable-svg-element](http://www.petercollingridge.co.uk/interactive-svg-components/draggable-svg-element)
 
 #### Overlays
 
