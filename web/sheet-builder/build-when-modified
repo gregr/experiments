@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+while true; do
+  inotifywait -e modify SB/*.elm --format '%w' | {
+    read filename
+    printf '============================\n%s\n' "$(date)"
+    printf 'build triggered by modified file: %s\n' "$filename"
+    "$here/build" || true
+  }
+done

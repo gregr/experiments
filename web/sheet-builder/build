@@ -1,0 +1,4 @@
+#!/bin/bash
+set -eufo pipefail
+
+elm make SB/Main.elm --output elm.js
