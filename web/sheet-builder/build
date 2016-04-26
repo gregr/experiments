@@ -1,4 +1,6 @@
 #!/bin/bash
 set -eufo pipefail
+here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-elm make SB/Main.elm --output elm.js
+elm make SB/Main.elm --output elm.js || \
+  cp "$here/elm.js.error" "$here/elm.js" && false

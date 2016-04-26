@@ -1,0 +1,8 @@
+Elm = {
+  fullscreen: function () {
+    'use strict';
+    var pre = document.createElement('pre');
+    pre.innerText = 'Compilation failed!';
+    document.body.insertBefore(pre, null);
+  }
+}
