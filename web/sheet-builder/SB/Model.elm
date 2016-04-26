@@ -44,13 +44,10 @@ type alias NamedRef = { name : Name, ref : Ref }
 type Value = VAtom Atom | VList (List ListComponent) | VSheet Sheet
 type ListComponent = LCElements (List Atom) | LCSplice Ref
 type alias Sheet =
-  { elements : List Ref -- TODO: labels
-  , owned : Set Ref -- not all embedded elements are owned
-  , parameter : Ref
-  , input : Atom  -- the parameter comes with an example
+  { elements : Set Ref
+  , input : Ref
   , output : Atom
   }
-type LayoutOrientation = Vertical | Horizontal
 
 type alias Name = String
 type alias Ref = Int
@@ -278,24 +275,20 @@ refInstantiate refmap ref env = case Dict.get ref refmap of
 atomInstantiate refmap atom env = case atom of
   ARef ref -> refInstantiate refmap ref env
   _ -> env
-sheetInstantiate refmap sheet =
-  let arg = atomCopy refmap sheet.input
-      genref oref (rmap, env) =
+sheetInstantiate refmap sheet arg =
+  let genref oref (rmap, env) =
         (nextRef $>>= \nref -> pure1 <| Dict.insert oref nref rmap) env
-  in (\env -> Set.foldl genref (refmap, env) sheet.owned) $>>= \refmap0 ->
+  in (\env -> Set.foldl genref (refmap, env) sheet.elements) $>>= \refmap0 ->
      newTerm (Literal arg) $>>= \param ->
-       let refmap1 = Dict.insert sheet.parameter param refmap0
+       let refmap1 = Dict.insert sheet.input param refmap0
            output = atomCopy refmap1 sheet.output
-           elements = List.map (refCopy refmap1) sheet.elements
-           owned = Set.map (refCopy refmap1) sheet.owned
+           elements = Set.map (refCopy refmap1) sheet.elements
        in \env -> ({ sheet | elements = elements,
-                             owned = owned,
-                             parameter = param,
-                             input = arg,
+                             input = param,
                              output = output }
-                  , List.foldl (refInstantiate refmap1) env sheet.elements)
+                  , Set.foldl (refInstantiate refmap1) env sheet.elements)
 termInstantiate refmap term = case term of
-  TSheet sheet -> TSheet $<$> sheetInstantiate refmap sheet
+  TSheet sheet -> TSheet $<$> sheetInstantiate refmap sheet (ARef sheet.input)
   _ -> pure1 <| termCopy refmap term
 
 iterate pending procedure count =
@@ -319,9 +312,9 @@ eval pending term = case term of
   TSheet sheet -> (,) <| Ok <| VSheet sheet
   SheetWith sref arg ->
     evalSheet pending sref >>= \sheet ->
-      pure0 << VSheet $<$> sheetInstantiate Dict.empty { sheet | input = arg }
+      pure0 << VSheet $<$> sheetInstantiate Dict.empty sheet arg
   SheetInput sref -> evalSheet pending sref >>=
-    \sheet -> VAtom <$> evalAtom pending sheet.input
+    \sheet -> VAtom <$> evalRef pending sheet.input
   SheetOutput sref -> evalSheet pending sref >>=
     \sheet -> VAtom <$> evalAtom pending sheet.output
   Access lref index ->
@@ -334,10 +327,8 @@ example =
   newTerm (BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)) $>>= \r1 ->
   newTerm (TList [LCElements [ARef r0, AString "and", ARef r1]]) $>>= \r2 ->
   newTerm (Literal <| AString "example sheet") $>>= \r3 ->
-  newTerm (TSheet { elements = [r3, r0, r1, r2]
-                  , owned = Set.fromList [r0, r1, r2]
-                  , parameter = rparam
-                  , input = ARef rparam
+  newTerm (TSheet { elements = Set.fromList [r3, r0, r1, r2]
+                  , input = rparam
                   , output = ARef r2
                   }) $>>= \r4 ->
   newTerm (SheetOutput r4) $>>= \r5 ->
@@ -351,10 +342,8 @@ example =
   newTerm (Access r11 <| AFloat 2.1) $>>= \r12 ->
   newTerm (Literal <| AUnit) $>>= \rparam1 ->
   newTerm (BinaryOp (BArithmetic (*)) (AFloat 1.5) (ARef rparam1)) $>>= \r13 ->
-  newTerm (TSheet { elements = [r13]
-                  , owned = Set.fromList [r13]
-                  , parameter = rparam1
-                  , input = ARef rparam1
+  newTerm (TSheet { elements = Set.fromList [r13]
+                  , input = rparam1
                   , output = ARef r13
                   }) $>>= \r14 ->
   newTerm (TIteration { procedure = r14, length = AInt 10 }) $>>= \r15 ->
