@@ -9,7 +9,7 @@ import Html.Events exposing (..)
 import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Json.Decode as J
 
-main = view editor
+main = viewValue <| VList [LCElements [AString "test", AInt 55, ABool True, AFloat 3.4]]
 
 view editor = text <| toString editor
 
@@ -43,6 +43,37 @@ editorEmpty =
   let (root, env) = newSheet envEmpty
   in { root = root, env = env, bodies = Dict.empty }
 editor = editorEmpty
+
+viewRef ref = text "TODO: ref"
+viewUnit = span [] []
+viewBool vb = input [type' "checkbox", checked vb] []
+viewString vs = span [] [text vs]
+viewInt vi = span [] [text <| toString vi]
+viewFloat vf = span [] [text <| toString vf]
+
+viewAtom atom = case atom of
+  ARef ref -> viewRef ref
+  AUnit -> viewUnit
+  ABool vb -> viewBool vb
+  AString vs -> viewString vs
+  AInt vi -> viewInt vi
+  AFloat vf -> viewFloat vf
+
+viewListComponent part = case part of
+  LCElements atoms -> List.map viewAtom atoms
+  LCSplice ref -> [text "TODO: splice"]
+viewListComponents parts = List.concatMap viewListComponent parts
+viewList parts = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents parts
+
+viewSheet { elements, input, output } =
+  div [] [div [] [viewRef input]
+         ,div [] <| List.map viewRef <| Set.toList elements
+         ,div [] [viewAtom output]]
+
+viewValue value = case value of
+  VAtom atom -> viewAtom atom
+  VList parts -> viewList parts
+  VSheet sheet -> viewSheet sheet
 
 -- editor operations
 
