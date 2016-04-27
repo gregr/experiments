@@ -92,13 +92,30 @@ viewValue value = case value of
   VList parts -> viewList parts
   VSheet sheet -> viewSheet sheet
 
+viewBinaryOp op lhs rhs =
+  let vl = viewAtom lhs
+      vr = viewAtom rhs
+      parts = case op of
+                BArithmetic aop -> case aop of
+                  BAdd -> [vl, text "+", vr]
+                  BSub -> [vl, text "-", vr]
+                  BMul -> [vl, text "*", vr]
+                  BDiv -> [vl, text "/", vr]
+                  BQuo -> [vl, text "//", vr]
+                  BRem -> [vl, text "/r", vr]
+                  BMod -> [vl, text "%", vr]
+                  BLog -> [text "log", vl, vr]
+                  BExp -> [vl, text "^", vr]
+                _ -> [text <| toString op, vl, vr]
+  in span [] <| List.intersperse (text " ") parts
+
 viewTerm term = case term of
   Literal atom -> viewAtom atom
   TList parts -> viewList parts
   TIteration {procedure, length} -> span [] [text "Iteration: ", viewRef procedure, text " ", viewAtom length]
   TSheet sheet -> viewSheet sheet
   UnaryOp op atom -> span [] [text <| "(" ++ toString op ++ ")", viewAtom atom]
-  BinaryOp op lhs rhs -> span [] [viewAtom lhs, text <| "(" ++ toString op ++ ")", viewAtom rhs]
+  BinaryOp op lhs rhs -> viewBinaryOp op lhs rhs
   SheetWith sref arg -> span [] [text <| "SheetWith " ++ toString sref ++ " ", viewAtom arg]
   Access lref index -> span [] [viewRef lref, text "[", viewAtom index, text "]"]
   _ -> text <| "TODO: viewTerm: " ++ toString term
