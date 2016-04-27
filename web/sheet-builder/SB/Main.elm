@@ -22,7 +22,7 @@ testView =
             Ok value -> viewValue value
             Err msg -> text msg
       d1 = viewEnv env
-  in div [] [div [] [d0], div [] [d1]]
+  in div [] [div [] [text <| "ref: " ++ toString testRef], div [] [d0], div [] [d1]]
 example = viewValue <| VList [LCElements [AString "test", ANumber <| NInt 55, ABool True, ANumber <| NFloat 3.4]]
 
 main = div [] [div [] [example], div [] [testView]]
@@ -61,7 +61,7 @@ editorEmpty =
 editor = editorEmpty
 
 viewRef ref = text <| "TODO: ref " ++ toString ref
-viewUnit = span [] []
+viewUnit = span [] [text "()"]
 viewBool vb = input [type' "checkbox", checked vb] []
 viewString vs = input [value vs] []
 viewInt vi = input [type' "number", value (toString vi)] []
