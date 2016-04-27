@@ -47,9 +47,9 @@ editor = editorEmpty
 viewRef ref = text "TODO: ref"
 viewUnit = span [] []
 viewBool vb = input [type' "checkbox", checked vb] []
-viewString vs = span [] [text vs]
-viewInt vi = span [] [text <| toString vi]
-viewFloat vf = span [] [text <| toString vf]
+viewString vs = input [value vs] []
+viewInt vi = input [type' "number", value (toString vi)] []
+viewFloat vf = input [type' "number", value (toString vf)] []
 
 viewAtom atom = case atom of
   ARef ref -> viewRef ref
