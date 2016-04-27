@@ -9,12 +9,12 @@ import Html.Events exposing (..)
 import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Json.Decode as J
 
-viewDict dct = ul [] <| List.map (\item -> li [] [text (toString item)]) <| Dict.toList dct
+viewDict vv dct = ul [] <| List.map (\(key, val) -> li [] [text (toString key ++ " => "), vv val]) <| Dict.toList dct
 viewEnv {terms, finished, uid} =
   ul [] [text "terms"
-        ,viewDict terms
+        ,viewDict (text << toString) terms
         ,text "finished"
-        ,viewDict finished
+        ,viewDict viewValue finished
         ,text <| toString uid]
 testView =
   let (result, env) = test
@@ -60,7 +60,7 @@ editorEmpty =
   in { root = root, env = env, bodies = Dict.empty }
 editor = editorEmpty
 
-viewRef ref = text "TODO: ref"
+viewRef ref = text <| "TODO: ref " ++ toString ref
 viewUnit = span [] []
 viewBool vb = input [type' "checkbox", checked vb] []
 viewString vs = input [value vs] []
@@ -82,7 +82,8 @@ viewListComponents parts = List.concatMap viewListComponent parts
 viewList parts = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents parts
 
 viewSheet { elements, input, output } =
-  div [] [div [] [viewRef input]
+  div [] [text "TODO: sheet"
+         ,div [] [viewRef input]
          ,div [] <| List.map viewRef <| Set.toList elements
          ,div [] [viewAtom output]]
 
