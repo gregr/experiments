@@ -23,7 +23,7 @@ testView =
             Err msg -> text msg
       d1 = viewEnv env
   in div [] [div [] [d0], div [] [d1]]
-example = viewValue <| VList [LCElements [AString "test", AInt 55, ABool True, AFloat 3.4]]
+example = viewValue <| VList [LCElements [AString "test", ANumber <| NInt 55, ABool True, ANumber <| NFloat 3.4]]
 
 main = div [] [div [] [example], div [] [testView]]
 
@@ -72,8 +72,8 @@ viewAtom atom = case atom of
   AUnit -> viewUnit
   ABool vb -> viewBool vb
   AString vs -> viewString vs
-  AInt vi -> viewInt vi
-  AFloat vf -> viewFloat vf
+  ANumber (NInt vi) -> viewInt vi
+  ANumber (NFloat vf) -> viewFloat vf
 
 viewListComponent part = case part of
   LCElements atoms -> List.map viewAtom atoms

@@ -36,8 +36,8 @@ type Atom
   | AUnit
   | ABool Bool
   | AString String
-  | AInt Int
-  | AFloat Float
+  | ANumber Number
+type Number = NInt Int | NFloat Float
 type alias Identifier = { namespace : Ref, nref : NamedRef }
 type alias NamedRef = { name : Name, ref : Ref }
 
@@ -183,17 +183,20 @@ infixl 4 <*>
 (<$>) f0 p1 = pure f0 <*> p1
 infixl 4 <$>
 
-aint atom = case atom of
-  AInt int -> Ok int
-  AFloat float -> Ok <| round float
-  _ -> Err "aint: expected a number"
+nint num = case num of
+  NInt int -> int
+  NFloat float -> round float
+nfloat num = case num of
+  NInt int -> toFloat int
+  NFloat float -> float
+anumber atom = case atom of
+  ANumber num -> Ok num
+  _ -> Err "expected a number"
+aint atom = nint @<$> anumber atom
+afloat atom = nfloat @<$> anumber atom
 
-afloat atom = case atom of
-  AInt int -> Ok <| toFloat int
-  AFloat float -> Ok float
-  _ -> Err "afloat: expected a number"
-
-arithApply op alhs arhs = AFloat @<$> (op @<$> afloat alhs @<*> afloat arhs)
+arithApply op alhs arhs =
+  ANumber << NFloat @<$> (op @<$> afloat alhs @<*> afloat arhs)
 
 valueAtom ref value = case value of
   VAtom atom -> atom
@@ -292,7 +295,7 @@ termInstantiate refmap term = case term of
   _ -> pure1 <| termCopy refmap term
 
 iterate pending procedure count =
-  let sheetAt index = newTerm <| SheetWith procedure <| AInt index
+  let sheetAt index = newTerm <| SheetWith procedure <| ANumber <| NInt index
       elementAt index = ARef $<$> (sheetAt index $>>= newTerm << SheetOutput)
       relements = forM1 [] [0..count - 1]
         (\index acc -> flip (::) acc $<$> elementAt index)
@@ -322,9 +325,9 @@ eval pending term = case term of
   _ -> (,) <| Err "TODO: eval term"
 
 example =
-  newTerm (Literal <| AInt 3) $>>= \rparam ->
-  newTerm (BinaryOp (BArithmetic (*)) (AFloat 4.1) (ARef rparam)) $>>= \r0 ->
-  newTerm (BinaryOp (BArithmetic (+)) (AFloat 5) (ARef r0)) $>>= \r1 ->
+  newTerm (Literal <| ANumber <| NInt 3) $>>= \rparam ->
+  newTerm (BinaryOp (BArithmetic (*)) (ANumber <| NFloat 4.1) (ARef rparam)) $>>= \r0 ->
+  newTerm (BinaryOp (BArithmetic (+)) (ANumber <| NFloat 5) (ARef r0)) $>>= \r1 ->
   newTerm (TList [LCElements [ARef r0, AString "and", ARef r1]]) $>>= \r2 ->
   newTerm (Literal <| AString "example sheet") $>>= \r3 ->
   newTerm (TSheet { elements = Set.fromList [r3, r0, r1, r2]
@@ -332,22 +335,22 @@ example =
                   , output = ARef r2
                   }) $>>= \r4 ->
   newTerm (SheetOutput r4) $>>= \r5 ->
-  newTerm (Access r5 <| AInt 2) $>>= \raccess0 ->
+  newTerm (Access r5 <| ANumber <| NInt 2) $>>= \raccess0 ->
   newTerm (SheetWith r4 (ARef raccess0)) $>>= \r6 ->
   newTerm (Literal <| ARef r6) $>>= \r7 ->
   newTerm (Literal <| ARef r7) $>>= \r8 ->
   newTerm (Literal <| ARef r8) $>>= \r9 ->
   newTerm (SheetInput r9) $>>= \r10 ->
   newTerm (SheetOutput r9) $>>= \r11 ->
-  newTerm (Access r11 <| AFloat 2.1) $>>= \r12 ->
+  newTerm (Access r11 <| ANumber <| NFloat 2.1) $>>= \r12 ->
   newTerm (Literal <| AUnit) $>>= \rparam1 ->
-  newTerm (BinaryOp (BArithmetic (*)) (AFloat 1.5) (ARef rparam1)) $>>= \r13 ->
+  newTerm (BinaryOp (BArithmetic (*)) (ANumber <| NFloat 1.5) (ARef rparam1)) $>>= \r13 ->
   newTerm (TSheet { elements = Set.fromList [r13]
                   , input = rparam1
                   , output = ARef r13
                   }) $>>= \r14 ->
-  newTerm (TIteration { procedure = r14, length = AInt 10 }) $>>= \r15 ->
-  newTerm (Access r15 (AInt 7))
+  newTerm (TIteration { procedure = r14, length = ANumber <| NInt 10 }) $>>= \r15 ->
+  newTerm (Access r15 (ANumber <| NInt 7))
 (testRef, testEnv) = example envEmpty
 test = eval Set.empty (Literal <| ARef testRef) testEnv
 
