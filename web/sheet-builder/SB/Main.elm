@@ -12,7 +12,7 @@ import Json.Decode as J
 viewDict vv dct = ul [] <| List.map (\(key, val) -> li [] [text (toString key ++ " => "), vv val]) <| Dict.toList dct
 viewEnv {terms, finished, uid} =
   ul [] [text "terms"
-        ,viewDict (text << toString) terms
+        ,viewDict viewTerm terms
         ,text "finished"
         ,viewDict viewValue finished
         ,text <| toString uid]
@@ -91,6 +91,17 @@ viewValue value = case value of
   VAtom atom -> viewAtom atom
   VList parts -> viewList parts
   VSheet sheet -> viewSheet sheet
+
+viewTerm term = case term of
+  Literal atom -> viewAtom atom
+  TList parts -> viewList parts
+  TIteration {procedure, length} -> span [] [text "Iteration: ", viewRef procedure, text " ", viewAtom length]
+  TSheet sheet -> viewSheet sheet
+  UnaryOp op atom -> span [] [text <| "(" ++ toString op ++ ")", viewAtom atom]
+  BinaryOp op lhs rhs -> span [] [viewAtom lhs, text <| "(" ++ toString op ++ ")", viewAtom rhs]
+  SheetWith sref arg -> span [] [text <| "SheetWith " ++ toString sref ++ " ", viewAtom arg]
+  Access lref index -> span [] [viewRef lref, text "[", viewAtom index, text "]"]
+  _ -> text <| "TODO: viewTerm: " ++ toString term
 
 -- editor operations
 
