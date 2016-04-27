@@ -9,7 +9,23 @@ import Html.Events exposing (..)
 import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Json.Decode as J
 
-main = viewValue <| VList [LCElements [AString "test", AInt 55, ABool True, AFloat 3.4]]
+viewDict dct = ul [] <| List.map (\item -> li [] [text (toString item)]) <| Dict.toList dct
+viewEnv {terms, finished, uid} =
+  ul [] [text "terms"
+        ,viewDict terms
+        ,text "finished"
+        ,viewDict finished
+        ,text <| toString uid]
+testView =
+  let (result, env) = test
+      d0 = case result of
+            Ok value -> viewValue value
+            Err msg -> text msg
+      d1 = viewEnv env
+  in div [] [div [] [d0], div [] [d1]]
+example = viewValue <| VList [LCElements [AString "test", AInt 55, ABool True, AFloat 3.4]]
+
+main = div [] [div [] [example], div [] [testView]]
 
 view editor = text <| toString editor
 
