@@ -27,10 +27,12 @@ type BOp
   | BCompareLTE
   | BCompareGT
   | BCompareGTE
-  | BArithmetic (Float -> Float -> Float)
+  | BArithmetic BArithmeticOp
   | BStringConcat
   | BStringSubrange
   | BStringReplace
+type BArithmeticOp
+  = BAdd | BSub | BMul | BDiv | BQuo | BRem | BMod | BExp | BLog
 type Atom
   = ARef Ref
   | AUnit
@@ -195,8 +197,24 @@ anumber atom = case atom of
 aint atom = nint @<$> anumber atom
 afloat atom = nfloat @<$> anumber atom
 
+baopCompute aop =
+  let flop op lhs rhs = NFloat <| op (nfloat lhs) (nfloat rhs)
+      iop op lhs rhs = NInt <| op (nint lhs) (nint rhs)
+      nop io fo lhs rhs = case (lhs, rhs) of
+                            (NInt nl, NInt nr) -> NInt <| io nl nr
+                            _ -> flop fo lhs rhs
+  in case aop of
+    BAdd -> nop (+) (+)
+    BSub -> nop (-) (-)
+    BMul -> nop (*) (*)
+    BDiv -> flop (/)
+    BQuo -> iop (//)
+    BRem -> iop rem
+    BMod -> iop (%)
+    BLog -> flop logBase
+    BExp -> nop (^) (^)
 arithApply op alhs arhs =
-  ANumber << NFloat @<$> (op @<$> afloat alhs @<*> afloat arhs)
+  ANumber @<$> (baopCompute op @<$> anumber alhs @<*> anumber arhs)
 
 valueAtom ref value = case value of
   VAtom atom -> atom
@@ -326,8 +344,8 @@ eval pending term = case term of
 
 example =
   newTerm (Literal <| ANumber <| NInt 3) $>>= \rparam ->
-  newTerm (BinaryOp (BArithmetic (*)) (ANumber <| NFloat 4.1) (ARef rparam)) $>>= \r0 ->
-  newTerm (BinaryOp (BArithmetic (+)) (ANumber <| NFloat 5) (ARef r0)) $>>= \r1 ->
+  newTerm (BinaryOp (BArithmetic BMul) (ANumber <| NFloat 4.1) (ARef rparam)) $>>= \r0 ->
+  newTerm (BinaryOp (BArithmetic BAdd) (ANumber <| NFloat 5) (ARef r0)) $>>= \r1 ->
   newTerm (TList [LCElements [ARef r0, AString "and", ARef r1]]) $>>= \r2 ->
   newTerm (Literal <| AString "example sheet") $>>= \r3 ->
   newTerm (TSheet { elements = Set.fromList [r3, r0, r1, r2]
@@ -344,7 +362,7 @@ example =
   newTerm (SheetOutput r9) $>>= \r11 ->
   newTerm (Access r11 <| ANumber <| NFloat 2.1) $>>= \r12 ->
   newTerm (Literal <| AUnit) $>>= \rparam1 ->
-  newTerm (BinaryOp (BArithmetic (*)) (ANumber <| NFloat 1.5) (ARef rparam1)) $>>= \r13 ->
+  newTerm (BinaryOp (BArithmetic BMul) (ANumber <| NFloat 1.5) (ARef rparam1)) $>>= \r13 ->
   newTerm (TSheet { elements = Set.fromList [r13]
                   , input = rparam1
                   , output = ARef r13
