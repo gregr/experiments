@@ -60,41 +60,50 @@ editorEmpty =
   in { root = root, env = env, bodies = Dict.empty }
 editor = editorEmpty
 
-viewRef ref = text <| "TODO: ref " ++ toString ref
 viewUnit = span [] [text "()"]
 viewBool vb = input [type' "checkbox", checked vb] []
 viewString vs = input [value vs] []
 viewInt vi = input [type' "number", value (toString vi)] []
 viewFloat vf = input [type' "number", value (toString vf)] []
 
-viewAtom atom = case atom of
+viewRef ref = text <| "TODO: ref " ++ toString ref
+viewValueRef = viewRef
+viewTermRef = viewRef
+
+viewAtom viewRef atom = case atom of
   ARef ref -> viewRef ref
   AUnit -> viewUnit
   ABool vb -> viewBool vb
   AString vs -> viewString vs
   ANumber (NInt vi) -> viewInt vi
   ANumber (NFloat vf) -> viewFloat vf
+viewValueAtom = viewAtom viewValueRef
+viewTermAtom = viewAtom viewTermRef
 
-viewListComponent part = case part of
+viewListComponent viewAtom part = case part of
   LCElements atoms -> List.map viewAtom atoms
   LCSplice ref -> [text "TODO: splice"]
-viewListComponents parts = List.concatMap viewListComponent parts
-viewList parts = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents parts
+viewListComponents viewAtom parts = List.concatMap (viewListComponent viewAtom) parts
+viewList viewAtom parts = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents viewAtom parts
+viewValueList = viewList viewValueAtom
+viewTermList = viewList viewTermAtom
 
-viewSheet { elements, input, output } =
+viewSheet viewRef viewAtom { elements, input, output } =
   div [] [text "TODO: sheet"
          ,div [] [viewRef input]
          ,div [] <| List.map viewRef <| Set.toList elements
          ,div [] [viewAtom output]]
+viewValueSheet = viewSheet viewValueRef viewValueAtom
+viewTermSheet = viewSheet viewTermRef viewTermAtom
 
 viewValue value = case value of
-  VAtom atom -> viewAtom atom
-  VList parts -> viewList parts
-  VSheet sheet -> viewSheet sheet
+  VAtom atom -> viewValueAtom atom
+  VList parts -> viewValueList parts
+  VSheet sheet -> viewValueSheet sheet
 
 viewBinaryOp op lhs rhs =
-  let vl = viewAtom lhs
-      vr = viewAtom rhs
+  let vl = viewTermAtom lhs
+      vr = viewTermAtom rhs
       parts = case op of
                 BArithmetic aop -> case aop of
                   BAdd -> [vl, text "+", vr]
@@ -110,14 +119,14 @@ viewBinaryOp op lhs rhs =
   in span [] <| List.intersperse (text " ") parts
 
 viewTerm term = case term of
-  Literal atom -> viewAtom atom
-  TList parts -> viewList parts
-  TIteration {procedure, length} -> span [] [text "Iteration: ", viewRef procedure, text " ", viewAtom length]
-  TSheet sheet -> viewSheet sheet
-  UnaryOp op atom -> span [] [text <| "(" ++ toString op ++ ")", viewAtom atom]
+  Literal atom -> viewTermAtom atom
+  TList parts -> viewTermList parts
+  TIteration {procedure, length} -> span [] [text "Iteration: ", viewTermRef procedure, text " ", viewTermAtom length]
+  TSheet sheet -> viewTermSheet sheet
+  UnaryOp op atom -> span [] [text <| "(" ++ toString op ++ ")", viewTermAtom atom]
   BinaryOp op lhs rhs -> viewBinaryOp op lhs rhs
-  SheetWith sref arg -> span [] [text <| "SheetWith " ++ toString sref ++ " ", viewAtom arg]
-  Access lref index -> span [] [viewRef lref, text "[", viewAtom index, text "]"]
+  SheetWith sref arg -> span [] [text <| "SheetWith " ++ toString sref ++ " ", viewTermAtom arg]
+  Access lref index -> span [] [viewTermRef lref, text "[", viewTermAtom index, text "]"]
   _ -> text <| "TODO: viewTerm: " ++ toString term
 
 -- editor operations
