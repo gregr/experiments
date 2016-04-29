@@ -10,20 +10,21 @@ import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Json.Decode as J
 
 viewDict vv dct = ul [] <| List.map (\(key, val) -> li [] [text (toString key ++ " => "), vv val]) <| Dict.toList dct
-viewEnv {terms, finished, uid} =
-  ul [] [text "terms"
-        ,viewDict viewTerm terms
-        ,text "finished"
-        ,viewDict viewValue finished
-        ,text <| toString uid]
+viewEnv env =
+  let {terms, finished, uid} = env
+  in ul [] [text "terms"
+           ,viewDict (viewTerm env Set.empty) terms
+           ,text "finished"
+           ,viewDict (viewValue env Set.empty) finished
+           ,text <| toString uid]
 testView =
   let (result, env) = test
       d0 = case result of
-            Ok value -> viewValue value
+            Ok value -> viewValue env Set.empty value
             Err msg -> text msg
       d1 = viewEnv env
   in div [] [div [] [text <| "ref: " ++ toString testRef], div [] [d0], div [] [d1]]
-example = viewValue <| VList [LCElements [AString "test", ANumber <| NInt 55, ABool True, ANumber <| NFloat 3.4]]
+example = viewValue envEmpty Set.empty <| VList [LCElements [AString "test", ANumber <| NInt 55, ABool True, ANumber <| NFloat 3.4]]
 
 main = div [] [div [] [example], div [] [testView]]
 
@@ -66,12 +67,12 @@ viewString vs = input [value vs] []
 viewInt vi = input [type' "number", value (toString vi)] []
 viewFloat vf = input [type' "number", value (toString vf)] []
 
-viewRef ref = text <| "TODO: ref " ++ toString ref
+viewRef env pending ref  = text <| "TODO: ref " ++ toString ref
 viewValueRef = viewRef
 viewTermRef = viewRef
 
-viewAtom viewRef atom = case atom of
-  ARef ref -> viewRef ref
+viewAtom viewRef env pending atom = case atom of
+  ARef ref -> viewRef env pending ref
   AUnit -> viewUnit
   ABool vb -> viewBool vb
   AString vs -> viewString vs
@@ -84,26 +85,27 @@ viewListComponent viewAtom part = case part of
   LCElements atoms -> List.map viewAtom atoms
   LCSplice ref -> [text "TODO: splice"]
 viewListComponents viewAtom parts = List.concatMap (viewListComponent viewAtom) parts
-viewList viewAtom parts = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents viewAtom parts
+viewList viewAtom env pending parts
+  = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents (viewAtom env pending) parts
 viewValueList = viewList viewValueAtom
 viewTermList = viewList viewTermAtom
 
-viewSheet viewRef viewAtom { elements, input, output } =
+viewSheet viewRef viewAtom env pending { elements, input, output } =
   div [] [text "TODO: sheet"
-         ,div [] [viewRef input]
-         ,div [] <| List.map viewRef <| Set.toList elements
-         ,div [] [viewAtom output]]
+         ,div [] [viewRef env pending input]
+         ,div [] <| List.map (viewRef env pending) <| Set.toList elements
+         ,div [] [viewAtom env pending output]]
 viewValueSheet = viewSheet viewValueRef viewValueAtom
 viewTermSheet = viewSheet viewTermRef viewTermAtom
 
-viewValue value = case value of
-  VAtom atom -> viewValueAtom atom
-  VList parts -> viewValueList parts
-  VSheet sheet -> viewValueSheet sheet
+viewValue env pending value = case value of
+  VAtom atom -> viewValueAtom env pending atom
+  VList parts -> viewValueList env pending parts
+  VSheet sheet -> viewValueSheet env pending sheet
 
-viewBinaryOp op lhs rhs =
-  let vl = viewTermAtom lhs
-      vr = viewTermAtom rhs
+viewBinaryOp env pending op lhs rhs =
+  let vl = viewTermAtom env pending lhs
+      vr = viewTermAtom env pending rhs
       parts = case op of
                 BArithmetic aop -> case aop of
                   BAdd -> [vl, text "+", vr]
@@ -118,15 +120,15 @@ viewBinaryOp op lhs rhs =
                 _ -> [text <| toString op, vl, vr]
   in span [] <| List.intersperse (text " ") parts
 
-viewTerm term = case term of
-  Literal atom -> viewTermAtom atom
-  TList parts -> viewTermList parts
-  TIteration {procedure, length} -> span [] [text "Iteration: ", viewTermRef procedure, text " ", viewTermAtom length]
-  TSheet sheet -> viewTermSheet sheet
-  UnaryOp op atom -> span [] [text <| "(" ++ toString op ++ ")", viewTermAtom atom]
-  BinaryOp op lhs rhs -> viewBinaryOp op lhs rhs
-  SheetWith sref arg -> span [] [text <| "SheetWith " ++ toString sref ++ " ", viewTermAtom arg]
-  Access lref index -> span [] [viewTermRef lref, text "[", viewTermAtom index, text "]"]
+viewTerm env pending term = case term of
+  Literal atom -> viewTermAtom env pending atom
+  TList parts -> viewTermList env pending parts
+  TIteration {procedure, length} -> span [] [text "Iteration: ", viewTermRef env pending procedure, text " ", viewTermAtom env pending length]
+  TSheet sheet -> viewTermSheet env pending sheet
+  UnaryOp op atom -> span [] [text <| "(" ++ toString op ++ ")", viewTermAtom env pending atom]
+  BinaryOp op lhs rhs -> viewBinaryOp env pending op lhs rhs
+  SheetWith sref arg -> span [] [text <| "SheetWith " ++ toString sref ++ " ", viewTermAtom env pending arg]
+  Access lref index -> span [] [viewTermRef env pending lref, text "[", viewTermAtom env pending index, text "]"]
   _ -> text <| "TODO: viewTerm: " ++ toString term
 
 -- editor operations
