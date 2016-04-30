@@ -17,16 +17,21 @@ viewEnv env =
            ,text "finished"
            ,viewDict (viewValue env Set.empty) finished
            ,text <| toString uid]
+testRoots =
+  let style = { tuisDefault | context = Just FormulaVisible }
+      tuis = List.map (\ref -> { ref = ref, style = style }) testRefs
+  in tuis
 testView =
-  let (result, env) = test
-      d0 = case result of
-            Ok value ->
-              let style = { tuisDefault | context = Just FormulaVisible }
-                  tui = { ref = testRef, style = style }
-              in viewTermUI env Set.empty styleDefault tui
-            Err msg -> text msg
-      d1 = viewEnv env
-  in div [] [div [] [text <| "ref: " ++ toString testRef], div [] [d0], div [] [d1]]
+  let (rtrs, env) = forM1 [] testRoots
+        (\tui trs ->
+          flip (::) trs $<$> ((,) tui $<$> evalRef Set.empty tui.ref)) testEnv
+      present (tui, result) = case result of
+        Ok value -> div [] [text <| "ref: " ++ toString tui.ref
+                           ,viewTermUI env Set.empty styleDefault tui]
+        Err msg -> text <| "error: " ++ msg
+      vtuis = List.map present <| List.reverse rtrs
+      venv = viewEnv env
+  in div [] <| vtuis ++ [div [] [venv]]
 example = viewValue envEmpty Set.empty <| VList [LCElements [AString "test", ANumber <| NInt 55, ABool True, ANumber <| NFloat 3.4]]
 
 main = div [] [div [] [example], div [] [testView]]

@@ -368,9 +368,9 @@ example =
                   , output = ARef r13
                   }) $>>= \r14 ->
   newTerm (TIteration { procedure = r14, length = ANumber <| NInt 10 }) $>>= \r15 ->
-  newTerm (Access r15 (ANumber <| NInt 7))
-(testRef, testEnv) = example envEmpty
-test = eval Set.empty (Literal <| ARef testRef) testEnv
+  newTerm (Access r15 (ANumber <| NInt 7)) $>>= \r16 ->
+    pure1 [r16, r12, r2]
+(testRefs, testEnv) = example envEmpty
 
 {-
 Notes:
