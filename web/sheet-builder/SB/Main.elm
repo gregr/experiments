@@ -67,9 +67,12 @@ viewString vs = input [value vs] []
 viewInt vi = input [type' "number", value (toString vi)] []
 viewFloat vf = input [type' "number", value (toString vf)] []
 
-viewRef env pending ref  = text <| "TODO: ref " ++ toString ref
-viewValueRef = viewRef
-viewTermRef = viewRef
+viewValueRef env pending ref =
+  if Set.member ref pending then text <| "cyclic ref: " ++ toString ref
+  else text ("unevaluated ref: " ++ toString ref) `Maybe.withDefault`
+    (viewValue env (Set.insert ref pending) `Maybe.map`
+    Dict.get ref env.finished)
+viewTermRef env pending ref = text <| "ref: " ++ toString ref
 
 viewAtom viewRef env pending atom = case atom of
   ARef ref -> viewRef env pending ref
@@ -78,8 +81,8 @@ viewAtom viewRef env pending atom = case atom of
   AString vs -> viewString vs
   ANumber (NInt vi) -> viewInt vi
   ANumber (NFloat vf) -> viewFloat vf
-viewValueAtom = viewAtom viewValueRef
-viewTermAtom = viewAtom viewTermRef
+viewValueAtom x = viewAtom viewValueRef x
+viewTermAtom x = viewAtom viewTermRef x
 
 viewListComponent viewAtom part = case part of
   LCElements atoms -> List.map viewAtom atoms
