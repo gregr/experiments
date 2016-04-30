@@ -20,7 +20,10 @@ viewEnv env =
 testView =
   let (result, env) = test
       d0 = case result of
-            Ok value -> viewValue env Set.empty value
+            Ok value ->
+              let style = { tuisDefault | context = Just FormulaVisible }
+                  tui = { ref = testRef, style = style }
+              in viewTermUI env Set.empty styleDefault tui
             Err msg -> text msg
       d1 = viewEnv env
   in div [] [div [] [text <| "ref: " ++ toString testRef], div [] [d0], div [] [d1]]
@@ -47,6 +50,7 @@ type ContextVisibility
 type alias Body = List (Name, TermUI)
 type alias Editor = { root : Ref, env : Environment, bodies : Dict Ref Body }
 
+styleDefault = { layout = Vertical, context = ValueVisible }
 tuisDefault = { layout = Nothing, context = Nothing }
 tuiDefault ref = { ref = ref, style = tuisDefault }
 
@@ -60,6 +64,16 @@ editorEmpty =
   let (root, env) = newSheet envEmpty
   in { root = root, env = env, bodies = Dict.empty }
 editor = editorEmpty
+
+viewTermUI env pending parentStyle {ref, style} =
+  let layout = Maybe.withDefault parentStyle.layout style.layout
+      context = Maybe.withDefault parentStyle.context style.context
+      value = VAtom (ARef ref) `Maybe.withDefault` refValue ref env
+      vv = div [] [text ("value: "), viewValue env pending value]
+      tv = div [] [text ("formula: "), viewTerm env pending (refTerm ref env)]
+  in case context of
+    ValueVisible -> div [] [vv]
+    _ -> div [] [tv, vv]
 
 viewUnit = span [] [text "()"]
 viewBool vb = input [type' "checkbox", checked vb] []
