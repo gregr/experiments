@@ -70,8 +70,7 @@ viewFloat vf = input [type' "number", value (toString vf)] []
 viewValueRef env pending ref =
   if Set.member ref pending then text <| "cyclic ref: " ++ toString ref
   else text ("unevaluated ref: " ++ toString ref) `Maybe.withDefault`
-    (viewValue env (Set.insert ref pending) `Maybe.map`
-    Dict.get ref env.finished)
+    (viewValue env (Set.insert ref pending) `Maybe.map` refValue ref env)
 viewTermRef env pending ref = text <| "ref: " ++ toString ref
 
 viewAtom viewRef env pending atom = case atom of
