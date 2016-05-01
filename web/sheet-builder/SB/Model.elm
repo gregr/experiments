@@ -88,6 +88,27 @@ refTerm ref { terms } = case Dict.get ref terms of
 refValue ref { finished } = Dict.get ref finished
 finishRef ref val env = { env | finished = Dict.insert ref val env.finished }
 
+atomDirectDeps atom = case atom of
+  ARef ref -> Set.singleton ref
+  _ -> Set.empty
+listComponentDirectDeps lc = case lc of
+  LCElements atoms -> List.foldl (Set.union << atomDirectDeps) Set.empty atoms
+  LCSplice ref -> Set.singleton ref
+termDirectDeps term = case term of
+  Literal atom -> atomDirectDeps atom
+  BinaryOp _ lhs rhs -> atomDirectDeps lhs `Set.union` atomDirectDeps rhs
+  TList lcs -> List.foldl (Set.union << listComponentDirectDeps) Set.empty lcs
+  TIteration {procedure, length} ->
+    Set.insert procedure <| atomDirectDeps length
+  TSheet {elements, input, output} ->
+    Set.insert input (elements `Set.union` atomDirectDeps output)
+  SheetWith ref atom -> Set.insert ref <| atomDirectDeps atom
+  SheetInput ref -> Set.singleton ref
+  SheetOutput ref -> Set.singleton ref
+  Access ref atom -> Set.insert ref <| atomDirectDeps atom
+  _ -> Set.empty
+refTermDirectDeps ref env = termDirectDeps <| refTerm ref env
+
 --schedulePush ref env = { env | pending = Set.insert ref env.pending,
                                --scheduleIn = ref :: env.scheduleIn }
 --schedulePop env = case env.scheduleOut of
