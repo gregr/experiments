@@ -179,3 +179,14 @@ viewTerm env pending term = case term of
 
 --type alias SimpleTermComposer = { focus }
 -- composition stack for jumping out to create new nested terms, then back to original context?
+
+-- TODO:
+-- default style for body elements should not be inherited
+-- crawl and eval tuis in open bodies (DependenciesVisible) reachable from roots
+-- implicit bodies
+-- explicit bodies
+-- iterations, sheets and context/dependency bodies
+-- namespaced identifiers in terms
+-- tracking bodies for newly-instantiated sheets and their contents
+-- styling
+-- editing/composition
