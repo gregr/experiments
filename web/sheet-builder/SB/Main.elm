@@ -18,7 +18,7 @@ viewEnv env =
            ,viewDict (viewValue env Set.empty) finished
            ,text <| toString uid]
 testRoots =
-  let style = { tuisDefault | context = Just FormulaVisible }
+  let style = { tuisDefault | context = Just DependenciesVisible }-- FormulaVisible }
       tuis = List.map (\ref -> { ref = ref, style = style }) testRefs
   in tuis
 testView =
@@ -72,15 +72,30 @@ editor = editorEmpty
 
 listItem item = li [] [item]
 
+refBody ref env =
+  let deps = List.sort <| Set.toList <| refTermDirectDeps ref env
+      depName ref = "ref " ++ toString ref
+      names = List.map depName deps
+      tuis = List.map tuiDefault deps
+  in List.map2 (,) names tuis
+
+viewBody env pending style ntuis =
+  let item (name, tui) =
+    li [] [text <| name ++ ": ",viewTermUI env pending style tui]
+  in ul [] <| List.map item ntuis
+
 viewTermUI env pending parentStyle {ref, style} =
   let layout = Maybe.withDefault parentStyle.layout style.layout
       context = Maybe.withDefault parentStyle.context style.context
+      style' = {layout = layout, context = context}
       value = VAtom (ARef ref) `Maybe.withDefault` refValue ref env
       vv = div [] [text ("value: "), viewValue env pending value]
       tv = div [] [text ("formula: "), viewTerm env pending (refTerm ref env)]
   in case context of
     ValueVisible -> div [] [vv]
-    _ -> div [] [tv, vv]
+    FormulaVisible -> div [] [tv, vv]
+    DependenciesVisible ->
+      div [] [viewBody env pending style' <| refBody ref env, tv, vv]
 
 viewUnit = span [] [text "()"]
 viewBool vb = input [type' "checkbox", checked vb] []
