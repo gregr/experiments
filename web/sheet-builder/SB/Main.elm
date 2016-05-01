@@ -70,6 +70,8 @@ editorEmpty =
   in { root = root, env = env, bodies = Dict.empty }
 editor = editorEmpty
 
+listItem item = li [] [item]
+
 viewTermUI env pending parentStyle {ref, style} =
   let layout = Maybe.withDefault parentStyle.layout style.layout
       context = Maybe.withDefault parentStyle.context style.context
@@ -107,9 +109,9 @@ viewListComponent viewAtom part = case part of
   LCSplice ref -> [text "TODO: splice"]
 viewListComponents viewAtom parts = List.concatMap (viewListComponent viewAtom) parts
 viewList viewAtom env pending parts
-  = ul [] <| List.map (\item -> li [] [item]) <| viewListComponents (viewAtom env pending) parts
-viewValueList = viewList viewValueAtom
-viewTermList = viewList viewTermAtom
+  = ol [start 0] <| List.map listItem <| viewListComponents (viewAtom env pending) parts
+viewValueList x = viewList viewValueAtom x
+viewTermList x = viewList viewTermAtom x
 
 viewSheet viewRef viewAtom env pending { elements, input, output } =
   div [] [text "TODO: sheet"
