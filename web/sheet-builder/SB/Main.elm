@@ -79,9 +79,9 @@ refBody ref env =
       tuis = List.map tuiDefault deps
   in List.map2 (,) names tuis
 
-viewBody env pending style ntuis =
+viewBody env pending ntuis =
   let item (name, tui) =
-    li [] [text <| name ++ ": ",viewTermUI env pending style tui]
+    li [] [text <| name ++ ": ",viewTermUI env pending styleDefault tui]
   in ul [] <| List.map item ntuis
 
 viewTermUI env pending parentStyle {ref, style} =
@@ -95,7 +95,7 @@ viewTermUI env pending parentStyle {ref, style} =
     ValueVisible -> div [] [vv]
     FormulaVisible -> div [] [tv, vv]
     DependenciesVisible ->
-      div [] [viewBody env pending style' <| refBody ref env, tv, vv]
+      div [] [viewBody env pending <| refBody ref env, tv, vv]
 
 viewUnit = span [] [text "()"]
 viewBool vb = input [type' "checkbox", checked vb] []
@@ -181,7 +181,6 @@ viewTerm env pending term = case term of
 -- composition stack for jumping out to create new nested terms, then back to original context?
 
 -- TODO:
--- default style for body elements should not be inherited
 -- crawl and eval tuis in open bodies (DependenciesVisible) reachable from roots
 -- implicit bodies
 -- explicit bodies
