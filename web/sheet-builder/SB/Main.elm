@@ -52,7 +52,8 @@ type ContextVisibility
   = ValueVisible
   | FormulaVisible
   | DependenciesVisible
-type alias Body = List (Name, TermUI)
+List ContextVisibility -- include new value-specific properties (openness, length/window, etc.)
+type alias Body = List (Name, TermUI) -- open/closed list for formula args
 type alias Editor = { root : Ref, env : Environment, bodies : Dict Ref Body }
 
 styleDefault = { layout = Vertical, context = ValueVisible }
