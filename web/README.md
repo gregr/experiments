@@ -2,6 +2,8 @@
 
 ## References
 
+* [https://platform.html5.org/](https://platform.html5.org/)
+
 [W3C Markup Validator](https://validator.w3.org/)
 
 * [https://google.github.io/styleguide/htmlcssguide.xml](https://google.github.io/styleguide/htmlcssguide.xml)
