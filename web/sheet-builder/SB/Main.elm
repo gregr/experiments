@@ -1,3 +1,6 @@
+module SB.Main where
+
+import Dict exposing (Dict)
 import Html exposing (..)
 
 main = text "test"
@@ -6,8 +9,10 @@ type Term
   = TAtom Atom
   | TList (List Term)
   | TModule ModuleTerm
+  | TCurrent
   | TParam Param
   | TModuleApply Term
+  | TModuleKeys Term
   | TListLength Term
   | TGet Term (Path Term)
 type Action
@@ -60,18 +65,32 @@ type Navigation
   | ActionIterationNext Int
   | ActionIterationPrevious Int
 
-type ACProp = ACRepeat Int | ACWhen
+type alias ActionHistoryResult =
+  { history : ActionHistory, result : EvalState }
+type alias ActionHistory = List ActionHistoryState
+type alias ActionHistoryState =
+  { initialState : EvalState
+  , action : Action
+  , trace : ActionHistoryTrace
+  }
+type ActionHistoryTrace
+  = AHRepeat (List ActionHistory)
+  | AHWhen ActionHistory
+  | AHStep
+
+type ACProp = ACRepeat Term Int | ACWhen Term
+type alias ActionState = (Action, EvalState)
 type alias ActionContext =
-  { earlier : List Action
-  , later : List Action
+  { earlier : List ActionState
+  , later : List ActionState
   }
 type alias ActionCursor =
-  { focus : Action
+  { focus : ActionState
   , context : ActionContext
   , contextOuter : List (ACProp, ActionContext)
   }
 type alias ModuleContext =
-  { state : Value
+  { value : Ref  -- TODO: covered by estate.current?
   , subpath : Path Atom
   , zooms : List (Path Atom)
   , action : ActionCursor
@@ -86,6 +105,15 @@ type Editor = Editor
   { cursor : ModuleCursor
   , history : List Editor
   , undone : List Editor
+  }
+
+type alias EvalState =
+  { values : Dict Ref Value
+  --, origins : Dict Ref SomeKindOfContext  -- TODO: provenance
+  , env : ClosureEnv
+  , current : Ref
+  , outer : List Ref
+  , uid : Int
   }
 
 -- TODO: small state previews
