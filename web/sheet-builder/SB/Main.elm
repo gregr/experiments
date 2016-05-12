@@ -116,4 +116,63 @@ type alias EvalState =
   , uid : Int
   }
 
+forFoldM_ pure bind acc xs op =
+  let loop acc xs = case xs of
+    [] -> pure acc
+    yy::ys -> bind (op yy acc) (\next -> loop next ys)
+  in loop acc xs
+-- Would need two copies of bind to satisfy type checker...
+--forM_ pure bind bind2 xs op =
+  --forFoldM_ pure bind [] xs (\xx acc -> bind2 (op xx) (\yy -> pure (yy :: acc)))
+forM_ pure bind xs op =
+  let loop results xs = case xs of
+    [] -> pure results
+    yy::ys -> bind (op yy) (\result -> loop (result :: results) ys)
+  in loop [] xs
+
+pure0 = Ok
+join0 result = case result of
+  Err err -> Err err
+  Ok ok -> ok
+(@>>=) = Result.andThen
+infixl 1 @>>=
+(@*>) p0 p1 = p0 @>>= \_ -> p1
+infixl 4 @*>
+(@<*) p0 p1 = p0 @>>= \r0 -> p1 @>>= \_ -> pure0 r0
+infixl 4 @<*
+(@<*>) p0 p1 = p0 @>>= \f0 -> p1 @>>= \r1 -> pure0 (f0 r1)
+infixl 4 @<*>
+(@<$>) f0 p1 = pure0 f0 @<*> p1
+infixl 4 @<$>
+
+pure1 val state = (val, state)
+($>>=) p0 fp1 state = let (result, state') = p0 state
+                      in fp1 result state'
+infixl 1 $>>=
+($*>) p0 p1 = p0 $>>= \_ -> p1
+infixl 4 $*>
+($<*) p0 p1 = p0 $>>= \r0 -> p1 $>>= \_ -> pure1 r0
+infixl 4 $<*
+($<*>) p0 p1 = p0 $>>= \f0 -> p1 $>>= \r1 -> pure1 (f0 r1)
+infixl 4 $<*>
+($<$>) f0 p1 = pure1 f0 $<*> p1
+infixl 4 $<$>
+forM1 = forM_ pure1 ($>>=)
+
+pure val state = (Ok val, state)
+(>>=) p0 fp1 state = let (result, state') = p0 state
+                     in case result of
+                       Err err -> (Err err, state')
+                       Ok ok -> fp1 ok state'
+infixl 1 >>=
+(*>) p0 p1 = p0 >>= \_ -> p1
+infixl 4 *>
+(<*) p0 p1 = p0 >>= \r0 -> p1 >>= \_ -> pure r0
+infixl 4 <*
+(<*>) p0 p1 = p0 >>= \f0 -> p1 >>= \r1 -> pure (f0 r1)
+infixl 4 <*>
+(<$>) f0 p1 = pure f0 <*> p1
+infixl 4 <$>
+forM = forM_ pure (>>=)
+
 -- TODO: small state previews
