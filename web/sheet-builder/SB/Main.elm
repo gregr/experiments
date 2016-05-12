@@ -175,4 +175,74 @@ infixl 4 <*>
 infixl 4 <$>
 forM = forM_ pure (>>=)
 
+envEmpty = []
+envEqual e0 e1 =
+  let all bools = List.foldl (&&) True bools
+      bindingsEq bs0 bs1 = all <| List.map2 (==) bs0 bs1
+  in all <| List.map2 bindingsEq e0 e1
+envExtendParams uref params args env =
+  let argDict = Dict.fromList args
+      binding param = (param, uref `Maybe.withDefault` Dict.get param argDict)
+  in List.map binding params :: env
+
+estateEmpty =
+  { values = Dict.fromList [(0, VAtom AUnit)]
+  , env = envEmpty
+  , current = 0
+  , outer = []
+  , uid = 1
+  }
+estateNewRef estate = (estate.uid, {estate | uid = estate.uid + 1})
+estateNewRefs count estate =
+  let next = estate.uid + count
+  in ([estate.uid .. next - 1], {estate | uid = next})
+estatePut ref value estate =
+  ((), {estate | values = Dict.insert ref value estate.values})
+estateGet ref estate = Dict.get ref estate.values
+estateEnvUpdate update estate = ((), {estate | env = update estate.env})
+estateExtendParams params args =
+  estateNewRef $>>= \uref -> estatePut uref (VAtom AUnit) $*>
+  estateEnvUpdate (envExtendParams uref params args)
+estateExtendRecDefs defs =
+  let count = List.length defs
+      mods = List.map snd defs
+      binding (name, term) ref = (name, ref)
+      extend refs env = List.map2 binding defs refs :: env
+  in estateNewRefs count $>>=
+     \refs -> estateEnvUpdate (extend refs) $*>
+     forM (List.map2 (,) refs (List.map TModule mods)) (uncurry evalWithRef) *>
+     pure ()
+estatePush =
+  estateNewRef $>>= \uref -> estatePut uref (VAtom AUnit) $*>
+  \estate ->
+    ((), {estate | current = uref, outer = estate.current::estate.outer})
+estatePop estate = ((), case estate.outer of
+  [] -> estate
+  prev::outer -> {estate | current = prev, outer = outer})
+
+estateEnter mod estate =
+  if not <| envEqual mod.env estate.env then pure Nothing estate
+  else let do = forM mod.args (\(name, arg) -> (,) name <$> evalAsRef arg) >>=
+                \args -> pure0 $<$> estateExtendParams mod.params args *>
+                estateExtendRecDefs mod.recDefs *> (pure0 $<$> estatePush)
+
+--estatePerform mod.procedure
+
+  -- traverse/perform actions and remember states: procedure : List Action
+       in (Just <$> do) estate
+
+--estateLeave estate = ...
+-- if changes, build new module term, pop estate, put new module term at path
+
+eval term estate = (pure0 <| VAtom AUnit, estate)
+  --...
+evalWithRef ref term = eval term >>= \value -> pure0 $<$> estatePut ref value
+evalAsRef term = estateNewRef $>>= \ref -> evalWithRef ref term *> pure ref
+
+-- TODO: evaluation w/ provenance
+-- provenance includes: originating ModuleContext: the step provides the Term
+
+-- decouple computational history from editor history?
+-- factor out zoom/path info; the rest is computational?
+
 -- TODO: small state previews
