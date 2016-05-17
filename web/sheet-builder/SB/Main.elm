@@ -7,37 +7,34 @@ main = text "test"
 
 type Term
   = TAtom Atom
-  | TList (List Term)
+  | TList (List Ref)
   | TModule ModuleTerm
-  | TCurrent
   | TParam Param
-  | TModuleApply Term
-  | TModuleKeys Term
-  | TListLength Term
-  | TGet Term (Path Term)
+  | TModuleApply Ref
+  | TModuleKeys Ref
+  | TListLength Ref
+  | TGet (Path Ref)
 type Action
-  = ARepeat Term (List Action)
-  | AWhen Term (List Action)
-  | AStep Step (Path Term)
+  = ARepeat Ref (List Ref)
+  | AWhen Ref (List Ref)
+  | AStep Step (Path Ref)
 type Step
-  = SListAppend Term
-  | SModuleAdd Term Term
-  | SPut Term
+  = SListAppend Ref
+  | SModuleAdd Ref Ref
+  | SPut Ref
   | SDelete
-  | SDefineParam Name
-  | SUndefineParam Name
-  | SDefineRecursive Name
-  | SUndefineRecursive Name
-type Value = VAtom Atom | VList (List Ref) | VModule Closure
-type alias ModuleTerm = Module ()
-type alias Closure = Module ClosureEnv
-type alias ClosureEnv = List (Bindings Ref)
-type Module env = Module
-  { env : env
-  , params : List Name
-  , args : Bindings Term
-  , recDefs : Bindings ModuleTerm
-  , procedure : List Action
+  --| SDefineParam Name
+  --| SUndefineParam Name
+  --| SDefineRecursive Name
+  --| SUndefineRecursive Name
+type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule ModuleClosure
+type alias ModuleTerm = { definition : Ref, args : Bindings Ref }
+type alias ModuleClosure = { source : ModuleTerm, env : Env }
+type alias Env = List (Bindings Ref)
+type alias ModuleDef =
+  { params : List Name
+  , recDefs : Bindings Ref
+  , procedure : List Ref
   }
 type alias Bindings rhs = List (Name, rhs)
 type Atom
@@ -65,54 +62,17 @@ type Navigation
   | ActionIterationNext Int
   | ActionIterationPrevious Int
 
-type alias ActionHistoryResult =
-  { history : ActionHistory, result : EvalState }
-type alias ActionHistory = List ActionHistoryState
-type alias ActionHistoryState =
-  { initialState : EvalState
-  , action : Action
-  , trace : ActionHistoryTrace
-  }
-type ActionHistoryTrace
-  = AHRepeat (List ActionHistory)
-  | AHWhen ActionHistory
-  | AHStep
 
-type ACProp = ACRepeat Term Int | ACWhen Term
-type alias ActionState = (Action, EvalState)
-type alias ActionContext =
-  { earlier : List ActionState
-  , later : List ActionState
-  }
-type alias ActionCursor =
-  { focus : ActionState
-  , context : ActionContext
-  , contextOuter : List (ACProp, ActionContext)
-  }
-type alias ModuleContext =
-  { value : Ref  -- TODO: covered by estate.current?
-  , subpath : Path Atom
-  , zooms : List (Path Atom)
-  , action : ActionCursor
-  , mod : Closure
-  }
-type alias ModuleCursor =
-  { context : ModuleContext
-  , contextOuter : List { defpath : Maybe Name, context : ModuleContext }
   }
 
-type Editor = Editor
-  { cursor : ModuleCursor
-  , history : List Editor
-  , undone : List Editor
-  }
+type Source = SourceTerm Ref | SourceAction Ref
+type alias Computation = { source : Source, env : Env, state : Ref }
 
 type alias EvalState =
   { values : Dict Ref Value
-  --, origins : Dict Ref SomeKindOfContext  -- TODO: provenance
-  , env : ClosureEnv
-  , current : Ref
-  , outer : List Ref
+  , computations : Dict Ref Computation
+  , currentState : Ref
+  , env : Env
   , uid : Int
   }
 
