@@ -5,36 +5,33 @@ import Html exposing (..)
 
 main = text "test"
 
-type Term
+type Term leaf
   = TAtom Atom
-  | TList (List Ref)
-  | TModule ModuleTerm
-  | TParam Param
-  | TModuleApply Ref
-  | TModuleKeys Ref
-  | TListLength Ref
-  | TGet (Path Ref)
-type Action
-  = ARepeat Ref (List Ref)
-  | AWhen Ref (List Ref)
-  | AStep Step (Path Ref)
-type Step
-  = SListAppend Ref
-  | SModuleAdd Ref Ref
-  | SPut Ref
-  | SDelete
-  --| SDefineParam Name
-  --| SUndefineParam Name
-  --| SDefineRecursive Name
-  --| SUndefineRecursive Name
+  | TIdent Ident
+  | TList (List leaf)
+  | TModule (ModuleTerm leaf)
+  | TModuleApply leaf
+  | TModuleUnite leaf leaf
+  | TModuleKeys leaf
+  | TListLength leaf
+  | TListAppend leaf leaf
+  | TGet leaf (Path leaf)
+  | TPut leaf (Path leaf) leaf
+  | TDelete leaf (Path leaf)
+type SimpleTerm = STerm (Term SimpleTerm)
+type TemporalTerm
+  = TTTerm (Term TemporalTerm)
+  | TTPreviousState
+
 type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule ModuleClosure
-type alias ModuleTerm = { definition : Ref, args : Bindings Ref }
-type alias ModuleClosure = { source : ModuleTerm, env : Env }
-type alias Env = List (Bindings Ref)
+type alias ModuleTerm leaf = { definition : ModuleDef, args : Bindings leaf }
+type alias ModuleClosure = { source : ModuleTerm Ref, env : Env }
+type alias EnvFrame = { bindings : Bindings Ref, local : Dict Ref Ref }
+type alias Env = List EnvFrame
 type alias ModuleDef =
   { params : List Name
-  , recDefs : Bindings Ref
-  , procedure : List Ref
+  , locals : Dict Ref Term
+  , procedure : List TemporalTerm
   }
 type alias Bindings rhs = List (Name, rhs)
 type Atom
@@ -42,11 +39,12 @@ type Atom
   | ABool Bool
   | AString String
   | ANumber Number
-type alias Path segment = List segment
 type Number = NInt Int | NFloat Float
-type alias Param = { levelsUp : Int, index : Int }
+type IdentIndex = Param Int | LocalIdent Ref
+type alias Ident = { levelsUp : Int, index : IdentIndex }
 type alias Name = Atom
 type alias Ref = Int
+type alias Path segment = List segment
 
 type Navigation
   = Ascend Int
@@ -63,7 +61,6 @@ type Navigation
   | ActionIterationPrevious Int
 
 
-  }
 
 type Source = SourceTerm Ref | SourceAction Ref
 type alias Computation = { source : Source, env : Env, state : Ref }
