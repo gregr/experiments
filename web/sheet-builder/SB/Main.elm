@@ -152,10 +152,12 @@ estateRefNewMulti count estate =
   let next = estate.uid + count
   in ([estate.uid .. next - 1], {estate | uid = next})
 estateRefTermGet ref estate =
-  let term = case Dict.get ref estate.terms of
+  let term = case Dict.get ref estate.computations of
         Just term -> term
-        Nothing -> TAtom AUnit  -- Debug.crash/log?
+        Nothing -> TAtom AUnit
   in (term, estate)
+estateRefTermsSet globals estate =
+  ((), {estate | computations = Dict.union globals estate.computations})
 estateRefValueGet ref estate = (Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
