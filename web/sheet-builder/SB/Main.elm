@@ -57,9 +57,7 @@ type alias Program =
   , uid : Int
   }
 type alias ComputationSource = { env : Env, local : Ref }
--- TODO: track sources
--- type alias Computation = { term : GlobalTerm, source : ComputationSource }
-type alias Computation = GlobalTerm
+type alias Computation = { term : GlobalTerm, source : ComputationSource }
 type alias EvalState =
   { values : Dict Ref Value
   , computations : Dict Ref Computation
@@ -176,13 +174,16 @@ envResolveModule env {locals, procedure} =
       global lref = -1 `Maybe.withDefault` Dict.get lref localToGlobal
       lts = Dict.toList locals
       lts' = List.map (\(lref, term) ->
-                       (global lref, envResolveLocalTerm env term)) lts
+                       (global lref, { term = envResolveLocalTerm env term
+                                     , source = { env = env
+                                                , local = lref } })) lts
       (plts, _) = forM1 procedure
         (\{locals, result} previous ->
           let lts = Dict.toList locals
               lts' = List.map (\(lref, term) ->
-                               (global lref
-                               ,envResolveTemporalTerm env previous term)) lts
+                (global lref, { term = envResolveTemporalTerm env previous term
+                              , source = { env = env
+                                         , local = lref } })) lts
               rref = global result
           in (lts', rref)) -1
   in Dict.fromList <| List.concat <| lts' :: plts
@@ -200,11 +201,16 @@ estateRefsForLocals locals =
   estateRefNewMulti (Dict.size locals)
 estateRefTermGet ref estate =
   let term = case Dict.get ref estate.computations of
-        Just term -> term
+        Just {term} -> term
         Nothing -> TAtom AUnit
   in (term, estate)
-estateRefTermsSet globals estate =
-  ((), {estate | computations = Dict.union globals estate.computations})
+estateRefEnvGet ref estate =
+  let env = case Dict.get ref estate.computations of
+        Just {source} -> source.env
+        Nothing -> []
+  in (env, estate)
+estateRefComputationsSet computations estate =
+  ((), {estate | computations = Dict.union computations estate.computations})
 estateRefValueGet ref estate = (Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
@@ -225,17 +231,18 @@ estateApply {source, env} {modules} =
         \localsRefs -> forM1 stepLocals estateRefsForLocals $>>=
         \stepLocalsRefs ->
         let allLocalsRefs = List.foldl Dict.union localsRefs stepLocalsRefs
-            stepResultsRefs = List.map (\{result} -> -1 `Maybe.withDefault`
-                                        Dict.get result allLocalsRefs) procedure
+            stepResultsRefs =
+              List.map (\{result} -> -1 `Maybe.withDefault`
+                        Dict.get result allLocalsRefs) procedure
             frame = { definition = definition
                     , bindings = bindings
                     , locals = allLocalsRefs
                     , results = stepResultsRefs }
             env' = frame :: env
-            globalTerms = envResolveModule env' definition
+            comps = envResolveModule env' definition
             final = -1 `Maybe.withDefault`
               List.head (List.reverse stepResultsRefs)
-        in estateRefTermsSet globalTerms $*> pure final
+        in estateRefComputationsSet comps $*> pure final
 
 -- TODO: evaluation w/ provenance
 -- provenance includes: originating ModuleContext: the step provides the Term
