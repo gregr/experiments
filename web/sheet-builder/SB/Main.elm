@@ -195,6 +195,9 @@ estateEmpty =
 estateRefNewMulti count estate =
   let next = estate.uid + count
   in ([estate.uid .. next - 1], {estate | uid = next})
+estateRefsForLocals locals =
+  Dict.fromList << List.map2 (,) (Dict.keys locals) $<$>
+  estateRefNewMulti (Dict.size locals)
 estateRefTermGet ref estate =
   let term = case Dict.get ref estate.computations of
         Just term -> term
