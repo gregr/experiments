@@ -141,6 +141,20 @@ infixl 4 <*>
 infixl 4 <$>
 forM = forM_ pure (>>=)
 
+termMap op term = case term of
+  TAtom atom -> TAtom atom
+  TList xs -> TList <| List.map op xs
+  TModule mt ->
+    TModule {mt | args = List.map (\(name, arg) -> (name, op arg)) mt.args}
+  TModuleApply mod -> TModuleApply <| op mod
+  TModuleUnite m0 m1 -> TModuleUnite (op m0) (op m1)
+  TModuleKeys mod -> TModuleKeys (op mod)
+  TListLength list -> TListLength (op list)
+  TListAppend l0 l1 -> TListAppend (op l0) (op l1)
+  TGet src ps -> TGet (op src) (List.map op ps)
+  TPut src ps val -> TPut (op src) (List.map op ps) (op val)
+  TDelete src ps -> TDelete (op src) (List.map op ps)
+
 envEmpty = []
 
 estateEmpty =
