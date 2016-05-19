@@ -85,11 +85,12 @@ forFoldM_ pure bind acc xs op =
     yy::ys -> bind (op yy acc) (\next -> loop next ys)
   in loop acc xs
 -- Would need two copies of bind to satisfy type checker...
+-- TODO: also, reverse result
 --forM_ pure bind bind2 xs op =
   --forFoldM_ pure bind [] xs (\xx acc -> bind2 (op xx) (\yy -> pure (yy :: acc)))
 forM_ pure bind xs op =
   let loop results xs = case xs of
-    [] -> pure results
+    [] -> pure <| List.reverse results
     yy::ys -> bind (op yy) (\result -> loop (result :: results) ys)
   in loop [] xs
 
