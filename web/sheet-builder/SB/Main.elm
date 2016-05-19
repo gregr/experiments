@@ -156,6 +156,36 @@ termMap op term = case term of
   TDelete src ps -> TDelete (op src) (List.map op ps)
 
 envEmpty = []
+envResolveIdent env {levelsUp, index} =
+  let (bindings, locals) =
+        Maybe.withDefault ([], Dict.empty) <|
+        (\frame -> (frame.bindings, frame.locals)) `Maybe.map`
+        List.head (List.drop levelsUp env)
+  in -1 `Maybe.withDefault` case index of
+    Param idx -> snd `Maybe.map` List.head (List.drop idx bindings)
+    LocalIdent ref -> Dict.get ref locals
+envResolveTemporalIdent env previous ident = case ident of
+  TIIdent id -> envResolveIdent env id
+  TIPreviousState -> previous
+envResolveLocalTerm env = termMap (envResolveIdent env)
+envResolveTemporalTerm env previous =
+  termMap (envResolveTemporalIdent env previous)
+envResolveModule env {locals, procedure} =
+  let localToGlobal =
+        Maybe.withDefault Dict.empty (.locals `Maybe.map` List.head env)
+      global lref = -1 `Maybe.withDefault` Dict.get lref localToGlobal
+      lts = Dict.toList locals
+      lts' = List.map (\(lref, term) ->
+                       (global lref, envResolveLocalTerm env term)) lts
+      (plts, _) = forM1 procedure
+        (\{locals, result} previous ->
+          let lts = Dict.toList locals
+              lts' = List.map (\(lref, term) ->
+                               (global lref
+                               ,envResolveTemporalTerm env previous term)) lts
+              rref = global result
+          in (lts', rref)) -1
+  in Dict.fromList <| List.concat <| lts' :: plts
 
 estateEmpty =
   { values = Dict.empty
