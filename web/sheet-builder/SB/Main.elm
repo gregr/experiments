@@ -211,7 +211,9 @@ estateRefEnvGet ref estate =
   in (env, estate)
 estateRefComputationsSet computations estate =
   ((), {estate | computations = Dict.union computations estate.computations})
-estateRefValueGet ref estate = (Dict.get ref estate.values, estate)
+estateRefValueGet ref estate =
+  (("Missing value for: " ++ toString ref) `Result.fromMaybe`
+   Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
 estateApply {source, env} {modules} =
