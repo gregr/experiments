@@ -76,9 +76,6 @@ type Navigation
   | ActionIterationNext Int
   | ActionIterationPrevious Int
 
-
-
-
 forFoldM_ pure bind acc xs op =
   let loop acc xs = case xs of
     [] -> pure acc
@@ -141,17 +138,6 @@ infixl 4 <$>
 forM = forM_ pure (>>=)
 
 envEmpty = []
-envEqual e0 e1 =
-  let all bools = List.foldl (&&) True bools
-      bindingsEq bs0 bs1 = all <| List.map2 (==) bs0 bs1
-  in all <| List.map2 bindingsEq e0 e1
-envExtendParams params args env =
-  let argDict = Dict.fromList args
-      binding param =
-        (,) param @<$>
-        (("Unbound parameter: " ++ toString param) `Result.fromMaybe`
-         Dict.get param argDict)
-  in flip (::) env @<$> forM0 params binding
 
 estateEmpty =
   { values = Dict.empty
@@ -159,7 +145,6 @@ estateEmpty =
   , env = envEmpty
   , uid = 0
   }
-estateRefNew estate = (estate.uid, {estate | uid = estate.uid + 1})
 estateRefNewMulti count estate =
   let next = estate.uid + count
   in ([estate.uid .. next - 1], {estate | uid = next})
@@ -168,25 +153,9 @@ estateRefTermGet ref estate =
         Just term -> term
         Nothing -> TAtom AUnit  -- Debug.crash/log?
   in (term, estate)
-estateRefTermSet term ref estate =
-  ((), { estate | terms = Dict.insert ref term estate.terms })
-estateRefTermNew term = estateRefNew $>>= estateRefTermSet term
 estateRefValueGet ref estate = (Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
-estateEnvUpdate update estate =
-  (pure1 (update estate.env) >>=
-   \env estate -> (pure0 (), {estate | env = env})) estate
-estateEnvExtendParams params args =
-  estateEnvUpdate (envExtendParams params args)
-
---estatePerform mod.procedure
-
-  -- traverse/perform actions and remember states: procedure : List Action
-
---estateLeave estate = ...
--- if changes, build new module term, pop estate, put new module term at path
-
 
 -- TODO: evaluation w/ provenance
 -- provenance includes: originating ModuleContext: the step provides the Term
