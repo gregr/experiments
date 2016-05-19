@@ -52,13 +52,17 @@ type alias Name = Atom
 type alias Ref = Int
 type alias Path segment = List segment
 
---type alias ModuleDefs = Dict Ref ModuleDef
+type alias Program =
+  { modules : Dict Ref ModuleDef
+  , uid : Int
+  }
 type alias ComputationSource = { env : Env, local : Ref }
-type alias Computation = { term : GlobalTerm, source : ComputationSource }
+-- TODO: track sources
+-- type alias Computation = { term : GlobalTerm, source : ComputationSource }
+type alias Computation = GlobalTerm
 type alias EvalState =
   { values : Dict Ref Value
   , computations : Dict Ref Computation
-  , env : Env
   , uid : Int
   }
 
@@ -142,7 +146,6 @@ envEmpty = []
 estateEmpty =
   { values = Dict.empty
   , computations = Dict.empty
-  , env = envEmpty
   , uid = 0
   }
 estateRefNewMulti count estate =
