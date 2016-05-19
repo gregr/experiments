@@ -208,6 +208,34 @@ estateRefTermsSet globals estate =
 estateRefValueGet ref estate = (Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
+estateApply {source, env} {modules} =
+  let {definition, args} = source
+  in pure1 (("Unknown module: " ++ toString definition) `Result.fromMaybe`
+            Dict.get definition modules) >>=
+     \definition ->
+     let {params, locals, procedure} = definition
+         stepLocals = List.map .locals procedure
+         argDict = Dict.fromList args
+         binding param =
+           (,) param @<$>
+           (("Unbound parameter: " ++ toString param) `Result.fromMaybe`
+           Dict.get param argDict)
+     in pure1 (forM0 params binding) >>=
+        \bindings -> estateRefsForLocals locals $>>=
+        \localsRefs -> forM1 stepLocals estateRefsForLocals $>>=
+        \stepLocalsRefs ->
+        let allLocalsRefs = List.foldl Dict.union localsRefs stepLocalsRefs
+            stepResultsRefs = List.map (\{result} -> -1 `Maybe.withDefault`
+                                        Dict.get result allLocalsRefs) procedure
+            frame = { definition = definition
+                    , bindings = bindings
+                    , locals = allLocalsRefs
+                    , results = stepResultsRefs }
+            env' = frame :: env
+            globalTerms = envResolveModule env' definition
+            final = -1 `Maybe.withDefault`
+              List.head (List.reverse stepResultsRefs)
+        in estateRefTermsSet globalTerms $*> pure final
 
 -- TODO: evaluation w/ provenance
 -- provenance includes: originating ModuleContext: the step provides the Term
