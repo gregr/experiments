@@ -7,7 +7,6 @@ main = text "test"
 
 type Term leaf
   = TAtom Atom
-  | TIdent Ident
   | TList (List leaf)
   | TModule (ModuleTerm leaf)
   | TModuleApply leaf
@@ -18,20 +17,29 @@ type Term leaf
   | TGet leaf (Path leaf)
   | TPut leaf (Path leaf) leaf
   | TDelete leaf (Path leaf)
-type SimpleTerm = STerm (Term SimpleTerm)
-type TemporalTerm
-  = TTTerm (Term TemporalTerm)
-  | TTPreviousState
+type alias GlobalTerm = Term Ref
+type alias LocalTerm = Term Ident
+type alias TemporalTerm = Term TemporalIdent
+type alias Ident = { levelsUp : Int, index : IdentIndex }
+type IdentIndex = Param Int | LocalIdent Ref
+type TemporalIdent = TIIdent Ident | TIPreviousState
 
 type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule ModuleClosure
-type alias ModuleTerm leaf = { definition : ModuleDef, args : Bindings leaf }
+type alias ModuleTerm leaf = { definition : Ref, args : Bindings leaf }
 type alias ModuleClosure = { source : ModuleTerm Ref, env : Env }
-type alias EnvFrame = { bindings : Bindings Ref, local : Dict Ref Ref }
+type alias EnvFrame =
+  { definition : Ref
+  , bindings : Bindings Ref
+  , locals : Dict Ref Ref
+  , results : List Ref
+  }
 type alias Env = List EnvFrame
+type alias ProcedureStep = { locals : Dict Ref TemporalTerm, result : Ref }
 type alias ModuleDef =
   { params : List Name
-  , locals : Dict Ref Term
-  , procedure : List TemporalTerm
+  , locals : Dict Ref LocalTerm
+  , procedure : List ProcedureStep
+  , uid : Int
   }
 type alias Bindings rhs = List (Name, rhs)
 type Atom
@@ -40,11 +48,19 @@ type Atom
   | AString String
   | ANumber Number
 type Number = NInt Int | NFloat Float
-type IdentIndex = Param Int | LocalIdent Ref
-type alias Ident = { levelsUp : Int, index : IdentIndex }
 type alias Name = Atom
 type alias Ref = Int
 type alias Path segment = List segment
+
+--type alias ModuleDefs = Dict Ref ModuleDef
+type alias ComputationSource = { env : Env, local : Ref }
+type alias Computation = { term : GlobalTerm, source : ComputationSource }
+type alias EvalState =
+  { values : Dict Ref Value
+  , computations : Dict Ref Computation
+  , env : Env
+  , uid : Int
+  }
 
 type Navigation
   = Ascend Int
@@ -62,16 +78,6 @@ type Navigation
 
 
 
-type Source = SourceTerm Ref | SourceAction Ref
-type alias Computation = { source : Source, env : Env, state : Ref }
-
-type alias EvalState =
-  { values : Dict Ref Value
-  , computations : Dict Ref Computation
-  , currentState : Ref
-  , env : Env
-  , uid : Int
-  }
 
 forFoldM_ pure bind acc xs op =
   let loop acc xs = case xs of
@@ -148,11 +154,9 @@ envExtendParams params args env =
 
 estateEmpty =
   { values = Dict.empty
-  , terms = Dict.fromList [(0, TAtom AUnit)]
+  , computations = Dict.empty
   , env = envEmpty
-  , current = 0
-  , outer = []
-  , uid = 1
+  , uid = 0
   }
 estateRefNew estate = (estate.uid, {estate | uid = estate.uid + 1})
 estateRefNewMulti count estate =
