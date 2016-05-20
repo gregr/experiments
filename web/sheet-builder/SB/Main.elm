@@ -27,7 +27,7 @@ type TemporalIdent = TIIdent Ident | TIPreviousState
 type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule (ModuleTerm Env Ref)
 type alias ModuleTerm env leaf =
   { definition : Ref
-  , args : Bindings leaf
+  , args : Dict Name leaf
   , env : env
   }
 type alias EnvFrame =
@@ -39,7 +39,7 @@ type alias EnvFrame =
 type alias Env = List EnvFrame
 type alias ProcedureStep = { locals : Dict Ref TemporalTerm, result : Ref }
 type alias ModuleDef =
-  { params : List Name
+  { params : Set Name
   , locals : Dict Ref LocalTerm
   , procedure : List ProcedureStep
   , uid : Int
@@ -149,8 +149,7 @@ termMap envOp op term = case term of
   TAtom atom -> TAtom atom
   TList xs -> TList <| List.map op xs
   TModule mt ->
-    TModule {mt | args = List.map (\(name, arg) -> (name, op arg)) mt.args
-                , env = envOp mt.env}
+    TModule {mt | args = Dict.map (\_ -> op) mt.args, env = envOp mt.env}
   TModuleApply mod -> TModuleApply <| op mod
   TModuleUnite m0 m1 -> TModuleUnite (op m0) (op m1)
   TListLength list -> TListLength (op list)
@@ -195,7 +194,7 @@ envResolveModule env {locals, procedure} =
   in Dict.fromList <| List.concat <| lts' :: plts
 
 moduleDefEmpty =
-  { params = []
+  { params = Set.empty
   , locals = Dict.empty
   , procedure = []
   , uid = 0
@@ -242,12 +241,11 @@ estateApply {definition, args, env} =
       \def ->
       let {params, locals, procedure} = def
           stepLocals = List.map .locals procedure
-          argDict = Dict.fromList args
           binding param =
             (,) param @<$>
             (("Unbound parameter: " ++ toString param) `Result.fromMaybe`
-            Dict.get param argDict)
-      in pure1 (forM0 params binding) >>=
+            Dict.get param args)
+      in pure1 (forM0 (Set.toList params) binding) >>=
         \bindings -> estateRefsForLocals locals $>>=
         \localsRefs -> forM1 stepLocals estateRefsForLocals $>>=
         \stepLocalsRefs ->
@@ -296,7 +294,7 @@ vstring val = vatom val >>= astring >> pure1
 
 vget1 pending segment vsrc = (case vsrc of
   VModule mod ->
-    (\index -> -1 `Maybe.withDefault` Dict.get index (Dict.fromList mod.args))
+    (\index -> -1 `Maybe.withDefault` Dict.get index mod.args)
     <$> vstring segment
   VList xs -> (\index -> -1 `Maybe.withDefault` List.head (List.drop index xs))
     <$> vint segment
@@ -305,8 +303,7 @@ vget1 pending segment vsrc = (case vsrc of
 vget pending segments vsrc = forFoldM vsrc segments (vget1 pending)
 vput1 pending val segment vsrc = case vsrc of
   VModule mod -> VModule <<
-    (\index -> {mod | args = Dict.toList (Dict.insert index val
-                                          (Dict.fromList mod.args))}) <$>
+    (\index -> {mod | args = Dict.insert index val mod.args}) <$>
     vstring segment
   VList xs -> VList <<
     (\index -> List.append (List.take index xs) (val :: List.drop index xs))
@@ -315,8 +312,7 @@ vput1 pending val segment vsrc = case vsrc of
     "' of simple value: " ++ toString vsrc
 vdelete1 pending segment vsrc = case vsrc of
   VModule mod -> VModule <<
-    (\index -> {mod | args = Dict.toList (Dict.remove index
-                                          (Dict.fromList mod.args))}) <$>
+    (\index -> {mod | args = Dict.remove index mod.args}) <$>
     vstring segment
   VList xs -> VList <<
     (\index -> List.append (List.take index xs) (List.drop (index + 1) xs))
@@ -324,8 +320,7 @@ vdelete1 pending segment vsrc = case vsrc of
   _ -> fail <| "cannot delete '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc
 
-moduleUnite m0 m1 =
-  {m0 | args = Dict.toList <| Dict.fromList <| m0.args ++ m1.args}
+moduleUnite m0 m1 = {m0 | args = m1.args `Dict.union` m0.args}
 
 evalRef pending ref = estateRefValueGet ref $>>= \mval -> case mval of
   Ok val -> pure <| vsimple ref val
