@@ -127,6 +127,7 @@ infixl 4 $<$>
 forM1 = forM_ pure1 ($>>=)
 
 pure val state = (Ok val, state)
+fail msg = pure1 (Err msg)
 (>>=) p0 fp1 state = let (result, state') = p0 state
                      in case result of
                        Err err -> (Err err, state')
