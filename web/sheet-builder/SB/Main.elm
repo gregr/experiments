@@ -82,6 +82,15 @@ type Navigation
   | ActionIterationNext Int
   | ActionIterationPrevious Int
 
+listGet index xs = List.head <| List.drop index xs
+listLast xs = List.head <| List.reverse xs
+listInsert index element xs =
+  List.append (List.take index xs) (element :: List.drop index xs)
+listRemove index xs =
+  List.append (List.take index xs) (List.drop (index + 1) xs)
+listReplace index element xs =
+  List.append (List.take index xs) (element :: (List.drop (index + 1) xs))
+
 forFoldM_ pure bind acc xs op =
   let loop acc xs = case xs of
     [] -> pure acc
@@ -163,9 +172,9 @@ envResolveIdent env {levelsUp, index} =
   let (bindings, locals) =
         Maybe.withDefault ([], Dict.empty) <|
         (\frame -> (frame.bindings, frame.locals)) `Maybe.map`
-        List.head (List.drop levelsUp env)
+        listGet levelsUp env
   in -1 `Maybe.withDefault` case index of
-    Param idx -> snd `Maybe.map` List.head (List.drop idx bindings)
+    Param idx -> snd `Maybe.map` listGet idx bindings
     LocalIdent ref -> Dict.get ref locals
 envResolveTemporalIdent env previous ident = case ident of
   TIIdent id -> envResolveIdent env id
@@ -259,8 +268,7 @@ estateApply {definition, args, env} =
                     , results = stepResultsRefs }
             env' = frame :: env
             comps = envResolveModule env' def
-            final = -1 `Maybe.withDefault`
-              List.head (List.reverse stepResultsRefs)
+            final = -1 `Maybe.withDefault` listLast stepResultsRefs
         in estateRefComputationsSet comps $*> pure final
 
 vsimple ref value = case value of
@@ -296,7 +304,7 @@ vget1 pending segment vsrc = (case vsrc of
   VModule mod ->
     (\index -> -1 `Maybe.withDefault` Dict.get index mod.args)
     <$> vstring segment
-  VList xs -> (\index -> -1 `Maybe.withDefault` List.head (List.drop index xs))
+  VList xs -> (\index -> -1 `Maybe.withDefault` listGet index xs)
     <$> vint segment
   _ -> fail <| "cannot get '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc) >>= evalRef pending
@@ -306,17 +314,13 @@ vput1 pending val segment vsrc = case vsrc of
     (\index -> {mod | args = Dict.insert index val mod.args}) <$>
     vstring segment
   VList xs -> VList <<
-    (\index -> List.append (List.take index xs) (val :: List.drop index xs))
-    <$> vint segment
+    (\index -> listInsert index val xs) <$> vint segment
   _ -> fail <| "cannot put '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc
 vdelete1 pending segment vsrc = case vsrc of
   VModule mod -> VModule <<
-    (\index -> {mod | args = Dict.remove index mod.args}) <$>
-    vstring segment
-  VList xs -> VList <<
-    (\index -> List.append (List.take index xs) (List.drop (index + 1) xs))
-    <$> vint segment
+    (\index -> {mod | args = Dict.remove index mod.args}) <$> vstring segment
+  VList xs -> VList << (\index -> listRemove index xs) <$> vint segment
   _ -> fail <| "cannot delete '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc
 
