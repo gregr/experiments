@@ -142,6 +142,7 @@ infixl 4 <*
 infixl 4 <*>
 (<$>) f0 p1 = pure f0 <*> p1
 infixl 4 <$>
+forFoldM = forFoldM_ pure (>>=)
 forM = forM_ pure (>>=)
 
 termMap envOp op term = case term of
@@ -255,6 +256,10 @@ estateApply {definition, args, env} =
 vsimple ref value = case value of
   VAtom atom -> VAtom atom
   _ -> VRef ref
+vatom value = case value of
+  VAtom atom -> pure atom
+  VRef ref -> estateRefValueGet ref >>= vatom
+  _ -> fail <| "expected an atom but found: " ++ toString value
 vlist value = case value of
   VList xs -> pure xs
   VRef ref -> estateRefValueGet ref >>= vlist
@@ -263,6 +268,30 @@ vmod value = case value of
   VModule mod -> pure mod
   VRef ref -> estateRefValueGet ref >>= vmod
   _ -> fail <| "expected a module but found: " ++ toString value
+
+nint num = case num of
+  NInt int -> int
+  NFloat float -> round float
+anumber atom = case atom of
+  ANumber num -> Ok num
+  _ -> Err "expected a number"
+aint atom = nint @<$> anumber atom
+astring atom = case atom of
+  AString string -> Ok string
+  _ -> Err "expected a string"
+vint val = vatom val >>= aint >> pure1
+vstring val = vatom val >>= astring >> pure1
+
+vget1 pending segment vsrc = (case vsrc of
+  VModule mod -> vstring segment >>=
+    (\index -> ("unbound field: " ++ toString index)
+    `Result.fromMaybe` Dict.get index (Dict.fromList mod.args)) >> pure1
+  VList xs -> vint segment >>=
+    (\index -> ("index out of bounds: " ++ toString index)
+    `Result.fromMaybe` List.head (List.drop index xs)) >> pure1
+  _ -> fail <| "cannot get '" ++ toString segment ++
+    "' of simple value: " ++ toString vsrc) >>= evalRef pending
+vget pending segments vsrc = forFoldM vsrc segments (vget1 pending)
 
 moduleUnite m0 m1 =
   {m0 | args = Dict.toList <| Dict.fromList <| m0.args ++ m1.args}
@@ -288,4 +317,7 @@ eval pending term = case term of
   TListAppend l0 l1 ->
     VList <$> (List.append <$>
       (evalRef pending l0 >>= vlist) <*> (evalRef pending l1 >>= vlist))
+  TGet src path -> evalRef pending src >>=
+    \vsrc -> forM path (evalRef pending) >>=
+    \segments -> vget pending segments vsrc
   _ -> pure <| VAtom AUnit
