@@ -15,7 +15,7 @@ type Term env leaf
   | TListLength leaf
   | TListAppend leaf leaf
   | TGet leaf (Path leaf)
-  | TPut leaf (Path leaf) leaf
+  | TPut1 leaf leaf leaf
   | TDelete leaf (Path leaf)
 type alias GlobalTerm = Term Env Ref
 type alias LocalTerm = Term () Ident
@@ -156,7 +156,7 @@ termMap envOp op term = case term of
   TListLength list -> TListLength (op list)
   TListAppend l0 l1 -> TListAppend (op l0) (op l1)
   TGet src ps -> TGet (op src) (List.map op ps)
-  TPut src ps val -> TPut (op src) (List.map op ps) (op val)
+  TPut1 src seg val -> TPut1 (op src) (op seg) (op val)
   TDelete src ps -> TDelete (op src) (List.map op ps)
 
 envEmpty = []
@@ -292,6 +292,16 @@ vget1 pending segment vsrc = (case vsrc of
   _ -> fail <| "cannot get '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc) >>= evalRef pending
 vget pending segments vsrc = forFoldM vsrc segments (vget1 pending)
+vput1 pending val segment vsrc = case vsrc of
+  VModule mod -> VModule <<
+    (\index -> {mod | args = Dict.toList (Dict.insert index val
+                                          (Dict.fromList mod.args))}) <$>
+    vstring segment
+  VList xs -> VList <<
+    (\index -> List.append (List.take index xs) (val :: List.drop index xs))
+    <$> vint segment
+  _ -> fail <| "cannot put '" ++ toString segment ++
+    "' of simple value: " ++ toString vsrc
 
 moduleUnite m0 m1 =
   {m0 | args = Dict.toList <| Dict.fromList <| m0.args ++ m1.args}
@@ -320,4 +330,7 @@ eval pending term = case term of
   TGet src path -> evalRef pending src >>=
     \vsrc -> forM path (evalRef pending) >>=
     \segments -> vget pending segments vsrc
+  TPut1 src segment val -> evalRef pending src >>=
+    \vsrc -> evalRef pending segment >>=
+    \vseg -> vput1 pending val vseg vsrc
   _ -> pure <| VAtom AUnit
