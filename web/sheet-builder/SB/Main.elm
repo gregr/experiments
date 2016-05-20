@@ -1,6 +1,7 @@
 module SB.Main where
 
 import Dict exposing (Dict)
+import Set exposing (Set)
 import Html exposing (..)
 
 main = text "test"
@@ -250,6 +251,44 @@ estateApply {definition, args, env} =
             final = -1 `Maybe.withDefault`
               List.head (List.reverse stepResultsRefs)
         in estateRefComputationsSet comps $*> pure final
+
+vsimple ref value = case value of
+  VAtom atom -> VAtom atom
+  _ -> VRef ref
+vlist value = case value of
+  VList xs -> pure xs
+  VRef ref -> estateRefValueGet ref >>= vlist
+  _ -> fail <| "expected a list but found: " ++ toString value
+vmod value = case value of
+  VModule mod -> pure mod
+  VRef ref -> estateRefValueGet ref >>= vmod
+  _ -> fail <| "expected a module but found: " ++ toString value
+
+moduleUnite m0 m1 =
+  {m0 | args = Dict.toList <| Dict.fromList <| m0.args ++ m1.args}
+
+evalRef pending ref = estateRefValueGet ref $>>= \mval -> case mval of
+  Ok val -> pure <| vsimple ref val
+  Err _ ->
+    if Set.member ref pending then pure1 <| Err "TODO: cyclic computation"
+    else (estateRefTermGet ref $>>= eval (Set.insert ref pending)) >>=
+         \val -> estateRefValueSet val ref $*> pure (vsimple ref val)
+
+eval pending term = case term of
+  TAtom atom -> pure <| VAtom atom
+  TList xs -> pure <| VList xs
+  TModule mt -> pure <| VModule mt
+  TModuleApply mod ->
+    evalRef pending mod >>= vmod >>= estateApply >>= evalRef pending
+  TModuleUnite m0 m1 ->
+    VModule <$> (moduleUnite <$>
+      (evalRef pending m0 >>= vmod) <*> (evalRef pending m1 >>= vmod))
+  TListLength list -> VAtom << ANumber << NInt << List.length <$>
+    (evalRef pending list >>= vlist)
+  TListAppend l0 l1 ->
+    VList <$> (List.append <$>
+      (evalRef pending l0 >>= vlist) <*> (evalRef pending l1 >>= vlist))
+  _ -> pure <| VAtom AUnit
 
 -- TODO: evaluation w/ provenance
 -- provenance includes: originating ModuleContext: the step provides the Term
