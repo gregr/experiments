@@ -5,10 +5,10 @@ import Html exposing (..)
 
 main = text "test"
 
-type Term leaf
+type Term env leaf
   = TAtom Atom
   | TList (List leaf)
-  | TModule (ModuleTerm leaf)
+  | TModule (ModuleTerm env leaf)
   | TModuleApply leaf
   | TModuleUnite leaf leaf
   | TModuleKeys leaf
@@ -17,16 +17,19 @@ type Term leaf
   | TGet leaf (Path leaf)
   | TPut leaf (Path leaf) leaf
   | TDelete leaf (Path leaf)
-type alias GlobalTerm = Term Ref
-type alias LocalTerm = Term Ident
-type alias TemporalTerm = Term TemporalIdent
+type alias GlobalTerm = Term Env Ref
+type alias LocalTerm = Term () Ident
+type alias TemporalTerm = Term () TemporalIdent
 type alias Ident = { levelsUp : Int, index : IdentIndex }
 type IdentIndex = Param Int | LocalIdent Ref
 type TemporalIdent = TIIdent Ident | TIPreviousState
 
-type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule ModuleClosure
-type alias ModuleTerm leaf = { definition : Ref, args : Bindings leaf }
-type alias ModuleClosure = { source : ModuleTerm Ref, env : Env }
+type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule (ModuleTerm Env Ref)
+type alias ModuleTerm env leaf =
+  { definition : Ref
+  , args : Bindings leaf
+  , env : env
+  }
 type alias EnvFrame =
   { definition : Ref
   , bindings : Bindings Ref
@@ -139,11 +142,12 @@ infixl 4 <*>
 infixl 4 <$>
 forM = forM_ pure (>>=)
 
-termMap op term = case term of
+termMap envOp op term = case term of
   TAtom atom -> TAtom atom
   TList xs -> TList <| List.map op xs
   TModule mt ->
-    TModule {mt | args = List.map (\(name, arg) -> (name, op arg)) mt.args}
+    TModule {mt | args = List.map (\(name, arg) -> (name, op arg)) mt.args
+                , env = envOp mt.env}
   TModuleApply mod -> TModuleApply <| op mod
   TModuleUnite m0 m1 -> TModuleUnite (op m0) (op m1)
   TModuleKeys mod -> TModuleKeys (op mod)
@@ -165,9 +169,9 @@ envResolveIdent env {levelsUp, index} =
 envResolveTemporalIdent env previous ident = case ident of
   TIIdent id -> envResolveIdent env id
   TIPreviousState -> previous
-envResolveLocalTerm env = termMap (envResolveIdent env)
+envResolveLocalTerm env = termMap (\_ -> env) (envResolveIdent env)
 envResolveTemporalTerm env previous =
-  termMap (envResolveTemporalIdent env previous)
+  termMap (\_ -> env) (envResolveTemporalIdent env previous)
 envResolveModule env {locals, procedure} =
   let localToGlobal =
         Maybe.withDefault Dict.empty (.locals `Maybe.map` List.head env)
