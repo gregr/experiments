@@ -283,12 +283,11 @@ vint val = vatom val >>= aint >> pure1
 vstring val = vatom val >>= astring >> pure1
 
 vget1 pending segment vsrc = (case vsrc of
-  VModule mod -> vstring segment >>=
-    (\index -> ("unbound field: " ++ toString index)
-    `Result.fromMaybe` Dict.get index (Dict.fromList mod.args)) >> pure1
-  VList xs -> vint segment >>=
-    (\index -> ("index out of bounds: " ++ toString index)
-    `Result.fromMaybe` List.head (List.drop index xs)) >> pure1
+  VModule mod ->
+    (\index -> -1 `Maybe.withDefault` Dict.get index (Dict.fromList mod.args))
+    <$> vstring segment
+  VList xs -> (\index -> -1 `Maybe.withDefault` List.head (List.drop index xs))
+    <$> vint segment
   _ -> fail <| "cannot get '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc) >>= evalRef pending
 vget pending segments vsrc = forFoldM vsrc segments (vget1 pending)
