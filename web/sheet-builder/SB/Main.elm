@@ -213,6 +213,18 @@ programEmpty =
   { definitions = Dict.empty
   , uid = 0
   }
+programDefNew program =
+  let rdef = program.uid
+      definitions = Dict.insert rdef moduleDefEmpty program.definitions
+  in (rdef, {program | definitions = definitions, uid = rdef + 1})
+programDefGet rdef program =
+  (("Unknown module definition: " ++ toString rdef) `Result.fromMaybe`
+   Dict.get rdef program.definitions, program)
+programDefSet rdef def program =
+  if Dict.member rdef program.definitions then
+     (Ok (),
+      {program | definitions = Dict.insert rdef def program.definitions})
+  else (Err ("Unknown module definition: " ++ toString rdef), program)
 
 estateEmpty =
   { values = Dict.empty
