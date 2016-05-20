@@ -16,7 +16,7 @@ type Term env leaf
   | TListAppend leaf leaf
   | TGet leaf (Path leaf)
   | TPut1 leaf leaf leaf
-  | TDelete leaf (Path leaf)
+  | TDelete1 leaf leaf
 type alias GlobalTerm = Term Env Ref
 type alias LocalTerm = Term () Ident
 type alias TemporalTerm = Term () TemporalIdent
@@ -157,7 +157,7 @@ termMap envOp op term = case term of
   TListAppend l0 l1 -> TListAppend (op l0) (op l1)
   TGet src ps -> TGet (op src) (List.map op ps)
   TPut1 src seg val -> TPut1 (op src) (op seg) (op val)
-  TDelete src ps -> TDelete (op src) (List.map op ps)
+  TDelete1 src seg -> TDelete1 (op src) (op seg)
 
 envEmpty = []
 envResolveIdent env {levelsUp, index} =
@@ -302,6 +302,16 @@ vput1 pending val segment vsrc = case vsrc of
     <$> vint segment
   _ -> fail <| "cannot put '" ++ toString segment ++
     "' of simple value: " ++ toString vsrc
+vdelete1 pending segment vsrc = case vsrc of
+  VModule mod -> VModule <<
+    (\index -> {mod | args = Dict.toList (Dict.remove index
+                                          (Dict.fromList mod.args))}) <$>
+    vstring segment
+  VList xs -> VList <<
+    (\index -> List.append (List.take index xs) (List.drop (index + 1) xs))
+    <$> vint segment
+  _ -> fail <| "cannot delete '" ++ toString segment ++
+    "' of simple value: " ++ toString vsrc
 
 moduleUnite m0 m1 =
   {m0 | args = Dict.toList <| Dict.fromList <| m0.args ++ m1.args}
@@ -333,4 +343,7 @@ eval pending term = case term of
   TPut1 src segment val -> evalRef pending src >>=
     \vsrc -> evalRef pending segment >>=
     \vseg -> vput1 pending val vseg vsrc
-  _ -> pure <| VAtom AUnit
+  TDelete1 src segment -> evalRef pending src >>=
+    \vsrc -> evalRef pending segment >>=
+    \vseg -> vdelete1 pending vseg vsrc
+  --_ -> pure <| VAtom AUnit
