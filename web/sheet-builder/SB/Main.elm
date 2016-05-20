@@ -202,12 +202,41 @@ envResolveModule env {locals, procedure} =
           in (lts', rref)) -1
   in Dict.fromList <| List.concat <| lts' :: plts
 
-moduleDefEmpty =
-  { params = Set.empty
-  , locals = Dict.empty
-  , procedure = []
-  , uid = 0
+procedureStepEmpty rref =
+  { locals = Dict.singleton rref (TGet TIPreviousState [])
+  , result = rref
   }
+moduleDefFresh params =
+  { params = params
+  , locals = Dict.empty
+  , procedure = [procedureStepEmpty 0]
+  , uid = 1
+  }
+moduleDefEmpty = moduleDefFresh Set.empty
+moduleDefParamAdd name mdef =
+  ((), {mdef | params = Set.insert name mdef.params})
+moduleDefParamRemove name mdef =
+  ((), {mdef | params = Set.remove name mdef.params})
+moduleDefRefNew mdef = (mdef.uid, {mdef | uid = mdef.uid + 1})
+moduleDefProcedureStepResultGet index mdef =
+  (-1 `Maybe.withDefault` listGet index mdef.procedure, mdef)
+moduleDefProcedureStepNew index = moduleDefRefNew $>>=
+  \rref mdef ->
+    let step = procedureStepEmpty rref
+    in (step, {mdef | procedure = listInsert index step mdef.procedure})
+moduleDefProcedureStepDelete index mdef =
+  ((), case listGet index mdef.procedure of
+    Nothing -> mdef
+    Just step ->
+      let proc = listRemove index mdef.procedure
+          (nidx, mstep') = case listGet index proc of
+            Just st -> (index, Just st)
+            Nothing -> (List.length proc - 1, listLast proc)
+      in case mstep' of
+        Nothing -> moduleDefFresh mdef.params
+        Just step' ->
+          let step'' = {step' | locals = Dict.union step'.locals step.locals}
+          in {mdef | procedure = listReplace nidx step'' proc})
 
 programEmpty =
   { definitions = Dict.empty
