@@ -56,7 +56,7 @@ type alias Ref = Int
 type alias Path segment = List segment
 
 type alias Program =
-  { modules : Dict Ref ModuleDef
+  { definitions : Dict Ref ModuleDef
   , uid : Int
   }
 type alias ComputationSource = { env : Env, local : Ref }
@@ -194,6 +194,18 @@ envResolveModule env {locals, procedure} =
           in (lts', rref)) -1
   in Dict.fromList <| List.concat <| lts' :: plts
 
+moduleDefEmpty =
+  { params = []
+  , locals = Dict.empty
+  , procedure = []
+  , uid = 0
+  }
+
+programEmpty =
+  { definitions = Dict.empty
+  , uid = 0
+  }
+
 estateEmpty =
   { values = Dict.empty
   , computations = Dict.empty
@@ -222,11 +234,11 @@ estateRefValueGet ref estate =
    Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
-estateModulesGet estate = (estate.program.modules, estate)
+estateDefinitionsGet estate = (estate.program.definitions, estate)
 estateApply {definition, args, env} =
-  estateModulesGet $>>= \modules ->
+  estateDefinitionsGet $>>= \definitions ->
     pure1 (("Unknown module: " ++ toString definition) `Result.fromMaybe`
-          Dict.get definition modules) >>=
+          Dict.get definition definitions) >>=
       \def ->
       let {params, locals, procedure} = def
           stepLocals = List.map .locals procedure
