@@ -11,7 +11,6 @@ type Term env leaf
   | TModule (ModuleTerm env leaf)
   | TModuleApply leaf
   | TModuleUnite leaf leaf
-  | TModuleKeys leaf
   | TListLength leaf
   | TListAppend leaf leaf
   | TGet leaf (Path leaf)
@@ -51,7 +50,7 @@ type Atom
   | AString String
   | ANumber Number
 type Number = NInt Int | NFloat Float
-type alias Name = Atom
+type alias Name = String
 type alias Ref = Int
 type alias Path segment = List segment
 
@@ -64,6 +63,7 @@ type alias Computation = { term : GlobalTerm, source : ComputationSource }
 type alias EvalState =
   { values : Dict Ref Value
   , computations : Dict Ref Computation
+  , program : Program
   , uid : Int
   }
 
@@ -150,7 +150,6 @@ termMap envOp op term = case term of
                 , env = envOp mt.env}
   TModuleApply mod -> TModuleApply <| op mod
   TModuleUnite m0 m1 -> TModuleUnite (op m0) (op m1)
-  TModuleKeys mod -> TModuleKeys (op mod)
   TListLength list -> TListLength (op list)
   TListAppend l0 l1 -> TListAppend (op l0) (op l1)
   TGet src ps -> TGet (op src) (List.map op ps)
@@ -220,19 +219,20 @@ estateRefValueGet ref estate =
    Dict.get ref estate.values, estate)
 estateRefValueSet value ref estate =
   ((), { estate | values = Dict.insert ref value estate.values })
-estateApply {source, env} {modules} =
-  let {definition, args} = source
-  in pure1 (("Unknown module: " ++ toString definition) `Result.fromMaybe`
-            Dict.get definition modules) >>=
-     \definition ->
-     let {params, locals, procedure} = definition
-         stepLocals = List.map .locals procedure
-         argDict = Dict.fromList args
-         binding param =
-           (,) param @<$>
-           (("Unbound parameter: " ++ toString param) `Result.fromMaybe`
-           Dict.get param argDict)
-     in pure1 (forM0 params binding) >>=
+estateModulesGet estate = (estate.program.modules, estate)
+estateApply {definition, args, env} =
+  estateModulesGet $>>= \modules ->
+    pure1 (("Unknown module: " ++ toString definition) `Result.fromMaybe`
+          Dict.get definition modules) >>=
+      \def ->
+      let {params, locals, procedure} = def
+          stepLocals = List.map .locals procedure
+          argDict = Dict.fromList args
+          binding param =
+            (,) param @<$>
+            (("Unbound parameter: " ++ toString param) `Result.fromMaybe`
+            Dict.get param argDict)
+      in pure1 (forM0 params binding) >>=
         \bindings -> estateRefsForLocals locals $>>=
         \localsRefs -> forM1 stepLocals estateRefsForLocals $>>=
         \stepLocalsRefs ->
@@ -245,7 +245,7 @@ estateApply {source, env} {modules} =
                     , locals = allLocalsRefs
                     , results = stepResultsRefs }
             env' = frame :: env
-            comps = envResolveModule env' definition
+            comps = envResolveModule env' def
             final = -1 `Maybe.withDefault`
               List.head (List.reverse stepResultsRefs)
         in estateRefComputationsSet comps $*> pure final
