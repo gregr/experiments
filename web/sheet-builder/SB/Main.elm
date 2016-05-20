@@ -289,11 +289,3 @@ eval pending term = case term of
     VList <$> (List.append <$>
       (evalRef pending l0 >>= vlist) <*> (evalRef pending l1 >>= vlist))
   _ -> pure <| VAtom AUnit
-
--- TODO: evaluation w/ provenance
--- provenance includes: originating ModuleContext: the step provides the Term
-
--- decouple computational history from editor history?
--- factor out zoom/path info; the rest is computational?
-
--- TODO: small state previews
