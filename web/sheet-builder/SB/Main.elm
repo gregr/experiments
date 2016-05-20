@@ -21,6 +21,7 @@ type alias GlobalTerm = Term Env Ref
 type alias LocalTerm = Term () Ident
 type alias TemporalTerm = Term () TemporalIdent
 type alias Ident = { levelsUp : Int, index : IdentIndex }
+-- TODO: hashed args/params breaks indexing ... associate params with local refs?
 type IdentIndex = Param Int | LocalIdent Ref
 type TemporalIdent = TIIdent Ident | TIPreviousState
 
@@ -67,6 +68,24 @@ type alias EvalState =
   , program : Program
   , uid : Int
   }
+
+type Segment = SegName Name | SegOffset Int
+type alias LocalPath = { result : Int, path : Path Segment }
+type alias StaticPath = { levelsUp : Int, localPath : LocalPath }
+type alias DynamicPath = { outerPaths : List LocalPath, localPath : LocalPath }
+
+type alias Navigator path =
+  { focus : path
+  , zooms : List Int
+  }
+type alias Composer =
+  { source : Navigator StaticPath
+  , target : Navigator DynamicPath
+  , term : TemporalTerm
+  }
+
+-- get refs/params from static paths
+-- put these refs, or previous state ref, into new/revised terms at dynamic paths
 
 type Navigation
   = Ascend Int
