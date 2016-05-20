@@ -20,9 +20,7 @@ type Term env leaf
 type alias GlobalTerm = Term Env Ref
 type alias LocalTerm = Term () Ident
 type alias TemporalTerm = Term () TemporalIdent
-type alias Ident = { levelsUp : Int, index : IdentIndex }
--- TODO: hashed args/params breaks indexing ... associate params with local refs?
-type IdentIndex = Param Int | LocalIdent Ref
+type alias Ident = { levelsUp : Int, index : Ref }
 type TemporalIdent = TIIdent Ident | TIPreviousState
 
 type Value = VRef Ref | VAtom Atom | VList (List Ref) | VModule (ModuleTerm Env Ref)
@@ -33,14 +31,13 @@ type alias ModuleTerm env leaf =
   }
 type alias EnvFrame =
   { definition : Ref
-  , bindings : Bindings Ref
   , locals : Dict Ref Ref
   , results : List Ref
   }
 type alias Env = List EnvFrame
 type alias ProcedureStep = { locals : Dict Ref TemporalTerm, result : Ref }
 type alias ModuleDef =
-  { params : Set Name
+  { params : Dict Name Ref
   , locals : Dict Ref LocalTerm
   , procedure : List ProcedureStep
   , uid : Int
@@ -188,13 +185,9 @@ termMap envOp op term = case term of
 
 envEmpty = []
 envResolveIdent env {levelsUp, index} =
-  let (bindings, locals) =
-        Maybe.withDefault ([], Dict.empty) <|
-        (\frame -> (frame.bindings, frame.locals)) `Maybe.map`
+  let locals = Maybe.withDefault Dict.empty <| .locals `Maybe.map`
         listGet levelsUp env
-  in -1 `Maybe.withDefault` case index of
-    Param idx -> snd `Maybe.map` listGet idx bindings
-    LocalIdent ref -> Dict.get ref locals
+  in -1 `Maybe.withDefault` Dict.get index locals
 envResolveTemporalIdent env previous ident = case ident of
   TIIdent id -> envResolveIdent env id
   TIPreviousState -> previous
@@ -226,17 +219,18 @@ procedureStepEmpty rref =
   , result = rref
   }
 moduleDefFresh params =
-  { params = params
+  { params = Dict.fromList <|
+      List.map2 (,) (Set.toList params) [1..Set.size params]
   , locals = Dict.empty
   , procedure = [procedureStepEmpty 0]
-  , uid = 1
+  , uid = Set.size params + 1
   }
 moduleDefEmpty = moduleDefFresh Set.empty
-moduleDefParamAdd name mdef =
-  ((), {mdef | params = Set.insert name mdef.params})
-moduleDefParamRemove name mdef =
-  ((), {mdef | params = Set.remove name mdef.params})
 moduleDefRefNew mdef = (mdef.uid, {mdef | uid = mdef.uid + 1})
+moduleDefParamAdd name = moduleDefRefNew $>>=
+  \pref mdef -> ((), {mdef | params = Dict.insert name pref mdef.params})
+moduleDefParamRemove name mdef =
+  ((), {mdef | params = Dict.remove name mdef.params})
 moduleDefProcedureStepResultGet index mdef =
   (-1 `Maybe.withDefault` listGet index mdef.procedure, mdef)
 moduleDefProcedureStepNew index = moduleDefRefNew $>>=
@@ -252,7 +246,7 @@ moduleDefProcedureStepDelete index mdef =
             Just st -> (index, Just st)
             Nothing -> (List.length proc - 1, listLast proc)
       in case mstep' of
-        Nothing -> moduleDefFresh mdef.params
+        Nothing -> moduleDefFresh <| Set.fromList <| Dict.keys mdef.params
         Just step' ->
           let step'' = {step' | locals = Dict.union step'.locals step.locals}
           in {mdef | procedure = listReplace nidx step'' proc})
@@ -310,20 +304,19 @@ estateApply {definition, args, env} =
       \def ->
       let {params, locals, procedure} = def
           stepLocals = List.map .locals procedure
-          binding param =
-            (,) param @<$>
+          binding (pname, pref) = (,) pref @<$>
             (("Unbound parameter: " ++ toString param) `Result.fromMaybe`
-            Dict.get param args)
-      in pure1 (forM0 (Set.toList params) binding) >>=
+            Dict.get pname args)
+      in pure1 (forM0 (Dict.toList params) binding) >>=
         \bindings -> estateRefsForLocals locals $>>=
         \localsRefs -> forM1 stepLocals estateRefsForLocals $>>=
         \stepLocalsRefs ->
-        let allLocalsRefs = List.foldl Dict.union localsRefs stepLocalsRefs
+        let allLocalsRefs = Dict.union (Dict.fromList bindings) <|
+              List.foldl Dict.union localsRefs stepLocalsRefs
             stepResultsRefs =
               List.map (\{result} -> -1 `Maybe.withDefault`
                         Dict.get result allLocalsRefs) procedure
             frame = { definition = definition
-                    , bindings = bindings
                     , locals = allLocalsRefs
                     , results = stepResultsRefs }
             env' = frame :: env
