@@ -322,7 +322,7 @@ estateApply {definition, args, env} =
             env' = frame :: env
             comps = envResolveModule env' def
             final = -1 `Maybe.withDefault` listLast stepResultsRefs
-        in estateRefComputationsSet comps $*> pure final
+        in estateRefComputationsSet comps $*> pure (final, env')
 
 vsimple ref value = case value of
   VAtom atom -> VAtom atom
@@ -391,7 +391,7 @@ eval pending term = case term of
   TList xs -> pure <| VList xs
   TModule mt -> pure <| VModule mt
   TModuleApply mod ->
-    evalRef pending mod >>= vmod >>= estateApply >>= evalRef pending
+    evalRef pending mod >>= vmod >>= estateApply >>= fst >> evalRef pending
   TModuleUnite m0 m1 ->
     VModule <$> (moduleUnite <$>
       (evalRef pending m0 >>= vmod) <*> (evalRef pending m1 >>= vmod))
