@@ -66,10 +66,15 @@ type alias EvalState =
   , uid : Int
   }
 
-type Segment = SegName Name | SegOffset Int
-type alias LocalPath = { result : Int, path : Path Segment }
+type alias LocalPath = { result : Int, path : Path Value }
 type alias StaticPath = { levelsUp : Int, localPath : LocalPath }
 type alias DynamicPath = { outerPaths : List LocalPath, localPath : LocalPath }
+
+--type alias Cursor =
+  --{ pathSelector : Maybe StaticPath
+  --, nameSelector
+  --, navPath : DynamicPath
+  --}
 
 type alias Navigator path =
   { focus : path
@@ -233,6 +238,12 @@ moduleDefParamRemove name mdef =
   ((), {mdef | params = Dict.remove name mdef.params})
 moduleDefProcedureStepResultGet index mdef =
   (-1 `Maybe.withDefault` listGet index mdef.procedure, mdef)
+--moduleDefProcedureStepResultSet index mdef =
+  --case listGet index mdef.procedure of
+  --Just step -> (step, mdef)
+  --Nothing -> (procedureStepEmpty -1, mdef)
+--moduleDefProcedureStepTermNew index mdef =
+  --...
 moduleDefProcedureStepNew index = moduleDefRefNew $>>=
   \rref mdef ->
     let step = procedureStepEmpty rref
@@ -250,6 +261,29 @@ moduleDefProcedureStepDelete index mdef =
         Just step' ->
           let step'' = {step' | locals = Dict.union step'.locals step.locals}
           in {mdef | procedure = listReplace nidx step'' proc})
+
+envParam spath name env estate = case listGet spath.levelsUp env of
+  Just frame -> -1 `Maybe.withDefault` Dict.get name frame.definition.params
+  Nothing -> -1
+--envStaticGet spath env estate = case listGet spath.levelsUp env of
+  --Nothing -> -1
+  --Just frame ->
+    --Maybe.withDefault -1 <| listGet spath.localPath.result frame.results `Maybe.andThen`
+    --\src -> Result.toMaybe <| vget Set.empty spath.localPath.path src
+-- vget isn't quite right, need local refs, not global... do we need estate?
+-- infer local from global ref? is it always possible?
+-- not generally possible for apply, unite, append, etc.
+-- cases where it should be possible:
+--   literal lists/modules and their gets/puts/deletes
+--   other simple subterms (e.g. arithmetic, arguments to apply, append, unite)
+--   locally precompute temporal terms when possible?
+-- oops, may always be possible if we uniquely tag and match environments
+
+-- but we should avoid surprises: instead of navigating over answers, navigate over local terms themselves:
+--   absolute child refs can only come from literals
+--     this means that most of the result/state manipulations are going to be in-place literal constructions
+--   child refs of computations are always relative
+-- eliminate temporals? have a single result ref?
 
 programEmpty =
   { definitions = Dict.empty
