@@ -1,3 +1,10 @@
+<p>Simple trampoline (with allocation): <span id="trampoline1">Computing ...</span></p>
+<p>Simple loop: <span id="loop1">Computing ...</span></p>
+<p>Comparison loop with continuation no-op: <span id="loop2">Computing ...</span></p>
+<p>Comparison loop with continuation no-op and allocation: <span id="loop3">Computing ...</span></p>
+<p>Optimized trampoline (without allocation): <span id="trampoline2">Computing ...</span></p>
+
+<script>
 function toZeroCPSAlloc(count) {
   if (count === 0) {
     return ['done', null];
@@ -15,7 +22,6 @@ function toZeroCPS(toZeroCPSResult, count) {
   toZeroCPSResult[1] = null;
 }
 
-// ~160ms
 function benchTrampolineAlloc(count) {
   var cont = toZeroCPSAlloc;
   var arg = count;
@@ -27,7 +33,6 @@ function benchTrampolineAlloc(count) {
   return cont;
 }
 
-// ~40ms
 function benchTrampoline(count) {
   var toZeroCPSResult = new Array(2)
   var cont = toZeroCPS;
@@ -40,7 +45,6 @@ function benchTrampoline(count) {
   return cont;
 }
 
-// ~11ms
 function benchLoop(count) {
   while (count > 0) {
     count = count - 1;
@@ -48,7 +52,6 @@ function benchLoop(count) {
   return 'done';
 }
 
-// ~40ms
 function benchLoopNop1(count) {
   var toZeroCPSResult = new Array(2)
   var cont = toZeroCPS;
@@ -63,7 +66,6 @@ function benchLoopNop1(count) {
   return 'done';
 }
 
-// ~110ms
 function benchLoopNop2(count) {
   var irrelevant = [undefined];
   irrelevant.pop();
@@ -89,13 +91,23 @@ function timed(f) {
   return [result, elapsed];
 }
 
-// ~160ms
-console.log(timed(function() { return benchTrampolineAlloc(10000000); }))
-// ~11ms
-console.log(timed(function() { return benchLoop(10000000); }))
-// ~40ms
-console.log(timed(function() { return benchLoopNop1(10000000); }))
-// ~110ms
-console.log(timed(function() { return benchLoopNop2(10000000); }))
-// ~40ms
-console.log(timed(function() { return benchTrampoline(10000000); }))
+function setResult(id, timeResult) {
+  var result = timeResult[1].toString() + ' ms';
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f) {
+  setResult(id, timed(function() { return f(10000000); }));
+}
+
+// ~125 ms
+benchmark('trampoline1', benchTrampolineAlloc);
+// ~11 ms
+benchmark('loop1', benchLoop);
+// ~35 ms
+benchmark('loop2', benchLoopNop1);
+// ~100 ms
+benchmark('loop3', benchLoopNop2);
+// ~35 ms
+benchmark('trampoline2', benchTrampoline);
+</script>
