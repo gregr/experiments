@@ -1,13 +1,33 @@
-<p>0 mod 3</p>
+<p>0 mod 3 (ms)</p>
 <table>
-  <tr><td>initial</td><td id="initial">Computing ...</td></tr>
-  <tr><td>trampoline</td><td id="trampoline">Computing ...</td></tr>
-  <tr><td>simple loop</td><td id="simple">Computing ...</td></tr>
-  <tr><td>greedy loop</td><td id="greedy">Computing ...</td></tr>
-  <tr><td>greedy loop 2</td><td id="greedy2">Computing ...</td></tr>
-  <tr><td>switch dispatching loop</td><td id="switch">Computing ...</td></tr>
-  <tr><td>label dispatching loop</td><td id="label">Computing ...</td></tr>
-  <tr><td>reduced label dispatching loop</td><td id="reducedlabel">Computing ...</td></tr>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>initial</td></tr>
+        <tr><td>trampoline</td></tr>
+        <tr><td>simple loop</td></tr>
+        <tr><td>greedy loop</td></tr>
+        <tr><td>greedy loop 2</td></tr>
+        <tr><td>switch dispatching loop</td></tr>
+        <tr><td>label dispatching loop</td></tr>
+        <tr><td>reduced label dispatching loop</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="initial"><td>Computing ...</td></tr>
+        <tr id="trampoline"><td>Computing ...</td></tr>
+        <tr id="simple"><td>Computing ...</td></tr>
+        <tr id="greedy"><td>Computing ...</td></tr>
+        <tr id="greedy2"><td>Computing ...</td></tr>
+        <tr id="switch"><td>Computing ...</td></tr>
+        <tr id="label"><td>Computing ...</td></tr>
+        <tr id="reducedlabel"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
 </table>
 
 <script>
@@ -261,23 +281,28 @@ function setResult(id, result) {
 
 function benchmark(id, f) {
   var trialCount = 5;
-  var trial = trialCount;
-  var scores = new Array(trial);
-  while (trial--) {
-    scores[trial] = timed(function() { return f(10000000); })[1];
+  var scores = new Array(trialCount);
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(100000000); })[1];
   }
   var sum = 0;
   var max = 0;
   var min = 1 << 30;
-  var trial = trialCount;
-  while (trial--) {
+  for (var trial = trialCount; trial--;) {
     score = scores[trial];
     sum += score;
     max = Math.max(max, score);
     min = Math.min(min, score);
   }
   var avg = sum / trialCount;
-  result = 'total: ' + sum.toString() + ' ms; avg: ' + avg.toString() + ' ms; max: ' + max.toString() + ' ms; min: ' + min.toString() + ' ms';
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
   setResult(id, result);
 }
 
