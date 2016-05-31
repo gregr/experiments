@@ -7,7 +7,8 @@
         <tr><td>initial</td></tr>
         <tr><td>CPS</td></tr>
         <tr><td>explicit stack</td></tr>
-        <tr><td>explicit delimited continuation stack switch</td></tr>
+        <tr><td>delimited continuation switch</td></tr>
+        <tr><td>delimited continuation closure</td></tr>
     </table>
     </td>
     <td>
@@ -17,6 +18,7 @@
         <tr id="cps"><td>Computing ...</td></tr>
         <tr id="stack"><td>Computing ...</td></tr>
         <tr id="delimccswitch"><td>Computing ...</td></tr>
+        <tr id="delimccclosure"><td>Computing ...</td></tr>
       </table>
     </td>
   </tr>
@@ -81,12 +83,59 @@ function stack(xs) {
   return result;
 }
 
+function delimccClosure(xs) {
+  var len = xs.length;
+  var result = [];
+  var reg = new Array(3);
+  var reset = [];
+  var stack = [];
+
+  function rpop() { reset.pop(); }
+  function calc() {
+    var x = reg[0];
+    var y = reg[1];
+    var z = reg[2];
+    if (x*x + y*y === z*z) result.push([x, y, z]);
+  }
+  function each(i, f) {
+    return function() {
+      if (i < len) {
+        stack.push(each(i + 1, f));
+        f(xs[i]);
+      }
+    };
+  }
+  function choose(ireg) {
+    return function() {
+      var k = stack.splice(reset[reset.length - 1]);  // shift
+      stack.push(rpop);
+      function invoke(val) {
+        reg[ireg] = val;
+        reset.push(stack.length);
+        Array.prototype.push.apply(stack, k);
+      }
+      stack.push(each(0, invoke));
+    };
+  }
+
+  reset.push(stack.length);
+  stack.push(rpop);
+  stack.push(calc);
+  stack.push(choose(2));
+  stack.push(choose(1));
+  stack.push(choose(0));
+
+  var cont;
+  while (cont = stack.pop()) { cont(); }
+  return result;
+}
+
 function delimccSwitch(xs) {
   var len = xs.length;
   var result = [];
   var i, k, x, y, z;
-  var reset = [1];
   var reg = new Array(3);
+  var reset = [1];
   var stack = [0, 1, 2, 2, 3, 1, 3, 0];  // pc, pc, pc, 2, pc, 1, pc, 0
   var pc = 3;
 
@@ -171,4 +220,5 @@ benchmark('initial', initial);
 benchmark('cps', cps);
 benchmark('stack', stack);
 benchmark('delimccswitch', delimccSwitch);
+benchmark('delimccclosure', delimccClosure);
 </script>
