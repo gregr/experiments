@@ -1,45 +1,75 @@
-<p>simple even: <span id="initial">Computing ...</span></p>
-<p>trampoline even: <span id="trampoline">Computing ...</span></p>
-<p>simple even loop: <span id="simple">Computing ...</span></p>
-<p>greedy even loop: <span id="greedy">Computing ...</span></p>
-<p>switch dispatching even loop: <span id="switch">Computing ...</span></p>
-<p>label dispatching even loop: <span id="label">Computing ...</span></p>
+<p>0 mod 3</p>
+<p>initial: <span id="initial">Computing ...</span></p>
+<p>trampoline: <span id="trampoline">Computing ...</span></p>
+<p>simple loop: <span id="simple">Computing ...</span></p>
+<p>greedy loop: <span id="greedy">Computing ...</span></p>
+<p>greedy loop 2: <span id="greedy2">Computing ...</span></p>
+<p>switch dispatching loop: <span id="switch">Computing ...</span></p>
+<p>label dispatching loop: <span id="label">Computing ...</span></p>
+<p>reduced label dispatching loop: <span id="reducedlabel">Computing ...</span></p>
 
 <script>
-function even(n) {
-  if (n === 0) return true;
-  return odd(n - 1);
+function is0mod3(n) {
+  if (n > 0) return is2mod3(n - 1);
+  if (n < 0) return is1mod3(n + 1);
+  return true;
 }
 
-function odd(n) {
-  if (n === 0) return false;
-  return even(n - 1);
+function is1mod3(n) {
+  if (n > 0) return is0mod3(n - 1);
+  if (n < 0) return is2mod3(n + 1);
+  return false;
+}
+
+function is2mod3(n) {
+  if (n > 0) return is1mod3(n - 1);
+  if (n < 0) return is0mod3(n + 1);
+  return false;
 }
 
 var cpsResult = new Array(2);
 
-function evenCPS(n) {
-  if (n === 0) {
+function is0mod3CPS(n) {
+  if (n > 0) {
+    cpsResult[0] = is2mod3CPS;
+    cpsResult[1] = n - 1;
+  } else if (n < 0) {
+    cpsResult[0] = is1mod3CPS;
+    cpsResult[1] = n + 1;
+  } else {
     cpsResult[0] = true;
     cpsResult[1] = null;
-  } else {
-    cpsResult[0] = oddCPS;
-    cpsResult[1] = n - 1;
   }
 }
 
-function oddCPS(n) {
-  if (n === 0) {
+function is1mod3CPS(n) {
+  if (n > 0) {
+    cpsResult[0] = is0mod3CPS;
+    cpsResult[1] = n - 1;
+  } else if (n < 0) {
+    cpsResult[0] = is2mod3CPS;
+    cpsResult[1] = n + 1;
+  } else {
     cpsResult[0] = false;
     cpsResult[1] = null;
-  } else {
-    cpsResult[0] = evenCPS;
-    cpsResult[1] = n - 1;
   }
 }
 
-function evenTrampoline(n) {
-  var cont = evenCPS;
+function is2mod3CPS(n) {
+  if (n > 0) {
+    cpsResult[0] = is1mod3CPS;
+    cpsResult[1] = n - 1;
+  } else if (n < 0) {
+    cpsResult[0] = is0mod3CPS;
+    cpsResult[1] = n + 1;
+  } else {
+    cpsResult[0] = false;
+    cpsResult[1] = null;
+  }
+}
+
+function trampoline(n) {
+  var cont = is0mod3CPS;
   var arg = n;
   while (arg !== null) {
     cont(arg);
@@ -49,51 +79,170 @@ function evenTrampoline(n) {
   return cont;
 }
 
-function evenLoopSwitchDispatch(n) {
-  var labelEven = true;
-  for (;;) {
-    switch (labelEven) {
-      case true: // even
-        if (n === 0) return true;
-        n -= 1;
-        labelEven = false;
+function switchDispatch(n) {
+  var label = 0;
+  while (true) {
+    switch (label) {
+      case 0: // 0 mod 3
+        if (n > 0) {
+          --n;
+          label = 2;
+        } else if (n < 0) {
+          ++n;
+          label = 1;
+        } else { return true; }
         break;
-      case false: // odd
-        if (n === 0) return false;
-        n -= 1;
-        labelEven = true;
+      case 1: // 1 mod 3
+        if (n > 0) {
+          --n;
+          label = 0;
+        } else if (n < 0) {
+          ++n;
+          label = 2;
+        } else { return false; }
+        break;
+      case 2: // 2 mod 3
+        if (n > 0) {
+          --n;
+          label = 1;
+        } else if (n < 0) {
+          ++n;
+          label = 0;
+        } else { return false; }
         break;
     }
   }
 }
 
-function evenLoopLabelDispatch(n) {
-  even: for (;;) {
-    if (n === 0) return true;
-    n -= 1;
-    odd: for (;;) {
-      if (n === 0) return false;
-      n -= 1;
-      continue even;
+function labelDispatch(n) {
+  L_is0mod3:
+  while (true) {
+    if (n > 0) {
+      --n;
+      L_is2mod3:
+      while (true) {
+        if (n > 0) {
+          --n;
+          L_is1mod3:
+          while (true) {
+            if (n > 0) {
+              --n;
+              continue L_is0mod3;
+            }
+            if (n < 0) {
+              ++n;
+              continue L_is2mod3;
+            }
+            return false;
+          }
+        }
+        if (n < 0) {
+          --n;
+          continue L_is0mod3;
+        }
+        return false;
+      }
     }
+    if (n < 0) {
+      ++n;
+      L_is1mod3:
+      while (true) {
+        if (n > 0) {
+          --n;
+          continue L_is0mod3;
+        }
+        if (n < 0) {
+          ++n;
+          L_is2mod3:
+          while (true) {
+            if (n > 0) {
+              --n;
+              continue L_is1mod3;
+            }
+            if (n < 0) {
+              ++n;
+              continue L_is0mod3;
+            }
+            return false;
+          }
+        }
+        return false;
+      }
+    }
+    return true;
   }
 }
 
-function evenLoopSimple(n) {
-  var result = true;
+function reducedLabelDispatch(n) {
+  L_is0mod3:
+  while (true) {
+    if (n > 0) {
+      --n;
+      L_is2mod3:
+      while (true) {
+        if (n > 0) {
+          --n;
+          L_is1mod3:
+          while (true) {
+            if (n > 0) {
+              --n;
+              continue L_is0mod3;
+            }
+            return false;
+          }
+        }
+        return false;
+      }
+    }
+    if (n < 0) {
+      ++n;
+      L_is1mod3:
+      while (true) {
+        if (n < 0) {
+          ++n;
+          L_is2mod3:
+          while (true) {
+            if (n < 0) {
+              ++n;
+              continue L_is0mod3;
+            }
+            return false;
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+function loopSimple(n) {
+  var result = 0;
   while (n !== 0) {
     n -= 1;
-    result = !result;
+    result -= 1;
+    if (result < 0) result = 2;
   }
   return result;
 }
 
-function evenLoopGreedy(n) {
-  for (;;) {
+function loopGreedy(n) {
+  while (true) {
     if (n === 0) return true;
-    n -= 1;
+    --n;
     if (n === 0) return false;
-    n -= 1;
+    --n;
+    if (n === 0) return false;
+    --n;
+  }
+}
+
+function loopGreedy2(n) {
+  while (true) {
+    if (n > 0) {
+      n -= 2;
+    } else if (n < 0) return false;
+    else return true;
   }
 }
 
@@ -112,14 +261,20 @@ function benchmark(id, f) {
   setResult(id, timed(function() { return f(50000000); }));
 }
 
-// ~110 ms
-benchmark('trampoline', evenTrampoline);
-// ~15 ms
-benchmark('simple', evenLoopSimple);
-benchmark('greedy', evenLoopGreedy);
-// ~20 ms
-benchmark('switch', evenLoopSwitchDispatch);
-benchmark('label', evenLoopLabelDispatch);
+// 540 - 720 ms
+benchmark('trampoline', trampoline);
+// ~102 ms
+benchmark('simple', loopSimple);
+// ~38 ms
+benchmark('greedy', loopGreedy);
+// ~27 ms
+benchmark('greedy2', loopGreedy2);
+// ~94 ms
+benchmark('switch', switchDispatch);
+// ~39 ms
+benchmark('label', labelDispatch);
+// ~29 ms
+benchmark('reducedlabel', reducedLabelDispatch);
 // stack overflow
-//benchmark('initial', even);
+//benchmark('initial', is0mod3);
 </script>
