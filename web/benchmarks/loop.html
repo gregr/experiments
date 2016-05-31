@@ -1,0 +1,46 @@
+<p>for(;;): <span id="for">Computing ...</span></p>
+<p>while(true): <span id="while">Computing ...</span></p>
+<p>do{}while(true): <span id="dowhile">Computing ...</span></p>
+
+<script>
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, timeResult) {
+  var result = timeResult[1].toString() + ' ms';
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f) {
+  setResult(id, timed(function() { return f(100000000); }));
+}
+
+function loopFor(n) {
+  for (;;) {
+    if (n <= 0) return;
+    --n;
+  }
+}
+
+function loopWhile(n) {
+  while (true) {
+    if (n <= 0) return;
+    --n;
+  }
+}
+
+function loopDoWhile(n) {
+  do {
+    if (n <= 0) return;  // performs an extra iteration, but no big deal
+    --n;
+  } while (true);
+}
+
+benchmark('for', loopFor);
+benchmark('while', loopWhile);
+benchmark('dowhile', loopDoWhile);
+</script>
