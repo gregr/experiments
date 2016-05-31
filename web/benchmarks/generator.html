@@ -1,0 +1,174 @@
+<p>generator (ms)</p>
+<table>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>initial</td></tr>
+        <tr><td>CPS</td></tr>
+        <tr><td>explicit stack</td></tr>
+        <tr><td>explicit delimited continuation stack switch</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="initial"><td>Computing ...</td></tr>
+        <tr id="cps"><td>Computing ...</td></tr>
+        <tr id="stack"><td>Computing ...</td></tr>
+        <tr id="delimccswitch"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<script>
+function initial(xs) {
+  var result = [];
+  var len = xs.length;
+  for (var i0 = 0; i0 < len; ++i0) {
+    var x = xs[i0];
+    for (var i1 = 0; i1 < len; ++i1) {
+      var y = xs[i1];
+      for (var i2 = 0; i2 < len; ++i2) {
+        var z = xs[i2];
+        if (x*x + y*y === z*z) result.push([x, y, z]);
+      }
+    }
+  }
+  return result;
+}
+
+function cps(xs) {
+  var len = xs.length;
+  var result = [];
+  function choose(k) { for (var i = 0; i < len; ++i) { k(xs[i]); } }
+  choose(function(x) {
+    choose(function(y) {
+      choose(function(z) { if (x*x + y*y === z*z) result.push([x, y, z]); });
+    });
+  });
+  return result;
+}
+
+function stack(xs) {
+  var len = xs.length;
+  var result = [];
+  var reg = new Array(3);
+  var stack = [];
+
+  function choose(ireg) {
+    return function(sp) {
+      --sp;
+      var k = stack[sp];
+      for (var i = 0; i < len; ++i) {
+        reg[ireg] = xs[i];
+        k(sp);
+      }
+    };
+  }
+  function calc(sp) {
+    var x = reg[0];
+    var y = reg[1];
+    var z = reg[2];
+    if (x*x + y*y === z*z) result.push([x, y, z]);
+  }
+
+  stack.push(calc);
+  stack.push(choose(2));
+  stack.push(choose(1));
+  choose(0)(3);
+  return result;
+}
+
+function delimccSwitch(xs) {
+  var len = xs.length;
+  var result = [];
+  var i, k, x, y, z;
+  var reset = [1];
+  var reg = new Array(3);
+  var stack = [0, 1, 2, 2, 3, 1, 3, 0];  // pc, pc, pc, 2, pc, 1, pc, 0
+  var pc = 3;
+
+  while (true) {
+    switch (pc) {
+      case 0: return result;
+      case 1:
+        reset.pop();
+        pc = stack.pop();
+        break;
+      case 2:
+        x = reg[0];
+        y = reg[1];
+        z = reg[2];
+        if (x*x + y*y === z*z) result.push([x, y, z]);
+        pc = stack.pop();
+        break;
+      case 3:
+        k = stack.splice(reset[reset.length - 1]);  // shift
+        pc = 4;
+        stack.push(1, k, 0);  // reset-pop, k, i
+        break;
+      case 4:
+        i = stack.pop();
+        k = stack.pop();
+        if (i < len) {
+          stack.push(k, i+1, 4);  // k, i, loop
+          // invoke k
+          reset.push(stack.length)
+          Array.prototype.push.apply(stack, k);
+          ireg = stack.pop();
+          reg[ireg] = xs[i];
+          pc = stack.pop();
+        } else { pc = stack.pop(); }
+        break;
+    }
+  }
+}
+
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, result) {
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f) {
+  var trialCount = 5;
+  var scores = new Array(trialCount);
+  var iterations = 100;
+  var input = new Array(iterations);
+  for (var idx = iterations; idx--;) { input[idx] = idx; }
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(input); })[1];
+  }
+  var sum = 0;
+  var max = 0;
+  var min = 1 << 30;
+  for (var trial = trialCount; trial--;) {
+    score = scores[trial];
+    sum += score;
+    max = Math.max(max, score);
+    min = Math.min(min, score);
+  }
+  var avg = sum / trialCount;
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  setResult(id, result);
+}
+
+benchmark('initial', initial);
+benchmark('cps', cps);
+benchmark('stack', stack);
+benchmark('delimccswitch', delimccSwitch);
+</script>
