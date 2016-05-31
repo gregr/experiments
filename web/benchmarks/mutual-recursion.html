@@ -1,0 +1,125 @@
+<p>simple even: <span id="initial">Computing ...</span></p>
+<p>trampoline even: <span id="trampoline">Computing ...</span></p>
+<p>simple even loop: <span id="simple">Computing ...</span></p>
+<p>greedy even loop: <span id="greedy">Computing ...</span></p>
+<p>switch dispatching even loop: <span id="switch">Computing ...</span></p>
+<p>label dispatching even loop: <span id="label">Computing ...</span></p>
+
+<script>
+function even(n) {
+  if (n === 0) return true;
+  return odd(n - 1);
+}
+
+function odd(n) {
+  if (n === 0) return false;
+  return even(n - 1);
+}
+
+var cpsResult = new Array(2);
+
+function evenCPS(n) {
+  if (n === 0) {
+    cpsResult[0] = true;
+    cpsResult[1] = null;
+  } else {
+    cpsResult[0] = oddCPS;
+    cpsResult[1] = n - 1;
+  }
+}
+
+function oddCPS(n) {
+  if (n === 0) {
+    cpsResult[0] = false;
+    cpsResult[1] = null;
+  } else {
+    cpsResult[0] = evenCPS;
+    cpsResult[1] = n - 1;
+  }
+}
+
+function evenTrampoline(n) {
+  var cont = evenCPS;
+  var arg = n;
+  while (arg !== null) {
+    cont(arg);
+    cont = cpsResult[0];
+    arg = cpsResult[1];
+  }
+  return cont;
+}
+
+function evenLoopSwitchDispatch(n) {
+  var labelEven = true;
+  for (;;) {
+    switch (labelEven) {
+      case true: // even
+        if (n === 0) return true;
+        n -= 1;
+        labelEven = false;
+        break;
+      case false: // odd
+        if (n === 0) return false;
+        n -= 1;
+        labelEven = true;
+        break;
+    }
+  }
+}
+
+function evenLoopLabelDispatch(n) {
+  even: for (;;) {
+    if (n === 0) return true;
+    n -= 1;
+    odd: for (;;) {
+      if (n === 0) return false;
+      n -= 1;
+      continue even;
+    }
+  }
+}
+
+function evenLoopSimple(n) {
+  var result = true;
+  while (n !== 0) {
+    n -= 1;
+    result = !result;
+  }
+  return result;
+}
+
+function evenLoopGreedy(n) {
+  for (;;) {
+    if (n === 0) return true;
+    n -= 1;
+    if (n === 0) return false;
+    n -= 1;
+  }
+}
+
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, timeResult) {
+  var result = timeResult[1].toString() + ' ms';
+  document.getElementById(id).innerHTML = result;
+}
+function benchmark(id, f) {
+  setResult(id, timed(function() { return f(50000000); }));
+}
+
+// ~110 ms
+benchmark('trampoline', evenTrampoline);
+// ~15 ms
+benchmark('simple', evenLoopSimple);
+benchmark('greedy', evenLoopGreedy);
+// ~20 ms
+benchmark('switch', evenLoopSwitchDispatch);
+benchmark('label', evenLoopLabelDispatch);
+// stack overflow
+//benchmark('initial', even);
+</script>
