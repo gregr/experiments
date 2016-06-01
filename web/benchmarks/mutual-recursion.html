@@ -240,10 +240,8 @@ function reducedLabelDispatch(n) {
 
 function loopSimple(n) {
   var result = 0;
-  while (n !== 0) {
-    n -= 1;
-    result -= 1;
-    if (result < 0) result = 2;
+  while (n--) {
+    if (--result < 0) result = 2;
   }
   return result;
 }
