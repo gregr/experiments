@@ -1,9 +1,29 @@
 <meta charset="utf-8"/>
-<p>Simple trampoline (with allocation): <span id="trampoline1">Computing ...</span></p>
-<p>Simple loop: <span id="loop1">Computing ...</span></p>
-<p>Comparison loop with continuation no-op: <span id="loop2">Computing ...</span></p>
-<p>Comparison loop with continuation no-op and allocation: <span id="loop3">Computing ...</span></p>
-<p>Optimized trampoline (without allocation): <span id="trampoline2">Computing ...</span></p>
+<p>iteration (ms)</p>
+<table>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>Simple trampoline (with allocation)</td></tr>
+        <tr><td>Simple loop</td></tr>
+        <tr><td>Comparison loop with continuation no-op</td></tr>
+        <tr><td>Comparison loop with continuation no-op and allocation</td></tr>
+        <tr><td>Optimized trampoline (without allocation)</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="trampoline1"><td>Computing ...</td></tr>
+        <tr id="loop1"><td>Computing ...</td></tr>
+        <tr id="loop2"><td>Computing ...</td></tr>
+        <tr id="loop3"><td>Computing ...</td></tr>
+        <tr id="trampoline2"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
 
 <script>
 function toZeroCPSAlloc(count) {
@@ -35,7 +55,7 @@ function benchTrampolineAlloc(count) {
 }
 
 function benchTrampoline(count) {
-  var toZeroCPSResult = new Array(2)
+  var toZeroCPSResult = [undefined, undefined];
   var cont = toZeroCPS;
   var args = count;
   while (args !== null) {
@@ -54,7 +74,7 @@ function benchLoop(count) {
 }
 
 function benchLoopNop1(count) {
-  var toZeroCPSResult = new Array(2)
+  var toZeroCPSResult = [undefined, undefined];
   var cont = toZeroCPS;
   var args = 10;
   while (count > 0) {
@@ -70,7 +90,7 @@ function benchLoopNop1(count) {
 function benchLoopNop2(count) {
   var irrelevant = [undefined];
   irrelevant.pop();
-  var toZeroCPSResult = new Array(2)
+  var toZeroCPSResult = [undefined, undefined];
   var cont = toZeroCPS;
   var args = 10;
   while (count > 0) {
@@ -92,13 +112,35 @@ function timed(f) {
   return [result, elapsed];
 }
 
-function setResult(id, timeResult) {
-  var result = timeResult[1].toString() + ' ms';
+function setResult(id, result) {
   document.getElementById(id).innerHTML = result;
 }
 
 function benchmark(id, f) {
-  setResult(id, timed(function() { return f(10000000); }));
+  var trialCount = 5;
+  var scores = new Array(trialCount);
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(10000000); })[1];
+  }
+  var sum = 0;
+  var max = 0;
+  var min = 1 << 30;
+  for (var trial = trialCount; trial--;) {
+    score = scores[trial];
+    sum += score;
+    max = Math.max(max, score);
+    min = Math.min(min, score);
+  }
+  var avg = sum / trialCount;
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  setResult(id, result);
 }
 
 // ~125 ms
