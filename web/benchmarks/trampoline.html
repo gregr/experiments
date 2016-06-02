@@ -26,6 +26,8 @@
 </table>
 
 <script>
+'use strict';
+
 function toZeroCPSAlloc(count) {
   if (count === 0) {
     return ['done', null];
@@ -126,7 +128,7 @@ function benchmark(id, f) {
   var max = 0;
   var min = 1 << 30;
   for (var trial = trialCount; trial--;) {
-    score = scores[trial];
+    var score = scores[trial];
     sum += score;
     max = Math.max(max, score);
     min = Math.min(min, score);
@@ -139,7 +141,7 @@ function benchmark(id, f) {
   }
   // assumes normal distribution; probably poor statistics
   var dev = Math.sqrt(sqdiffs / trialCount);
-  result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  var result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
   setResult(id, result);
 }
 

@@ -26,6 +26,8 @@
 </table>
 
 <script>
+'use strict';
+
 function initial(xs) {
   var result = [];
   var len = xs.length;
@@ -134,7 +136,7 @@ function delimccClosure(xs) {
 function delimccSwitch(xs) {
   var len = xs.length;
   var result = [];
-  var i, k, x, y, z;
+  var ireg, i, k, x, y, z;
   var reg = new Array(3);
   var reset = [1];
   var stack = [0, 1, 2, 2, 3, 1, 3, 0];  // pc, pc, pc, 2, pc, 1, pc, 0
@@ -200,7 +202,7 @@ function benchmark(id, f) {
   var max = 0;
   var min = 1 << 30;
   for (var trial = trialCount; trial--;) {
-    score = scores[trial];
+    var score = scores[trial];
     sum += score;
     max = Math.max(max, score);
     min = Math.min(min, score);
@@ -213,7 +215,7 @@ function benchmark(id, f) {
   }
   // assumes normal distribution; probably poor statistics
   var dev = Math.sqrt(sqdiffs / trialCount);
-  result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  var result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
   setResult(id, result);
 }
 
