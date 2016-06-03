@@ -1,0 +1,150 @@
+<meta charset="utf-8"/>
+<p>stack push</p>
+<table>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>individual 1</td></tr>
+        <tr><td>chunked 1</td></tr>
+        <tr><td>individual 2</td></tr>
+        <tr><td>chunked 2</td></tr>
+        <tr><td>individual 10</td></tr>
+        <tr><td>chunked 10</td></tr>
+        <tr><td>individual 10 retry 5</td></tr>
+        <tr><td>chunked 10 retry 5</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="individual1"><td>Computing ...</td></tr>
+        <tr id="chunked1"><td>Computing ...</td></tr>
+        <tr id="individual2"><td>Computing ...</td></tr>
+        <tr id="chunked2"><td>Computing ...</td></tr>
+        <tr id="individual10"><td>Computing ...</td></tr>
+        <tr id="chunked10"><td>Computing ...</td></tr>
+        <tr id="individual10retry5"><td>Computing ...</td></tr>
+        <tr id="chunked10retry5"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<script>
+'use strict';
+
+function individual1(count) {
+  var stack = [];
+  while (count--) {
+    stack.push(1);
+  }
+}
+
+function individual2(count) {
+  var stack = [];
+  while (count--) {
+    stack.push(1, 1);
+  }
+}
+
+function chunked1(count) {
+  var stack = [];
+  while (count--) {
+    stack.push([1]);
+  }
+}
+
+function chunked2(count) {
+  var stack = [];
+  while (count--) {
+    stack.push([1, 1]);
+  }
+}
+
+function individual10(count) {
+  var stack = [];
+  while (count--) {
+    stack.push(1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+  }
+}
+
+function chunked10(count) {
+  var stack = [];
+  while (count--) {
+    stack.push([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  }
+}
+
+function individual10retry5(count) {
+  var stack = [];
+  var retry = 5;
+  while (retry--) {
+    var n = count;
+    while (n--) {
+      stack.push(1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    }
+    stack.length = 0;
+  }
+}
+
+function chunked10retry5(count) {
+  var stack = [];
+  var n = count;
+  var retry = 5;
+  while (retry--) {
+    var n = count;
+    while (n--) {
+      stack.push([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    }
+    stack.length = 0;
+  }
+}
+
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, result) {
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f) {
+  var trialCount = 5;
+  var scores = new Array(trialCount);
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(100000); })[1];
+  }
+  var sum = 0;
+  var max = 0;
+  var min = 1 << 30;
+  for (var trial = trialCount; trial--;) {
+    var score = scores[trial];
+    sum += score;
+    max = Math.max(max, score);
+    min = Math.min(min, score);
+  }
+  var avg = sum / trialCount;
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  var result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  setResult(id, result);
+}
+
+benchmark('individual1', individual1);
+benchmark('chunked1', chunked1);
+benchmark('individual2', individual2);
+benchmark('chunked2', chunked2);
+benchmark('individual10', individual10);
+benchmark('chunked10', chunked10);
+benchmark('individual10retry5', individual10retry5);
+benchmark('chunked10retry5', chunked10retry5);
+</script>
