@@ -7,10 +7,13 @@
         <tr><th>name</th></tr>
         <tr><td>individual 1</td></tr>
         <tr><td>chunked 1</td></tr>
+        <tr><td>cons 1</td></tr>
         <tr><td>individual 2</td></tr>
         <tr><td>chunked 2</td></tr>
+        <tr><td>cons 2</td></tr>
         <tr><td>individual 10</td></tr>
         <tr><td>chunked 10</td></tr>
+        <tr><td>cons 10</td></tr>
         <tr><td>individual 10 retry 5</td></tr>
         <tr><td>chunked 10 retry 5</td></tr>
     </table>
@@ -20,10 +23,13 @@
         <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
         <tr id="individual1"><td>Computing ...</td></tr>
         <tr id="chunked1"><td>Computing ...</td></tr>
+        <tr id="cons1"><td>Computing ...</td></tr>
         <tr id="individual2"><td>Computing ...</td></tr>
         <tr id="chunked2"><td>Computing ...</td></tr>
+        <tr id="cons2"><td>Computing ...</td></tr>
         <tr id="individual10"><td>Computing ...</td></tr>
         <tr id="chunked10"><td>Computing ...</td></tr>
+        <tr id="cons10"><td>Computing ...</td></tr>
         <tr id="individual10retry5"><td>Computing ...</td></tr>
         <tr id="chunked10retry5"><td>Computing ...</td></tr>
       </table>
@@ -59,6 +65,27 @@ function chunked2(count) {
   var stack = [];
   while (count--) {
     stack.push([1, 1]);
+  }
+}
+
+function cons1(count) {
+  var stack = null;
+  while (count--) {
+    stack = [[1], stack];
+  }
+}
+
+function cons2(count) {
+  var stack = null;
+  while (count--) {
+    stack = [[1, 1], stack];
+  }
+}
+
+function cons10(count) {
+  var stack = null;
+  while (count--) {
+    stack = [[1, 1, 1, 1, 1], stack];
   }
 }
 
@@ -141,10 +168,13 @@ function benchmark(id, f) {
 
 benchmark('individual1', individual1);
 benchmark('chunked1', chunked1);
+benchmark('cons1', cons1);
 benchmark('individual2', individual2);
 benchmark('chunked2', chunked2);
+benchmark('cons2', cons2);
 benchmark('individual10', individual10);
 benchmark('chunked10', chunked10);
+benchmark('cons10', cons10);
 benchmark('individual10retry5', individual10retry5);
 benchmark('chunked10retry5', chunked10retry5);
 </script>
