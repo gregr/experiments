@@ -16,6 +16,7 @@
         <tr><td>cons 10</td></tr>
         <tr><td>individual 10 retry 5</td></tr>
         <tr><td>chunked 10 retry 5</td></tr>
+        <tr><td>array buffer 10</td></tr>
     </table>
     </td>
     <td>
@@ -32,6 +33,7 @@
         <tr id="cons10"><td>Computing ...</td></tr>
         <tr id="individual10retry5"><td>Computing ...</td></tr>
         <tr id="chunked10retry5"><td>Computing ...</td></tr>
+        <tr id="buffer10"><td>Computing ...</td></tr>
       </table>
     </td>
   </tr>
@@ -100,6 +102,13 @@ function chunked10(count) {
   var stack = [];
   while (count--) {
     stack.push([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  }
+}
+
+function buffer10(count) {
+  var stack = [];
+  while (count--) {
+    stack.push(new ArrayBuffer(40));
   }
 }
 
@@ -177,4 +186,5 @@ benchmark('chunked10', chunked10);
 benchmark('cons10', cons10);
 benchmark('individual10retry5', individual10retry5);
 benchmark('chunked10retry5', chunked10retry5);
+benchmark('buffer10', buffer10);
 </script>
