@@ -108,7 +108,7 @@ function buildMachine(inputRegs, outputReg, otherRegs, entry, blocks) {
   full.push('case 0: return ' + regname(outputReg) + ';');
   for (var block, i=0; block = blocks[i++];) {
     var body = ['case ' + i.toString() + ': '];
-    function assembleInstrs(instrs) {
+    var assembleInstrs = function(instrs) {
       for (var instr, j=0; instr = instrs[j]; ++j) {
         switch (instr[0]) {
           case 'assign':
@@ -124,7 +124,7 @@ function buildMachine(inputRegs, outputReg, otherRegs, entry, blocks) {
           default: throw ['bad instr', instr];
         }
       }
-    }
+    };
     assembleInstrs(block[1]);
     body.push('break;');
     full.push(body.join('\n'));
