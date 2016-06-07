@@ -7,6 +7,8 @@
         <tr><th>name</th></tr>
         <tr><td>factorial naive recursion</td></tr>
         <tr><td>factorial accumulator</td></tr>
+        <tr><td>fibonacci naive recursion (33)</td></tr>
+        <tr><td>fibonacci accumulator (1 million)</td></tr>
     </table>
     </td>
     <td>
@@ -14,6 +16,8 @@
         <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
         <tr id="factret"><td>Computing ...</td></tr>
         <tr id="factacc"><td>Computing ...</td></tr>
+        <tr id="fiboslow"><td>Computing ...</td></tr>
+        <tr id="fiboacc"><td>Computing ...</td></tr>
       </table>
     </td>
   </tr>
@@ -161,6 +165,56 @@ var factorialReturn = buildMachine(['n'], 'result', ['return', 'saved', 'restore
     jump(reg('return'))
     ]]]);
 
+var fiboAcc = buildMachine(['n'], 'result', ['new', 'next'], 'main',
+  [['main', [
+    assign('result', constant('0')),
+    assign('next', constant('1')),
+    jump(cont('loop'))
+    ]],
+    ['loop', [
+    branch(eq(constant('0'), reg('n')), halt()),
+    assign('new', add(reg('result'), reg('next'))),
+    assign('result', reg('next')),
+    assign('next', reg('new')),
+    assign('n', subtract(reg('n'), constant('1'))),
+    jump(cont('loop'))
+    ]]]);
+
+var fiboSlow = buildMachine(['n'], 'result', ['result0', 'return', 'saved', 'restored'], 'entry',
+  [['entry', [
+    assign('return', halt()),
+    jump(cont('main'))
+    ]],
+   ['main', [
+    branch(eq(constant('0'), reg('n')), cont('base-return-0')),
+    branch(eq(constant('1'), reg('n')), cont('base-return-1')),
+    save('saved', ['return', 'n']),
+    assign('return', cont('main-return-0')),
+    assign('n', subtract(reg('n'), constant('1'))),
+    jump(cont('main'))
+    ]],
+   ['main-return-0', [
+    restore('saved', 'restored', ['return', 'n']),
+    assign('result0', reg('result')),
+    save('saved', ['return', 'result0']),
+    assign('return', cont('main-return-1')),
+    assign('n', subtract(reg('n'), constant('2'))),
+    jump(cont('main'))
+    ]],
+   ['main-return-1', [
+    restore('saved', 'restored', ['return', 'result0']),
+    assign('result', add(reg('result'), reg('result0'))),
+    jump(reg('return'))
+    ]],
+   ['base-return-0', [
+    assign('result', constant('0')),
+    jump(reg('return'))
+    ]],
+   ['base-return-1', [
+    assign('result', constant('1')),
+    jump(reg('return'))
+    ]]]);
+
 function timed(f) {
   var start = Date.now();
   var result = f();
@@ -201,4 +255,6 @@ function benchmark(id, f, arg) {
 
 benchmark('factret', factorialReturn, 1000000);
 benchmark('factacc', factorialAcc,    1000000);
+benchmark('fiboslow', fiboSlow,       33);
+benchmark('fiboacc', fiboAcc,         1000000);
 </script>
