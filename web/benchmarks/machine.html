@@ -1,0 +1,204 @@
+<meta charset="utf-8"/>
+<p>register machine</p>
+<table>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>factorial naive recursion</td></tr>
+        <tr><td>factorial accumulator</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="factret"><td>Computing ...</td></tr>
+        <tr id="factacc"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<script>
+'use strict';
+
+function subb(instrs) { return ['sub-block', instrs]; }
+function assign(rname, rhs) { return ['assign', rname, rhs]; }
+function branch(cond, dest) { return ['branch', cond, dest]; }
+function jump(dest) { return branch(constant('true'), dest); }
+
+function reg(name) { return ['register', name]; }
+function cont(name) { return ['continuation', name]; }
+function halt() { return ['halt']; }
+function constant(valstr) { return ['constant', valstr]; }
+function eq(a, b) { return ['eq', a, b]; }
+function add(a, b) { return ['add', a, b]; }
+function multiply(a, b) { return ['multiply', a, b]; }
+function subtract(a, b) { return ['subtract', a, b]; }
+function arrayNew(items) { return ['array-new', items]; }
+function arrayGet(arr, idx) { return ['array-get', arr, idx]; }
+
+function save(stack, regs) {
+  var items = [];
+  for (var len=regs.length, i=0; i<len; ++i) { items.push(reg(regs[i])); }
+  return assign(stack, arrayNew([arrayNew(items), reg(stack)]));
+}
+function restore(stack, restoreFrame, regs) {
+  var instrs = [
+    assign(restoreFrame, arrayGet(reg(stack), constant('0'))),
+    assign(stack, arrayGet(reg(stack), constant('1')))
+      ];
+  for (var len=regs.length, i=0; i<len; ++i) {
+    instrs.push(assign(regs[i], arrayGet(reg(restoreFrame), constant(i.toString()))));
+  }
+  return subb(instrs);
+}
+
+function buildMachine(inputRegs, outputReg, otherRegs, entry, blocks) {
+  function regname(rname) { return 'reg_' + rname; }
+  var params = [];
+  for (var len=inputRegs.length, i=0; i<len; ++i) {
+    params.push(regname(inputRegs[i]));
+  }
+  var internalRegs = [outputReg].concat(otherRegs);
+  var blockToPc = {};
+  for (var block, i=0; block = blocks[i++];) {
+    blockToPc[block[0]] = i.toString();
+  }
+
+  function assembleExpr(expr) {
+    function assembleMany(exprs) {
+      var assembled = [];
+      for (var len=exprs.length, i=0; i<len; ++i) {
+        assembled.push(assembleExpr(exprs[i]));
+      }
+      return assembled;
+    }
+    function assembleBinOp(op) {
+      return '('+assembleExpr(expr[1])+' '+op+' '+assembleExpr(expr[2])+')';
+    }
+    switch (expr[0]) {
+      case 'register': return regname(expr[1]);  // TODO: validate
+      case 'constant': return expr[1];
+      case 'continuation': return blockToPc[expr[1]];
+      case 'halt': return '0';
+      case 'eq': return assembleBinOp('===');
+      case 'add': return assembleBinOp('+');
+      case 'multiply': return assembleBinOp('*');
+      case 'subtract': return assembleBinOp('-');
+      case 'array-new': return '['+assembleMany(expr[1]).join(',')+']';
+      case 'array-get':
+        return assembleExpr(expr[1])+'['+assembleExpr(expr[2])+']';
+      default: throw ['bad expr', expr];
+    }
+  }
+
+  var full = ["'use strict';"];
+  for (var len = internalRegs.length, i=0; i < len; ++i) {
+    full.push('var ' + regname(internalRegs[i]) + ';');
+  }
+  full.push('var pc = ' + blockToPc[entry] + ';');
+  full.push('while (true) { switch (pc) {');
+  full.push('case 0: return ' + regname(outputReg) + ';');
+  for (var block, i=0; block = blocks[i++];) {
+    var body = ['case ' + i.toString() + ': '];
+    function assembleInstrs(instrs) {
+      for (var instr, j=0; instr = instrs[j]; ++j) {
+        switch (instr[0]) {
+          case 'assign':
+            body.push(regname(instr[1]) + ' = ' + assembleExpr(instr[2]) + ';');
+            break;
+          case 'branch':
+            body.push('if (' + assembleExpr(instr[1]) +
+                      ') { pc = ' + assembleExpr(instr[2]) + '; break; }');
+            break;
+          case 'sub-block':
+            assembleInstrs(instr[1]);
+            break;
+          default: throw ['bad instr', instr];
+        }
+      }
+    }
+    assembleInstrs(block[1]);
+    body.push('break;');
+    full.push(body.join('\n'));
+  }
+  full.push(' } }');
+  return Function.apply(null, params.concat([full.join('\n')]));
+}
+
+var factorialAcc = buildMachine(['n'], 'result', [], 'main',
+  [['main', [
+    assign('result', constant('1')),
+    jump(cont('loop'))
+    ]],
+    ['loop', [
+    branch(eq(constant('0'), reg('n')), halt()),
+    assign('result', multiply(reg('n'), reg('result'))),
+    assign('n', subtract(reg('n'), constant('1'))),
+    jump(cont('loop'))
+    ]]]);
+
+var factorialReturn = buildMachine(['n'], 'result', ['return', 'saved', 'restored'], 'entry',
+  [['entry', [
+    assign('return', halt()),
+    jump(cont('main'))
+    ]],
+   ['main', [
+    branch(eq(constant('0'), reg('n')), cont('base-return')),
+    save('saved', ['return', 'n']),
+    assign('return', cont('main-return')),
+    assign('n', subtract(reg('n'), constant('1'))),
+    jump(cont('main'))
+    ]],
+   ['main-return', [
+    restore('saved', 'restored', ['return', 'n']),
+    assign('result', multiply(reg('result'), reg('n'))),
+    jump(reg('return'))
+    ]],
+   ['base-return', [
+    assign('result', constant('1')),
+    jump(reg('return'))
+    ]]]);
+
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, result) {
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f, arg) {
+  var trialCount = 5;
+  var scores = new Array(trialCount);
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(arg); })[1];
+  }
+  var sum = 0;
+  var max = 0;
+  var min = 1 << 30;
+  for (var trial = trialCount; trial--;) {
+    var score = scores[trial];
+    sum += score;
+    max = Math.max(max, score);
+    min = Math.min(min, score);
+  }
+  var avg = sum / trialCount;
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  var result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  setResult(id, result);
+}
+
+benchmark('factret', factorialReturn, 1000000);
+benchmark('factacc', factorialAcc,    1000000);
+</script>
