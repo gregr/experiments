@@ -7,9 +7,13 @@
         <tr><th>name</th></tr>
         <tr><td>factorial native 3x</td></tr>
         <tr><td>factorial naive recursion</td></tr>
+        <tr><td>factorial naive recursion optimized 0</td></tr>
+        <tr><td>factorial naive recursion optimized 1</td></tr>
         <tr><td>factorial accumulator</td></tr>
-        <tr><td>fibonacci naive recursion (33)</td></tr>
-        <tr><td>fibonacci accumulator (4 million)</td></tr>
+        <tr><td>factorial accumulator optimized 0</td></tr>
+        <tr><td>factorial accumulator optimized 1</td></tr>
+        <tr><td>fibonacci naive recursion (only 33)</td></tr>
+        <tr><td>fibonacci accumulator</td></tr>
     </table>
     </td>
     <td>
@@ -17,7 +21,11 @@
         <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
         <tr id="factnat"><td>Computing ...</td></tr>
         <tr id="factret"><td>Computing ...</td></tr>
+        <tr id="factretopt0"><td>Computing ...</td></tr>
+        <tr id="factretopt1"><td>Computing ...</td></tr>
         <tr id="factacc"><td>Computing ...</td></tr>
+        <tr id="factaccopt0"><td>Computing ...</td></tr>
+        <tr id="factaccopt1"><td>Computing ...</td></tr>
         <tr id="fiboslow"><td>Computing ...</td></tr>
         <tr id="fiboacc"><td>Computing ...</td></tr>
       </table>
@@ -173,6 +181,103 @@ var factorialReturn = buildMachine(['n'], 'result', ['return', 'saved', 'restore
     jump(reg('return'))
     ]]]);
 
+var factorialAccOptimized0 = (function(reg_n
+/**/) {
+'use strict';
+var reg_result;
+var pc = 1;
+while (true) { switch (pc) {
+case 0: return reg_result;
+case 1:
+reg_result = 1;
+if (true) { pc = 2; break; }
+break;
+case 2:
+while (true) {
+if ((0 === reg_n)) { pc = 0; break; }
+reg_result = (reg_n * reg_result);
+reg_n = (reg_n - 1);
+}
+break;
+ } }
+});
+
+var factorialAccOptimized1 = (function(reg_n
+/**/) {
+'use strict';
+var reg_result;
+var pc = 1;
+reg_result = 1;
+while (true) {
+if ((0 === reg_n)) { return reg_result; }
+reg_result = (reg_n * reg_result);
+reg_n = (reg_n - 1);
+}
+});
+
+var factorialReturnOptimized0 = (function(reg_n
+/**/) {
+'use strict';
+var reg_result;
+var reg_return;
+var reg_saved;
+var reg_restored;
+var pc = 1;
+while (true) { switch (pc) {
+case 0: return reg_result;
+case 1:
+reg_return = 0;
+if (true) { pc = 2; break; }
+break;
+case 2:
+while (true) {
+if ((0 === reg_n)) { pc = 4; break; }
+reg_saved = [[reg_return,reg_n],reg_saved];
+reg_return = 3;
+reg_n = (reg_n - 1);
+}
+break;
+case 3:
+reg_restored = reg_saved[0];
+reg_saved = reg_saved[1];
+reg_return = reg_restored[0];
+reg_n = reg_restored[1];
+reg_result = (reg_result * reg_n);
+if (true) { pc = reg_return; break; }
+break;
+case 4:
+reg_result = 1;
+if (true) { pc = reg_return; break; }
+break;
+ } }
+});
+
+var factorialReturnOptimized1 = (function(reg_n
+/**/) {
+'use strict';
+var reg_result;
+var reg_return;
+var reg_saved;
+var reg_restored;
+var pc = 1;
+reg_return = 0;
+while (true) {
+if ((0 === reg_n)) { reg_result = 1; pc = reg_return; break; }
+reg_saved = [[reg_return,reg_n],reg_saved];
+reg_return = 3;
+reg_n = (reg_n - 1);
+}
+while (pc === 3) {
+reg_restored = reg_saved[0];
+reg_saved = reg_saved[1];
+reg_return = reg_restored[0];
+reg_n = reg_restored[1];
+reg_result = (reg_result * reg_n);
+pc = reg_return;
+}
+return reg_result;
+});
+
 var fiboAcc = buildMachine(['n'], 'result', ['new', 'next'], 'main',
   [['main', [
     assign('result', constant('0')),
@@ -261,9 +366,13 @@ function benchmark(id, f, arg) {
   setResult(id, result);
 }
 
-benchmark('factnat', factorialNative, 12000000);
-benchmark('factret', factorialReturn, 4000000);
-benchmark('factacc', factorialAcc,    4000000);
-benchmark('fiboslow', fiboSlow,       33);
-benchmark('fiboacc', fiboAcc,         4000000);
+benchmark('factnat', factorialNative,               6000000);
+benchmark('factret', factorialReturn,               2000000);
+benchmark('factretopt0', factorialReturnOptimized0, 2000000);
+benchmark('factretopt1', factorialReturnOptimized1, 2000000);
+benchmark('factacc', factorialAcc,                  2000000);
+benchmark('factaccopt0', factorialAccOptimized0,    2000000);
+benchmark('factaccopt1', factorialAccOptimized1,    2000000);
+benchmark('fiboslow', fiboSlow,                     33);
+benchmark('fiboacc', fiboAcc,                       2000000);
 </script>
