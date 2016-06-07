@@ -5,15 +5,17 @@
     <td>
       <table>
         <tr><th>name</th></tr>
+        <tr><td>factorial native 3x</td></tr>
         <tr><td>factorial naive recursion</td></tr>
         <tr><td>factorial accumulator</td></tr>
         <tr><td>fibonacci naive recursion (33)</td></tr>
-        <tr><td>fibonacci accumulator (1 million)</td></tr>
+        <tr><td>fibonacci accumulator (4 million)</td></tr>
     </table>
     </td>
     <td>
       <table>
         <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="factnat"><td>Computing ...</td></tr>
         <tr id="factret"><td>Computing ...</td></tr>
         <tr id="factacc"><td>Computing ...</td></tr>
         <tr id="fiboslow"><td>Computing ...</td></tr>
@@ -129,6 +131,12 @@ function buildMachine(inputRegs, outputReg, otherRegs, entry, blocks) {
   }
   full.push(' } }');
   return Function.apply(null, params.concat([full.join('\n')]));
+}
+
+function factorialNative(n) {
+  var result = 1;
+  for(; n>0; --n) { result *= n; }
+  return result;
 }
 
 var factorialAcc = buildMachine(['n'], 'result', [], 'main',
@@ -253,8 +261,9 @@ function benchmark(id, f, arg) {
   setResult(id, result);
 }
 
-benchmark('factret', factorialReturn, 1000000);
-benchmark('factacc', factorialAcc,    1000000);
+benchmark('factnat', factorialNative, 12000000);
+benchmark('factret', factorialReturn, 4000000);
+benchmark('factacc', factorialAcc,    4000000);
 benchmark('fiboslow', fiboSlow,       33);
-benchmark('fiboacc', fiboAcc,         1000000);
+benchmark('fiboacc', fiboAcc,         4000000);
 </script>
