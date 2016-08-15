@@ -194,6 +194,7 @@
 #### Event handling
 
 * requestAnimationFrame
+* [event reference](https://developer.mozilla.org/en-US/docs/Web/Events)
 * [http://www.quirksmode.org/js/contents.html#events](http://www.quirksmode.org/js/contents.html#events)
 * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
 
@@ -235,7 +236,7 @@
 * device agnosticism
     * onactivate/onfocus/oninput/onchange vs. onclick/onmouseX/onkeypress
     * accessibility: optional keyboard versions of mouse uses
-* explicit event interception: stopPopagation the default
+* explicit event interception: stopPropagation the default
 
 ### Tools
 
