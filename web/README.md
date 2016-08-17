@@ -197,6 +197,7 @@
 * [event reference](https://developer.mozilla.org/en-US/docs/Web/Events)
 * [http://www.quirksmode.org/js/contents.html#events](http://www.quirksmode.org/js/contents.html#events)
 * [http://eloquentjavascript.net/14_event.html](http://eloquentjavascript.net/14_event.html)
+* [A crash course in how DOM events work](http://blog.bitovi.com/a-crash-course-in-how-dom-events-work/)
 
 #### Web workers
 
