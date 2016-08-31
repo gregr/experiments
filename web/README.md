@@ -224,6 +224,7 @@
 * [elements to attributes](https://simon.html5.org/html-elements)
 * [attributes to elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes)
 * [standard custom data attributes](https://stackoverflow.com/a/18227550)
+* [efficient custom data attributes](http://calendar.perfplanet.com/2012/efficient-html5-data-attributes/)
 
 #### CSS Properties
 
