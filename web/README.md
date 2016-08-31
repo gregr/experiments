@@ -223,6 +223,7 @@
 
 * [elements to attributes](https://simon.html5.org/html-elements)
 * [attributes to elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes)
+* [standard custom data attributes](https://stackoverflow.com/a/18227550)
 
 #### CSS Properties
 
