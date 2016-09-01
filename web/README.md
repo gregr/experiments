@@ -5,6 +5,7 @@
 * [https://platform.html5.org/](https://platform.html5.org/)
 
 [W3C Markup Validator](https://validator.w3.org/)
+[HTML5 Security Cheat Sheet](https://www.owasp.org/index.php/HTML5_Security_Cheat_Sheet)
 
 * [https://google.github.io/styleguide/htmlcssguide.xml](https://google.github.io/styleguide/htmlcssguide.xml)
 * [https://google.github.io/styleguide/javascriptguide.xml](https://google.github.io/styleguide/javascriptguide.xml)
