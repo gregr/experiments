@@ -76,6 +76,7 @@
 #### WebRTC
 
 * peer-to-peer (browser to browser)
+* [Data Channels](http://www.html5rocks.com/en/tutorials/webrtc/datachannels/)
 * [https://stackoverflow.com/questions/4118272/do-websockets-allow-for-p2p-browser-to-browser-communication](https://stackoverflow.com/questions/4118272/do-websockets-allow-for-p2p-browser-to-browser-communication)
 * [http://peerjs.com/](http://peerjs.com/)
 * [https://github.com/js-platform/p2p](https://github.com/js-platform/p2p)
