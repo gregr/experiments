@@ -51,6 +51,11 @@
 * [https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB)
 * [http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/](http://blog.vanamco.com/indexeddb-fundamentals-plus-a-indexeddb-example-tutorial/)
 
+#### Shared state for multiple tabs
+
+* [Sharing sessionStorage](https://blog.guya.net/2015/06/12/sharing-sessionstorage-between-tabs-for-secure-multi-tab-authentication/)
+* [Implementation of synchronization primitives over HTML5 local storage](https://stackoverflow.com/a/22283455)
+
 ### Communication
 
 #### XHR
