@@ -86,6 +86,10 @@
 
 [http://www.html5rocks.com/en/tutorials/getusermedia/intro/](http://www.html5rocks.com/en/tutorials/getusermedia/intro/)
 
+#### Visibility
+
+* [PageVisibility API](http://www.html5rocks.com/en/tutorials/pagevisibility/intro/)
+
 #### Webcam
 
 * [https://github.com/jhuckaby/webcamjs/blob/master/webcam.js](https://github.com/jhuckaby/webcamjs/blob/master/webcam.js)
