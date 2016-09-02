@@ -41,7 +41,8 @@
 
 #### Service workers
 
-[https://jakearchibald.github.io/isserviceworkerready/resources.html](https://jakearchibald.github.io/isserviceworkerready/resources.html)
+[Is Service Worker Ready?](https://jakearchibald.github.io/isserviceworkerready/resources.html)
+[Introduction to Service Worker](https://developers.google.com/web/fundamentals/primers/service-worker/)
 
 #### IndexedDB
 
