@@ -107,7 +107,7 @@
 #### Graphics
 
 * filters
-* canvas
+* [Painting with The HTML5 Canvas](https://gamealchemist.wordpress.com/2014/11/30/203/)
 
 ##### WebGL
 
