@@ -199,6 +199,7 @@
 * [https://kangax.github.io/compat-table/es6/](https://kangax.github.io/compat-table/es6/)
 * [Promise PolyFill](https://www.promisejs.org/)
 * [Tail-call optimization without trampoline](http://glat.info/jscheck/tomrec.html)
+* [JavaScript has a Unicode problem](https://mathiasbynens.be/notes/javascript-unicode)
 
 #### Event handling
 
