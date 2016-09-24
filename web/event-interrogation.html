@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<style>
+html {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  height: 100%;
+  margin: 0;
+}
+#main {
+  height: 100%;
+  background-color: #cccccc;
+}
+</style>
+<div id="main">
+  <p>some text here</p>
+  <textarea></textarea>
+</div>
+<script>
+function handleDefault(ev) {
+  ev.stopPropagation();
+  console.log(ev.type);
+  console.log(ev);
+  if (ev.type == 'input') {
+    console.log('input: ', ev.target.value);
+  }
+  if (ev.type == 'change') {
+    console.log('change: ', ev.target.value);
+  }
+  if (ev.type == 'scroll') {
+    console.log('scroll: ', ev.pageX, ev.pageY);
+  }
+  if (ev.type === 'paste') {
+    //ev.preventDefault();
+    console.log('pasted: ', ev.clipboardData.getData('text/plain'));
+  }
+}
+var eventHandlers = [
+];
+var eventNames = [
+'input', 'change', 'click', 'select',// 'resize',
+  'scroll', 'focus', 'blur', 'keydown', 'keyup', 'keypress', 'mousedown', 'mouseup', 'mousemove', 'mouseover', 'mouseout', 'contextmenu', 'wheel', 'dragstart', 'dragend', 'dragenter', 'dragleave', 'drop', 'touchstart', 'touchmove', 'touchend', 'touchcancel', 'copy', 'cut', 'paste', 'SVGZoom', 'SVGScroll', 'SVGResize'
+];
+function handleEvents(node, handlers) {
+  for (var i = 0, ename; ename = handlers[i]; ++i) {
+    node.addEventListener(ename, handleDefault, true);
+  }
+  //for (var i = 0, handler; handler = handlers[i]; ++i) {
+  //  node.addEventListener(handler[0], handler[1], true);
+  //}
+  //[].forEach.call(handlers, function (handler) {
+  //    });
+  //for (var i = 0, len = handlers.length; i < len; ++i) {
+  //  var handler = handlers[i];
+  //  node.addEventListener('', , true);
+  //}
+}
+
+// resize event must be handled/propagated by window
+handleEvents(document.getElementById('main'), eventNames);
+handleEvents(window, ['resize']);
+
+// Event
+// input, change
+// target, currentTarget, type, timeStamp, preventDefault, stopPropagation
+
+// UIEvent
+// click, select, resize, scroll
+// pageX/Y?
+
+// FocusEvent
+// focus, blur
+// relatedTarget
+
+// KeyboardEvent
+// keydown, keyup, keypress?
+// code, key, repeat
+
+// MouseEvent
+// mousedown, mouseup, mousemove, mouseover, mouseout, contextmenu
+// button, buttons, clientX/Y, screenX/Y, offsetX/Y, pageX/Y, relatedTarget
+
+// WheelEvent
+// wheel
+// deltaX/Y/Z, deltaMode
+
+// DragEvent
+// dragstart, dragend, dragenter, dragleave, drop
+// dataTransfer
+
+// TouchEvent
+// touchstart, touchmove, touchend, touchcancel
+// touches, targetTouches, changedTouches
+
+// PointerEvent?
+// pointerover, pointerenter, pointerdown, pointermove, pointerup, pointercancel, pointerleave, gotpointercapture, lostpointercapture
+// pointerId, width, height, pressure, tiltX/Y, pointerType, isPrimary
+
+// ClipboardEvent
+// copy, cut, paste
+// clipboardData
+
+// SVGEvent
+// SVGZoom, SVGScroll, SVGResize
+
+// accessibility pairings
+// mouseover, focus
+// mouseout, blur
+// mousedown, keydown
+// mouseup, keyup
+</script>
