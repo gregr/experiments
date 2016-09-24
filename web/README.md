@@ -221,6 +221,13 @@
 * [http://www.quirksmode.org/js/keys.html](http://www.quirksmode.org/js/keys.html)
 * [http://www.cambiaresearch.com/articles/15/javascript-key-codes](http://www.cambiaresearch.com/articles/15/javascript-key-codes)
 
+#### Security
+
+* [OWASP XSS Prevention Rules](https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet#RULE_.233_-_JavaScript_Escape_Before_Inserting_Untrusted_Data_into_HTML_JavaScript_Data_Values)
+* [Misuse of DOM text methods](http://benv.ca/2012/10/02/you-are-probably-misusing-DOM-text-methods/)
+* [Automatic charset detection issue](http://wonko.com/post/html-escaping)
+* [Mustache escaping](https://github.com/janl/mustache.js/blob/cd06b22dabdaeffe3e4c74ee02bd492a11bbb740/mustache.js#L71)
+
 ### Misc
 
 * [http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html](http://apress.jensimmons.com/v5/pro-html5-programming/ch0.html)
