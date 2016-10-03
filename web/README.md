@@ -228,6 +228,7 @@
 * [Misuse of DOM text methods](http://benv.ca/2012/10/02/you-are-probably-misusing-DOM-text-methods/)
 * [Automatic charset detection issue](http://wonko.com/post/html-escaping)
 * [Mustache escaping](https://github.com/janl/mustache.js/blob/cd06b22dabdaeffe3e4c74ee02bd492a11bbb740/mustache.js#L71)
+* [What to escape in a script element](https://stackoverflow.com/questions/6908866/what-exactly-do-i-have-to-escape-inside-a-script-element)
 
 ### Misc
 
