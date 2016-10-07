@@ -221,6 +221,8 @@
 * [https://stackoverflow.com/questions/16050762/jquery-contenteditable-new-paragraph-on-keypress-works-on-original-but-not-g](https://stackoverflow.com/questions/16050762/jquery-contenteditable-new-paragraph-on-keypress-works-on-original-but-not-g)
 * [http://www.quirksmode.org/js/keys.html](http://www.quirksmode.org/js/keys.html)
 * [http://www.cambiaresearch.com/articles/15/javascript-key-codes](http://www.cambiaresearch.com/articles/15/javascript-key-codes)
+* [Why ContentEditable is Terrible](https://medium.engineering/why-contenteditable-is-terrible-122d8a40e480)
+* [Faking an editable control in browser JavaScript](http://marijnhaverbeke.nl/blog/browser-input-reading.html)
 
 #### Security
 
