@@ -1,0 +1,129 @@
+<meta charset="utf-8"/>
+<p>iteration (ms)</p>
+<table>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>Comparing numbers</td></tr>
+        <tr><td>Comparing 1-char literal strings</td></tr>
+        <tr><td>Comparing multi-char literal strings</td></tr>
+        <tr><td>Comparing multi-char non-literal strings</td></tr>
+        <tr><td>Comparing multi-char interned strings</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="number"><td>Computing ...</td></tr>
+        <tr id="string1"><td>Computing ...</td></tr>
+        <tr id="string2"><td>Computing ...</td></tr>
+        <tr id="string3"><td>Computing ...</td></tr>
+        <tr id="string4"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<script>
+'use strict';
+
+function numberComparison(count) {
+  while (count > 0) {
+    97 === 98;
+    97 === 97;
+    count = count - 1;
+  }
+}
+
+function stringComparison1(count) {
+  while (count > 0) {
+    'a' === 'b';
+    'a' === 'a';
+    count = count - 1;
+  }
+}
+
+function stringComparison2(count) {
+  while (count > 0) {
+    'ab123456789987654321d' === 'ba987654321123456789d';
+    'ab123456789987654321d' === 'ab123456789987654321d';
+    count = count - 1;
+  }
+}
+
+var ab = 'a' + 'b' + '123456789987654321' + 'd';
+var ba = 'b' + 'a' + '987654321123456789' + 'd';
+
+function stringComparison3(count) {
+  while (count > 0) {
+    ab === ba;
+    ab === ab;
+    count = count - 1;
+  }
+}
+
+var string_interner = {'': true};  // ensure hash table mode
+delete string_interner[''];
+function string_interned(str) {
+  string_interner[str] = true;
+  var interned = Object.keys(string_interner)[0];
+  delete string_interner[interned];
+  return interned;
+}
+
+var abi = string_interned(ab);
+var bai = string_interned(ba);
+
+function stringComparison4(count) {
+  while (count > 0) {
+    abi === bai;
+    abi === abi;
+    count = count - 1;
+  }
+}
+
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, result) {
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f) {
+  var trialCount = 5;
+  var scores = new Array(trialCount);
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(10000000); })[1];
+  }
+  var sum = 0;
+  var max = 0;
+  var min = 1 << 30;
+  for (var trial = trialCount; trial--;) {
+    var score = scores[trial];
+    sum += score;
+    max = Math.max(max, score);
+    min = Math.min(min, score);
+  }
+  var avg = sum / trialCount;
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  var result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  setResult(id, result);
+}
+
+benchmark('number', numberComparison);
+benchmark('string1', stringComparison1);
+benchmark('string2', stringComparison2);
+benchmark('string3', stringComparison3);
+benchmark('string4', stringComparison4);
+</script>
