@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<canvas id="test" width="640" height="480" style="border:1px solid #000000;">
+  If the browser can't display the canvas, this text is rendered.
+</canvas>
+<script>
+var ctx = document.getElementById('test').getContext('2d');
+var text = 'Some graphics';
+var x = 10, y = 20;
+
+var th = 50;
+
+ctx.font = th.toString() + 'px Arial';
+var tw = ctx.measureText(text).width;
+
+ctx.globalAlpha = 0.3;
+ctx.textBaseline = 'alphabetic';
+//ctx.textBaseline = 'bottom';
+
+ctx.fillStyle = 'green';
+ctx.fillRect(x, y, tw, th);
+
+ctx.fillStyle = 'red';
+ctx.fillRect(x, y + th, tw, 10);
+ctx.clearRect(x + 5, y + th + 5, tw - 10, 5);
+
+ctx.globalAlpha = 1;
+ctx.fillStyle = 'orange';
+ctx.fillText(text, x, y + th);
+</script>
