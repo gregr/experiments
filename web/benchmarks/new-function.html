@@ -1,0 +1,99 @@
+<meta charset="utf-8"/>
+<p>new Function (ms)</p>
+<table>
+  <tr>
+    <td>
+      <table>
+        <tr><th>name</th></tr>
+        <tr><td>incg</td></tr>
+        <tr><td>incc</td></tr>
+        <tr><td>incg_new</td></tr>
+        <tr><td>incc_new</td></tr>
+    </table>
+    </td>
+    <td>
+      <table>
+        <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
+        <tr id="incg"><td>Computing ...</td></tr>
+        <tr id="incc"><td>Computing ...</td></tr>
+        <tr id="incg_new"><td>Computing ...</td></tr>
+        <tr id="incc_new"><td>Computing ...</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<script>
+'use strict';
+
+function inc_global() {
+  counter += 1;
+}
+
+function inc_context(ctx) {
+  ctx['counter'] += 1;
+}
+
+function new_param0(code) {
+  return new Function(code);
+}
+
+function new_param1(param, code) {
+  return new Function(param, code);
+}
+
+function timed(f) {
+  var start = Date.now();
+  var result = f();
+  var elapsed = Date.now() - start;
+  return [result, elapsed];
+}
+
+function setResult(id, result) {
+  document.getElementById(id).innerHTML = result;
+}
+
+function benchmark(id, f) {
+  var trialCount = 5;
+  var scores = new Array(trialCount);
+  for (var trial = trialCount; trial--;) {
+    scores[trial] = timed(function() { return f(); })[1];
+  }
+  var sum = 0;
+  var max = 0;
+  var min = 1 << 30;
+  for (var trial = trialCount; trial--;) {
+    var score = scores[trial];
+    sum += score;
+    max = Math.max(max, score);
+    min = Math.min(min, score);
+  }
+  var avg = sum / trialCount;
+  var sqdiffs = 0;
+  for (var trial = trialCount; trial--;) {
+    var diff = avg - scores[trial];
+    sqdiffs += diff * diff
+  }
+  // assumes normal distribution; probably poor statistics
+  var dev = Math.sqrt(sqdiffs / trialCount);
+  var result = '<tr><td>' + sum.toString() + '</td><td>' + avg.toString() + '</td><td>' + min.toString() + '</td><td>' + max.toString() + '</td><td>' + dev.toString() + '</td></tr>';
+  setResult(id, result);
+}
+
+var inc_global_new = new_param0(prompt('global code'));
+var inc_context_new = new_param1(prompt('context param'), prompt('context code'))
+
+var counter = 0;
+var ctx = {'counter': 0};
+
+function incg() { for (var i = 0; i < 100000000; ++i) { inc_global(); }}
+function incg_new() { for (var i = 0; i < 100000000; ++i) { inc_global_new(); }}
+function incc(ctx) { for (var i = 0; i < 100000000; ++i) { inc_context(ctx); }}
+function incc_new(ctx) { for (var i = 0; i < 100000000; ++i) { inc_context_new(ctx); }}
+
+benchmark('incg', function(){ incg(); });
+benchmark('incg_new', function(){ incg_new(); });
+benchmark('incc', function(){ incc(ctx); });
+benchmark('incc_new', function(){ incc_new(ctx); });
+</script>
+
