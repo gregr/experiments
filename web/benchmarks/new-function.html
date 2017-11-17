@@ -7,8 +7,10 @@
         <tr><th>name</th></tr>
         <tr><td>incg</td></tr>
         <tr><td>incc</td></tr>
+        <tr><td>inca</td></tr>
         <tr><td>incg_new</td></tr>
         <tr><td>incc_new</td></tr>
+        <tr><td>inca_new</td></tr>
     </table>
     </td>
     <td>
@@ -16,8 +18,10 @@
         <tr><th>total</th><th>average</th><th>minimum</th><th>maximum</th><th>std deviation</th></tr>
         <tr id="incg"><td>Computing ...</td></tr>
         <tr id="incc"><td>Computing ...</td></tr>
+        <tr id="inca"><td>Computing ...</td></tr>
         <tr id="incg_new"><td>Computing ...</td></tr>
         <tr id="incc_new"><td>Computing ...</td></tr>
+        <tr id="inca_new"><td>Computing ...</td></tr>
       </table>
     </td>
   </tr>
@@ -32,6 +36,10 @@ function inc_global() {
 
 function inc_context(ctx) {
   ctx['counter'] += 1;
+}
+
+function inc_context_array(ctx) {
+  ctx[0] += 1;
 }
 
 function new_param0(code) {
@@ -80,20 +88,26 @@ function benchmark(id, f) {
   setResult(id, result);
 }
 
-var inc_global_new = new_param0(prompt('global code'));
-var inc_context_new = new_param1(prompt('context param'), prompt('context code'))
+var inc_global_new = new_param0(prompt('counter += 1;'));
+var inc_context_new = new_param1(prompt('ctx'), prompt('ctx["counter"] += 1;'))
+var inc_context_array_new = new_param1(prompt('ctxa'), prompt('ctxa[0] += 1;'))
 
 var counter = 0;
 var ctx = {'counter': 0};
+var ctxa = [0];
 
 function incg() { for (var i = 0; i < 100000000; ++i) { inc_global(); }}
 function incg_new() { for (var i = 0; i < 100000000; ++i) { inc_global_new(); }}
 function incc(ctx) { for (var i = 0; i < 100000000; ++i) { inc_context(ctx); }}
 function incc_new(ctx) { for (var i = 0; i < 100000000; ++i) { inc_context_new(ctx); }}
+function inca(ctxa) { for (var i = 0; i < 100000000; ++i) { inc_context_array(ctxa); }}
+function inca_new(ctxa) { for (var i = 0; i < 100000000; ++i) { inc_context_array_new(ctxa); }}
 
 benchmark('incg', function(){ incg(); });
 benchmark('incg_new', function(){ incg_new(); });
 benchmark('incc', function(){ incc(ctx); });
 benchmark('incc_new', function(){ incc_new(ctx); });
+benchmark('inca', function(){ inca(ctxa); });
+benchmark('inca_new', function(){ inca_new(ctxa); });
 </script>
 
