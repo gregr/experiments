@@ -28,7 +28,7 @@
                (lambda (v kk h) (k (handle handlers kk h) v))
                hk henv)
               ((handle rest-handlers hk henv) invoked-name arg k))))
-        hk))))
+        (if arg henv hk)))))
 
 (define (evaluate expr env henv k)
   (match expr
@@ -61,8 +61,9 @@
       (let ((preturn (evaluate return env henv id)))
         (evaluate body env (extend-handlers env henv k handlers)
                   (lambda (henv returned)
-                    ;; (henv #f #f #f) is a hack to extract updated k
-                    (preturn returned (henv #f #f #f) henv)))))
+                    ;; (henv #f #f #f) is a hack to extract updated k.
+                    ;; (henv #f #t #f) is a hack to get the previous henv.
+                    (preturn returned (henv #f #f #f) (henv #f #t #f))))))
 
     (`(invoke ,name ,rand)
       (evaluate rand env henv
@@ -80,7 +81,7 @@
 
 (define (ev expr) (evaluate expr '() henv-initial id))
 
-(ev '(((lambda (x) (lambda (y) x)) '1) '2))
+(ev '(((lambda (x) (lambda (y) x)) (cons 'one '1)) (cons 'two '2)))
 
 (ev
   '((handle
@@ -107,5 +108,38 @@
                 (lambda (_) ((k 'unit) a)))))))
     'initial))
 
+(ev
+  '((handle
+      ((handle
+         ;'here2
 
-;; TODO: test nested handle
+         ;; '(s0 . s1)
+         ;(cons (invoke get0 '#f) (invoke get1 '#f))
+
+         ;; '(new-value0 . new-value1)
+         (((lambda (_)
+             (lambda (_)
+               (cons (invoke get0 '#f) (invoke get1 '#f))))
+           (invoke set0 'new-value0))
+          (invoke set1 'new-value1))
+
+         ;; return
+         (lambda (returned) (lambda (v) returned))
+
+         ((get1 (lambda (_)
+                  (lambda (k)
+                    (lambda (v) ((k v) v)))))
+          (set1 (lambda (a)
+                  (lambda (k)
+                    (lambda (_) ((k 'unit) a)))))))
+       's1)
+
+      (lambda (returned) (lambda (v) returned))
+
+      ((get0 (lambda (_)
+               (lambda (k)
+                 (lambda (v) ((k v) v)))))
+       (set0 (lambda (a)
+               (lambda (k)
+                 (lambda (_) ((k 'unit) a)))))))
+    's0))
