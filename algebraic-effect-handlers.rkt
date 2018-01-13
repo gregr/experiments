@@ -1,7 +1,6 @@
 #lang racket
 
-
-(define (id v) v)
+(define (id h v) v)
 
 (define (extend-env env name value)
   `((,name . ,value) . ,env))
@@ -12,67 +11,69 @@
       (cdr binding)
       (error 'lookup (format "unbound variable: ~s" name)))))
 
-(define (extend-handlers env henv hk ehandlers)
+(define (extend-handlers env henv k ehandlers)
   (define handlers
     (map (lambda (neh)
            `(,(car neh) ,(evaluate (cadr neh) env henv id)))
          ehandlers))
-  (let handle ((handlers handlers))
+  (let handle ((remaining-handlers handlers) (hk k) (henv henv))
     (lambda (invoked-name arg k)
-      (match handlers
-        ('() (henv invoked-name arg k))
-        (`((,name ,handler) . ,rest-handlers)
-          (if (equal? invoked-name name)
-            ;((handler arg id) (lambda (v _) (k v)) id)
-            ;((handler arg id) (lambda (v _) (k v)) hk)
-
-            ;; TODO: restore updated henv around (k v)
-            ((handler arg id) (lambda (v _) (k v)) hk)
-
-            ((handle rest-handlers) invoked-name arg k)))))))
+      (if invoked-name
+        (match remaining-handlers
+          ('() (henv invoked-name arg (lambda (h v)
+                                        (k (handle handlers hk h) v))))
+          (`((,name ,handler) . ,rest-handlers)
+            (if (equal? invoked-name name)
+              ((handler arg id #f)
+               (lambda (v kk h) (k (handle handlers kk h) v))
+               hk henv)
+              ((handle rest-handlers hk henv) invoked-name arg k))))
+        hk))))
 
 (define (evaluate expr env henv k)
   (match expr
-    (`(quote ,datum) (k datum))
+    (`(quote ,datum) (k henv datum))
 
-    ((? symbol? x) (k (lookup env x)))
+    ((? symbol? x) (k henv (lookup env x)))
 
     (`(cons ,ea ,ed)
       (evaluate ea env henv
-                (lambda (a)
+                (lambda (henv a)
                   (evaluate ed env henv
-                            (lambda (d) (k (cons a d)))))))
+                            (lambda (henv d) (k henv (cons a d)))))))
 
-    (`(car ,ec) (evaluate ec env henv (lambda (c) (k (car c)))))
+    (`(car ,ec) (evaluate ec env henv (lambda (h c) (k h (car c)))))
 
-    (`(cdr ,ec) (evaluate ec env henv (lambda (c) (k (cdr c)))))
+    (`(cdr ,ec) (evaluate ec env henv (lambda (h c) (k h (cdr c)))))
 
     (`(if ,ec ,et ,ef)
       (evaluate ec env henv
-                (lambda (c)
+                (lambda (henv c)
                   (if c
                     (evaluate et env henv k)
                     (evaluate ef env henv k)))))
 
     (`(lambda (,x) ,body)
-      (k (lambda (a k)
-           (evaluate body (extend-env env x a) henv k))))
+      (k henv (lambda (a k henv)
+                (evaluate body (extend-env env x a) henv k))))
 
     (`(handle ,body ,return ,handlers)
       (let ((preturn (evaluate return env henv id)))
         (evaluate body env (extend-handlers env henv k handlers)
-                  (lambda (returned) (preturn returned k)))))
+                  (lambda (henv returned)
+                    ;; (henv #f #f #f) is a hack to extract updated k
+                    (preturn returned (henv #f #f #f) henv)))))
 
     (`(invoke ,name ,rand)
       (evaluate rand env henv
-                (lambda (rand-value)
+                (lambda (henv rand-value)
                   (henv name rand-value k))))
 
     (`(,rator ,rand)
       (evaluate rator env henv
-                (lambda (p)
+                (lambda (henv p)
                   (evaluate rand env henv
-                            (lambda (a) (p a k))))))))
+                            (lambda (henv a) (p a k henv))))))))
 
 (define (henv-initial . _)
   (error 'evaluate (format "unhandled handler: ~s" _)))
@@ -84,12 +85,16 @@
 (ev
   '((handle
       ;'here
+
+      ;; This returns 'initial.
       ;(invoke get '#f)
+
+      ;; This returns 'unit.
       ;(invoke set 'new-value)
 
-      ((lambda (_) (invoke get '#f)) (invoke set 'new-value))
-
-      ;(invoke get (invoke set 'new-value))
+      ;; These both return 'new-value.
+      ;((lambda (_) (invoke get '#f)) (invoke set 'new-value))
+      (invoke get (invoke set 'new-value))
 
       ;; return
       (lambda (returned) (lambda (v) returned))
