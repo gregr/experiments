@@ -155,3 +155,12 @@
                (lambda (k)
                  (lambda (_) ((k 'unit) a)))))))
     's0))
+
+(define (let-in name code body) `((lambda (,name) ,body) ,code))
+
+(define Z '(lambda (f)
+             ((lambda (d) (d d))
+              (lambda (x) (f (lambda (a) ((x x) a)))))))
+
+(define (fix-in name code body) `((lambda (,name) ,body)
+                                  (,Z (lambda (,name) ,code))))
