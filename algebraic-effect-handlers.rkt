@@ -11,24 +11,36 @@
       (cdr binding)
       (error 'lookup (format "unbound variable: ~s" name)))))
 
+(define (henv->k henv) (caar henv))
+(define (henv->handlers henv) (cadar henv))
+(define (henv->henv-prev henv) (cdr henv))
+(define (make-henv k handlers henv-prev) `((,k ,handlers) . ,henv-prev))
+
+(define (invoke-handler henv-full invoked-name arg k)
+  (define handlers (henv->handlers henv-full))
+  (let handle ((remaining-handlers handlers)
+               (hk (henv->k henv-full))
+               (henv (henv->henv-prev henv-full)))
+    (match remaining-handlers
+      ('() (if henv
+             (invoke-handler henv invoked-name arg
+                             (lambda (h v)
+                               (k (make-henv hk handlers h) v)))
+             (error 'invoke-handler
+                    (format "unhandled handler: ~s" invoked-name))))
+      (`((,name ,handler) . ,rest-handlers)
+        (if (equal? invoked-name name)
+          ((handler arg id #f)
+           (lambda (v kk h) (k (make-henv kk handlers h) v))
+           hk henv)
+          (handle rest-handlers hk henv))))))
+
 (define (extend-handlers env henv k ehandlers)
   (define handlers
     (map (lambda (neh)
            `(,(car neh) ,(evaluate (cadr neh) env henv id)))
          ehandlers))
-  (let handle ((remaining-handlers handlers) (hk k) (henv henv))
-    (lambda (invoked-name arg k)
-      (if invoked-name
-        (match remaining-handlers
-          ('() (henv invoked-name arg (lambda (h v)
-                                        (k (handle handlers hk h) v))))
-          (`((,name ,handler) . ,rest-handlers)
-            (if (equal? invoked-name name)
-              ((handler arg id #f)
-               (lambda (v kk h) (k (handle handlers kk h) v))
-               hk henv)
-              ((handle rest-handlers hk henv) invoked-name arg k))))
-        (if arg henv hk)))))
+  (make-henv k handlers henv))
 
 (define (evaluate expr env henv k)
   (match expr
@@ -73,14 +85,13 @@
       (let ((preturn (evaluate return env henv id)))
         (evaluate body env (extend-handlers env henv k handlers)
                   (lambda (henv returned)
-                    ;; (henv #f #f #f) is a hack to extract updated k.
-                    ;; (henv #f #t #f) is a hack to get the previous henv.
-                    (preturn returned (henv #f #f #f) (henv #f #t #f))))))
+                    (preturn
+                      returned (henv->k henv) (henv->henv-prev henv))))))
 
     (`(invoke ,name ,rand)
       (evaluate rand env henv
                 (lambda (henv rand-value)
-                  (henv name rand-value k))))
+                  (invoke-handler henv name rand-value k))))
 
     (`(,rator ,rand)
       (evaluate rator env henv
@@ -88,10 +99,7 @@
                   (evaluate rand env henv
                             (lambda (henv a) (p a k henv))))))))
 
-(define (henv-initial . _)
-  (error 'evaluate (format "unhandled handler: ~s" _)))
-
-(define (ev expr) (evaluate expr '() henv-initial id))
+(define (ev expr) (evaluate expr '() #f id))
 
 (ev '(((lambda (x) (lambda (y) x)) (cons 'one '1)) (cons 'two '2)))
 
