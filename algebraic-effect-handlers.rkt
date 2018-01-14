@@ -164,3 +164,28 @@
 
 (define (fix-in name code body) `((lambda (,name) ,body)
                                   (,Z (lambda (,name) ,code))))
+
+
+(ev
+  `(handle
+     ;; '(5 6 7 14 15 16)
+     ,(let-in 'x '(invoke choose (cons 1 (cons 10 '())))
+              (let-in 'y '(invoke choose (cons 4 (cons 5 (cons 6 '()))))
+                      '(+ x y)))
+
+     ;; return
+     (lambda (returned) (cons returned '()))
+
+     ((choose
+        (lambda (choices)
+          (lambda (k)
+            ,(fix-in 'append
+                     '(lambda (xs)
+                        (lambda (ys)
+                          (if (null? xs) ys
+                            (cons (car xs) ((append (cdr xs)) ys)))))
+                     (fix-in 'loop
+                             '(lambda (cs)
+                                (if (null? cs) '()
+                                  ((append (k (car cs))) (loop (cdr cs)))))
+                             '(loop choices)))))))))
