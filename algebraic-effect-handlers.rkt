@@ -38,11 +38,11 @@
 (define (extend-handlers env henv k ehandlers)
   (define handlers
     (map (lambda (neh)
-           `(,(car neh) ,(evaluate (cadr neh) env henv id)))
+           `(,(car neh) ,(evaluate-k (cadr neh) env henv id)))
          ehandlers))
   (make-henv k handlers henv))
 
-(define (evaluate expr env henv k)
+(define (evaluate-k expr env henv k)
   (match expr
     (#t (k henv #t))
     (#f (k henv #f))
@@ -52,58 +52,58 @@
     ((? symbol? x) (k henv (lookup env x)))
 
     (`(cons ,ea ,ed)
-      (evaluate ea env henv
+      (evaluate-k ea env henv
                 (lambda (henv a)
-                  (evaluate ed env henv
+                  (evaluate-k ed env henv
                             (lambda (henv d) (k henv (cons a d)))))))
 
-    (`(car ,ec) (evaluate ec env henv (lambda (h c) (k h (car c)))))
+    (`(car ,ec) (evaluate-k ec env henv (lambda (h c) (k h (car c)))))
 
-    (`(cdr ,ec) (evaluate ec env henv (lambda (h c) (k h (cdr c)))))
+    (`(cdr ,ec) (evaluate-k ec env henv (lambda (h c) (k h (cdr c)))))
 
-    (`(null? ,e) (evaluate e env henv (lambda (h v) (k h (null? v)))))
+    (`(null? ,e) (evaluate-k e env henv (lambda (h v) (k h (null? v)))))
 
     (`(+ ,ex ,ey)
-      (evaluate ex env henv
+      (evaluate-k ex env henv
                 (lambda (henv x)
-                  (evaluate ey env henv
+                  (evaluate-k ey env henv
                             (lambda (henv y)
                               (k henv (+ x y)))))))
 
     (`(if ,ec ,et ,ef)
-      (evaluate ec env henv
+      (evaluate-k ec env henv
                 (lambda (henv c)
                   (if c
-                    (evaluate et env henv k)
-                    (evaluate ef env henv k)))))
+                    (evaluate-k et env henv k)
+                    (evaluate-k ef env henv k)))))
 
     (`(lambda (,x) ,body)
       (k henv (lambda (a k henv)
-                (evaluate body (extend-env env x a) henv k))))
+                (evaluate-k body (extend-env env x a) henv k))))
 
     (`(handle ,body ,return ,handlers)
-      (let ((preturn (evaluate return env henv id)))
-        (evaluate body env (extend-handlers env henv k handlers)
+      (let ((preturn (evaluate-k return env henv id)))
+        (evaluate-k body env (extend-handlers env henv k handlers)
                   (lambda (henv returned)
                     (preturn
                       returned (henv->k henv) (henv->henv-prev henv))))))
 
     (`(invoke ,name ,rand)
-      (evaluate rand env henv
+      (evaluate-k rand env henv
                 (lambda (henv rand-value)
                   (invoke-handler henv name rand-value k))))
 
     (`(,rator ,rand)
-      (evaluate rator env henv
+      (evaluate-k rator env henv
                 (lambda (henv p)
-                  (evaluate rand env henv
+                  (evaluate-k rand env henv
                             (lambda (henv a) (p a k henv))))))))
 
-(define (ev expr) (evaluate expr '() #f id))
+(define (ev-k expr) (evaluate-k expr '() #f id))
 
-(ev '(((lambda (x) (lambda (y) x)) (cons 'one '1)) (cons 'two '2)))
+(ev-k '(((lambda (x) (lambda (y) x)) (cons 'one '1)) (cons 'two '2)))
 
-(ev
+(ev-k
   '((handle
       ;'here
 
@@ -128,7 +128,7 @@
                 (lambda (_) ((k 'unit) a)))))))
     'initial))
 
-(ev
+(ev-k
   '((handle
       ((handle
          ;'here2
@@ -174,7 +174,7 @@
                                   (,Z (lambda (,name) ,code))))
 
 
-(ev
+(ev-k
   `(handle
      ;; '(5 6 7 14 15 16)
      ,(let-in 'x '(invoke choose (cons 1 (cons 10 '())))
