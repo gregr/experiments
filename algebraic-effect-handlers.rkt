@@ -32,6 +32,9 @@
 
 (define (evaluate expr env henv k)
   (match expr
+    (#t (k henv #t))
+    (#f (k henv #f))
+    ((? number? x) (k henv x))
     (`(quote ,datum) (k henv datum))
 
     ((? symbol? x) (k henv (lookup env x)))
@@ -45,6 +48,15 @@
     (`(car ,ec) (evaluate ec env henv (lambda (h c) (k h (car c)))))
 
     (`(cdr ,ec) (evaluate ec env henv (lambda (h c) (k h (cdr c)))))
+
+    (`(null? ,e) (evaluate e env henv (lambda (h v) (k h (null? v)))))
+
+    (`(+ ,ex ,ey)
+      (evaluate ex env henv
+                (lambda (henv x)
+                  (evaluate ey env henv
+                            (lambda (henv y)
+                              (k henv (+ x y)))))))
 
     (`(if ,ec ,et ,ef)
       (evaluate ec env henv
