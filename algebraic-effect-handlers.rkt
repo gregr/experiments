@@ -71,6 +71,7 @@
     (`(null? ,e)     (eval-primop1 null? e env))
     (`(cons ,ea ,ed) (eval-primop2 cons ea ed env))
     (`(+ ,ex ,ey)    (eval-primop2 + ex ey env))
+    (`(* ,ex ,ey)    (eval-primop2 * ex ey env))
 
     (`(if ,ec ,et ,ef)
       (bind (evaluate ec env)
@@ -167,6 +168,12 @@
                   (evaluate-k ey env henv
                             (lambda (henv y)
                               (k henv (+ x y)))))))
+    (`(* ,ex ,ey)
+      (evaluate-k ex env henv
+                (lambda (henv x)
+                  (evaluate-k ey env henv
+                            (lambda (henv y)
+                              (k henv (* x y)))))))
 
     (`(if ,ec ,et ,ef)
       (evaluate-k ec env henv
