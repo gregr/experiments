@@ -327,3 +327,29 @@
                        ((control (lambda (f)
                                    (lambda (k) (f k)))))))))))))
 
+(ev
+  (fix-in
+    'reset
+    '(lambda (t)
+       (handle
+         (t 'unit)
+         (lambda (returned) returned)
+         ((shift (lambda (f)
+                   (lambda (k)
+                     (reset (lambda (_) (f k)))))))))
+    (let-in
+      'shift '(lambda (f) (invoke shift f))
+
+      ;; (+ 1000 (k2 2)   (k1 3)   )
+      ;; (+ 1000 (* 10 2) (* 100 3))
+      ;; 1320
+      '(+ 1000
+          (reset
+            (lambda (_)
+              (* 100
+                 (shift
+                   (lambda (k)
+                     (* 10
+                        (shift
+                          (lambda (k2)
+                            (+ (k2 2) (k 3))))))))))))))
