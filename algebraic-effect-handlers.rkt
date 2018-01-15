@@ -9,6 +9,9 @@
       (cdr binding)
       (error 'lookup (format "unbound variable: ~s" name)))))
 
+(define ((not-keyword? env) head)
+  (or (not (symbol? head)) (assoc head env)))
+
 
 ;; Direct version:
 
@@ -53,8 +56,15 @@
     (#t              (value #t))
     (#f              (value #f))
     ((? number? x)   (value x))
-    (`(quote ,datum) (value datum))
     ((? symbol? x)   (value (lookup env x)))
+
+    (`(,(? (not-keyword? env) rator) ,rand)
+      (bind (evaluate rator env)
+            ;; Alternatively: (lambda (p) (bind (evaluate rand env) p))
+            (lambda (p) (bind (evaluate rand env)
+                              (lambda (a) (p a))))))
+
+    (`(quote ,datum) (value datum))
 
     (`(car ,ec)      (eval-primop1 car ec env))
     (`(cdr ,ec)      (eval-primop1 cdr ec env))
@@ -64,7 +74,7 @@
 
     (`(if ,ec ,et ,ef)
       (bind (evaluate ec env)
-        (lambda (c) (if c (evaluate et env) (evaluate ef env)))))
+            (lambda (c) (if c (evaluate et env) (evaluate ef env)))))
 
     (`(lambda (,x) ,body)
       (value (lambda (a) (evaluate body (extend-env env x a)))))
@@ -84,13 +94,7 @@
 
     (`(invoke ,name ,rand)
       (bind (evaluate rand env)
-            (lambda (a) (effect name a (lambda (v) (value v))))))
-
-    (`(,rator ,rand)
-      (bind (evaluate rator env)
-            ;; Alternatively: (lambda (p) (bind (evaluate rand env) p))
-            (lambda (p) (bind (evaluate rand env)
-                              (lambda (a) (p a))))))))
+            (lambda (a) (effect name a (lambda (v) (value v))))))))
 
 (define (ev expr) (evaluate expr '()))
 
@@ -135,9 +139,15 @@
     (#t (k henv #t))
     (#f (k henv #f))
     ((? number? x) (k henv x))
-    (`(quote ,datum) (k henv datum))
-
     ((? symbol? x) (k henv (lookup env x)))
+
+    (`(,(? (not-keyword? env) rator) ,rand)
+      (evaluate-k rator env henv
+                  (lambda (henv p)
+                    (evaluate-k rand env henv
+                                (lambda (henv a) (p a k henv))))))
+
+    (`(quote ,datum) (k henv datum))
 
     (`(cons ,ea ,ed)
       (evaluate-k ea env henv
@@ -179,13 +189,7 @@
     (`(invoke ,name ,rand)
       (evaluate-k rand env henv
                 (lambda (henv rand-value)
-                  (invoke-handler henv name rand-value k))))
-
-    (`(,rator ,rand)
-      (evaluate-k rator env henv
-                (lambda (henv p)
-                  (evaluate-k rand env henv
-                            (lambda (henv a) (p a k henv))))))))
+                  (invoke-handler henv name rand-value k))))))
 
 (define (ev-k expr) (evaluate-k expr '() #f id))
 
