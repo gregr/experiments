@@ -89,7 +89,10 @@
         (define hb (and (effect? d) (assoc (effect-name d) handlers)))
         (cond ((value? d) (return (value-datum d)))
               (hb (apply-handler
-                    (cdr hb) (effect-payload d) (dk->k handle (effect-k d))))
+                    (cdr hb) (effect-payload d)
+                    ;; For shallow handlers, use this instead:
+                    ;(effect-k d)
+                    (dk->k handle (effect-k d))))
               (else (effect/dk d handle))))
       (handle (evaluate body env)))
 
