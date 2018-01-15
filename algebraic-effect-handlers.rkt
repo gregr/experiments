@@ -298,34 +298,40 @@
                              '(loop choices)))))))))
 
 (ev
-  `(handle
-     ,(let-in
-        'prompt '(lambda (t) (invoke prompt t))
-        (let-in
-          'control '(lambda (f) (invoke control f))
-
-          '(cons
-             'result:
-             (prompt
-               (lambda (_)
-                 ((((lambda (_)
-                      (lambda (_)
-                        (lambda (_) '())))
-                    (control (lambda (k) (cons 1 (k 'unit)))))
-                   (control (lambda (k) (cons 2 (k 'unit)))))
-                  (control (lambda (k) (cons 3 (k 'unit))))))))))
-
-     (lambda (returned) returned)
-
-     ((prompt (lambda (thunk)
-                (lambda (k)
-                  (k (handle
-                       (thunk 'unit)
-
-                       (lambda (returned) returned)
-
-                       ((control (lambda (f)
-                                   (lambda (k) (f k)))))))))))))
+  (fix-in
+    'reset
+    '(lambda (t)
+       (handle
+         (t 'unit)
+         (lambda (returned) returned)
+         ((shift (lambda (f)
+                   (lambda (k)
+                     (reset (lambda (_)
+                              ;; With shallow handlers, shift/reset would be:
+                              ;(f (lambda (v)
+                                   ;(reset (lambda (_) (k v)))))
+                              ;; With shallow handlers, this is control/prompt.
+                              ;; Our handlers are deep, so it's shift/reset.
+                              (f k)))))))))
+    (let-in
+      'shift '(lambda (f) (invoke shift f))
+      ;; Because our handlers are deep, we get:
+      ;; (+ 1000 1 (k1 3)   )
+      ;; (+ 1000 1 (* 100 3))
+      ;; 1301
+      ;; With control/prompt, we would get:
+      ;; (+ 1000 1)
+      ;; 1001
+      '(+ 1000
+          (reset
+            (lambda (_)
+              (* 100
+                 (shift
+                   (lambda (k1)
+                     (* (shift
+                          (lambda (k2)
+                            (+ (k2 2) (k1 3))))
+                        (* 10 (shift (lambda (k3) 1)))))))))))))
 
 (ev
   (fix-in
@@ -353,3 +359,27 @@
                         (shift
                           (lambda (k2)
                             (+ (k2 2) (k 3))))))))))))))
+
+(ev
+  (fix-in
+    'reset
+    '(lambda (t)
+       (handle
+         (t 'unit)
+         (lambda (returned) returned)
+         ((shift (lambda (f)
+                   (lambda (k)
+                     (reset (lambda (_) (f k)))))))))
+    (let-in
+      'shift '(lambda (f) (invoke shift f))
+
+      '(cons
+         'result:
+         (reset
+           (lambda (_)
+             ((((lambda (_)
+                  (lambda (_)
+                    (lambda (_) '())))
+                (shift (lambda (k) (cons 1 (k 'unit)))))
+               (shift (lambda (k) (cons 2 (k 'unit)))))
+              (shift (lambda (k) (cons 3 (k 'unit)))))))))))
