@@ -289,3 +289,31 @@
                                 (if (null? cs) '()
                                   ((append (k (car cs))) (loop (cdr cs)))))
                              '(loop choices)))))))))
+
+(ev
+  `(handle
+     ,(let-in
+        'reset '(lambda (t) (invoke reset t))
+        (let-in
+          'shift '(lambda (f) (invoke shift f))
+
+          '(reset
+             (lambda (_)
+               ((((lambda (_)
+                    (lambda (_)
+                      (lambda (_) '())))
+                  (shift (lambda (k) (cons 1 (k 'unit)))))
+                 (shift (lambda (k) (cons 2 (k 'unit)))))
+                (shift (lambda (k) (cons 3 (k 'unit)))))))))
+
+     (lambda (returned) returned)
+
+     ((reset (lambda (thunk)
+               (lambda (k)
+                 (handle
+                   (thunk 'unit)
+
+                   (lambda (returned) (k returned))
+
+                   ((shift (lambda (f)
+                             (lambda (k) (f k))))))))))))
