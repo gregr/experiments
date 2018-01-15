@@ -1,7 +1,5 @@
 #lang racket
 
-(define (id h v) v)
-
 (define (extend-env env name value)
   `((,name . ,value) . ,env))
 
@@ -10,6 +8,96 @@
     (if binding
       (cdr binding)
       (error 'lookup (format "unbound variable: ~s" name)))))
+
+
+;; Direct version:
+
+(define (dk->k dk k) (lambda (v) (dk (k v))))
+
+(define (tagged? tag d) (and (vector? d) (eq? tag (vector-ref d 0))))
+
+(define (value datum) `#(value ,datum))
+(define (value? d) (tagged? 'value d))
+(define (value-datum d) (vector-ref d 1))
+
+(define (effect name payload k) `#(effect ,name ,payload ,k))
+(define (effect? d) (tagged? 'effect d))
+(define (effect-name d) (vector-ref d 1))
+(define (effect-payload d) (vector-ref d 2))
+(define (effect-k d) (vector-ref d 3))
+(define (effect/dk d dk)
+  (effect (effect-name d) (effect-payload d) (dk->k dk (effect-k d))))
+
+(define (bind d k)
+  (if (value? d)
+    (k (value-datum d))
+    (effect/dk d (lambda (d) (bind d k)))))
+
+(define (eval-primop1 op expr env)
+  (bind (evaluate expr env) (lambda (v) (value (op v)))))
+
+(define (eval-primop2 op ea eb env)
+  (bind (evaluate ea env)
+        (lambda (a) (bind (evaluate eb env)
+                          (lambda (b) (value (op a b)))))))
+
+(define (value! d) (if (value? d) (value-datum d)
+                     (error 'evaluate (format "unexpected effect: ~s" d))))
+
+(define (eval-value expr env) (value! (evaluate expr env)))
+
+(define (apply-handler handler payload k) ((value! (handler payload)) k))
+
+(define (evaluate expr env)
+  (match expr
+    (#t              (value #t))
+    (#f              (value #f))
+    ((? number? x)   (value x))
+    (`(quote ,datum) (value datum))
+    ((? symbol? x)   (value (lookup env x)))
+
+    (`(car ,ec)      (eval-primop1 car ec env))
+    (`(cdr ,ec)      (eval-primop1 cdr ec env))
+    (`(null? ,e)     (eval-primop1 null? e env))
+    (`(cons ,ea ,ed) (eval-primop2 cons ea ed env))
+    (`(+ ,ex ,ey)    (eval-primop2 + ex ey env))
+
+    (`(if ,ec ,et ,ef)
+      (bind (evaluate ec env)
+        (lambda (c) (if c (evaluate et env) (evaluate ef env)))))
+
+    (`(lambda (,x) ,body)
+      (value (lambda (a) (evaluate body (extend-env env x a)))))
+
+    (`(handle ,body ,ereturn ,ehandlers)
+      (define return (eval-value ereturn env))
+      (define handlers  ;; ((name . handler) ...)
+        (map (lambda (neh) (cons (car neh) (eval-value (cadr neh) env)))
+             ehandlers))
+      (define (handle d)
+        (define hb (and (effect? d) (assoc (effect-name d) handlers)))
+        (cond ((value? d) (return (value-datum d)))
+              (hb (apply-handler
+                    (cdr hb) (effect-payload d) (dk->k handle (effect-k d))))
+              (else (effect/dk d handle))))
+      (handle (evaluate body env)))
+
+    (`(invoke ,name ,rand)
+      (bind (evaluate rand env)
+            (lambda (a) (effect name a (lambda (v) (value v))))))
+
+    (`(,rator ,rand)
+      (bind (evaluate rator env)
+            ;; Alternatively: (lambda (p) (bind (evaluate rand env) p))
+            (lambda (p) (bind (evaluate rand env)
+                              (lambda (a) (p a))))))))
+
+(define (ev expr) (evaluate expr '()))
+
+
+;; Continuation-passing version:
+
+(define (id h v) v)
 
 (define (henv->k henv) (caar henv))
 (define (henv->handlers henv) (cadar henv))
@@ -101,9 +189,9 @@
 
 (define (ev-k expr) (evaluate-k expr '() #f id))
 
-(ev-k '(((lambda (x) (lambda (y) x)) (cons 'one '1)) (cons 'two '2)))
+(ev '(((lambda (x) (lambda (y) x)) (cons 'one '1)) (cons 'two '2)))
 
-(ev-k
+(ev
   '((handle
       ;'here
 
@@ -128,7 +216,7 @@
                 (lambda (_) ((k 'unit) a)))))))
     'initial))
 
-(ev-k
+(ev
   '((handle
       ((handle
          ;'here2
@@ -174,7 +262,7 @@
                                   (,Z (lambda (,name) ,code))))
 
 
-(ev-k
+(ev
   `(handle
      ;; '(5 6 7 14 15 16)
      ,(let-in 'x '(invoke choose (cons 1 (cons 10 '())))
