@@ -1,5 +1,15 @@
 #lang racket
 
+;; Quasi-map (map over improper lists)
+;; e.g., (~map2 list '(a b . c) '(1 2 3 4 5))
+;;       =
+;;       ((a 1) (b 2) (c (3 4 5)))
+(define (~map2 f xs ys)
+  (cond ((pair? xs) (cons (f (car xs) (car ys))
+                          (~map2 f (cdr xs) (cdr ys))))
+        ((null? xs) '())
+        (else       (list (f xs ys)))))
+
 ;; Environments
 (define env-empty '())
 
@@ -22,45 +32,110 @@
 
 
 ;; Evaluation
-;; TODO: eval, eval*, @quote, @if, @cond, @lambda, @let, @lambda-syntax, @let-syntax
+(define (eval env form)
+        ;; TODO: combinations
+
+        ;; TODO: variables
+
+        ;; TODO: literals
+  )
+
+(define (eval* env forms)
+  (map (lambda (form) (eval env form)) forms))
 
 
-(define env:base
-  `((@             #f . ,(lambda (proc . args) (apply proc args)))
-    (eval          #f . ,eval)
-    (apply         #f . ,apply)
-    (pair?         #f . ,pair?)
-    (symbol?       #f . ,symbol?)
-    (number?       #f . ,number?)
-    (null?         #f . ,null?)
-    (procedure?    #f . ,procedure?)
-    (equal?        #f . ,equal?)
-    (list          #f . ,list)
-    (cons          #f . ,cons)
-    (car           #f . ,car)
-    (cdr           #f . ,cdr)
-    (+             #f . ,+)
-    (-             #f . ,-)
-    (*             #f . ,*)
-    (/             #f . ,/)
-    (=             #f . ,=)
-    (>             #f . ,>)
-    (<             #f . ,<)
-    (>=            #f . ,>=)
-    (<=            #f . ,<=)
+;; TODO: @quote, @if, @lambda
 
-    ;(quote         #t . , @quote)
-    ;(if            #t . , @if)
-    ;(cond          #t . , @cond)
-    ;(lambda        #t . , @lambda)
-    ;(let           #t . , @let)
 
-    ;(lambda-syntax #t . , @lambda-syntax)
-    ;(let-syntax    #t . , @let-syntax)
+(define env:initial
+  `((@               #f . ,(lambda (proc . args) (apply proc args)))
+    (eval            #f . ,eval)
+    (eval*           #f . ,eval*)
+    (apply           #f . ,apply)
+    (pair?           #f . ,pair?)
+    (symbol?         #f . ,symbol?)
+    (number?         #f . ,number?)
+    (null?           #f . ,null?)
+    (procedure?      #f . ,procedure?)
+    (equal?          #f . ,equal?)
+    (list            #f . ,list)
+    (cons            #f . ,cons)
+    (car             #f . ,car)
+    (cdr             #f . ,cdr)
+    (cadr            #f . ,cadr)
+    (cdar            #f . ,cdar)
+    (cddr            #f . ,cddr)
+    (caar            #f . ,caar)
+    (cadar           #f . ,cadar)
+    (+               #f . ,+)
+    (-               #f . ,-)
+    (*               #f . ,*)
+    (/               #f . ,/)
+    (=               #f . ,=)
+    (>               #f . ,>)
+    (<               #f . ,<)
+    (>=              #f . ,>=)
+    (<=              #f . ,<=)
+    (map             #f . ,map)
+    (~map2           #f . ,~map2)
+    (displayln       #f . ,displayln)
+    (env-ref         #f . ,env-ref)
+    (env-ref-syntax? #f . ,env-ref-syntax?)
+    (env-ref-value   #f . ,env-ref-value)
+    (env-remove*     #f . ,env-remove*)
+    (env-extend*     #f . ,env-extend*)
 
-    ($             #t . ,(lambda (env rator . rands)
-                           (apply (eval env rator) env rands)))))
+    ;; TODO:
+    ;(quote           #t . , @quote)
+    ;(if              #t . , @if)
+    ;(lambda          #t . , @lambda)
 
+    ;; $ applies a procedure as if it is a syntax operator.
+    ($               #t . ,(lambda (env rator . rands)
+                             (apply (eval env rator) env rands)))))
+
+;; TODO: bootstrap env:base, which will contain bindings for:
+;;         lambda-syntax, let-syntax, let, cond
+(define bootstrap-env:base
+  '((lambda (@lambda-syntax)
+      ;; Use @lambda-syntax to bind itself as the syntax: lambda-syntax
+      (($ @lambda-syntax (lambda-syntax)
+          ((lambda-syntax
+             (let-syntax)
+             (let-syntax ((let (lambda (env bindings body)
+                                 ;; TODO:
+                                 )))
+
+               (let ((fix (lambda (f)
+                            ((lambda (d) (d d))
+                             (lambda (x) (f (lambda arg
+                                              (apply (x x) arg))))))))
+
+                 (let-syntax
+                   ((cond (fix (lambda (@cond)
+                                 (lambda (env . clauses)
+                                   ;; TODO:
+                                   )))))
+
+                   ;; env:base
+                   ($ (lambda (env) env))))))
+
+           ;; let-syntax
+           (lambda (env bindings body)
+             ;; TODO:
+             )))
+
+       ;; lambda-syntax
+       @lambda-syntax))
+
+    ;; @lambda-syntax
+    (lambda (env param body)
+      ;; TODO:
+      )))
+
+;; TODO:
+(define env:base env:initial)
+;(define env:base (eval env:initial bootstrap-env:base))
 
 (for-each
   (lambda (form)
@@ -104,9 +179,16 @@
           (#f 'second)
           (#t 'third))
 
+    (let ((sign (lambda (n) (cond ((< n 0) 'negative)
+                                  ((= n 0) 'zero)
+                                  (#t      'positive)))))
+      (list (list -3 (sign -3))
+            (list 10 (sign 10))
+            (list  0 (sign  0))))
+
     (let ((fix (lambda (f)
                  ((lambda (d) (d d))
-                  (lambda (x) (f (lambda (a b) ((x x) a b))))))))
+                  (lambda (x) (f (lambda arg (apply (x x) arg))))))))
       (let ((append
               (fix (lambda (append)
                      (lambda (xs ys)
