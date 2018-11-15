@@ -37,50 +37,56 @@
 ;(define (ast:lambda param body) (vector 'lambda param body))
 
 ;; Code generation: procedural representation
-;; TODO: ast:quote, ast:var, ast:if, ast:apply*, ast:lambda
-(define (ast:quote datum)
+(define (ast:quote datum) (lambda (env) datum))
+(define (ast:var address) (lambda (env) (env-ref env address)))
+(define (ast:if c t f)    (lambda (env) (if (c env) (t env) (f env))))
+(define (ast:apply* proc args)
+  (lambda (env) (apply (proc env) (map (lambda (a) (a env)) args))))
+(define (ast:lambda param body)
   (lambda (env)
-    ;; TODO:
-    ))
+    (lambda arg
+      (body (env-extend* env (~map2 cons param arg))))))
 
 ;; Staged evaluation
 (define (stage env form)
-        ;; TODO: combinations
+  (cond ((pair? form)  ;; combinations
+         (define syntax-op (env-ref-syntax? env (car form)))
+         (define operands (cdr form))
+         (if syntax-op
+           (apply syntax-op env operands)
+           (ast:apply* (stage env (car form)) (stage* env operands))))
 
-        ;; TODO: variables
+        ;; variables
+        ((symbol? form) (ast:var (env-ref env form)))
 
-        ;; TODO: literals
-  )
+        ;; literals
+        (#t             (ast:quote form))))
 
 (define (stage* env forms)
   (map (lambda (form) (stage env form)) forms))
 
 (define (@quote env datum)
-  ;; TODO:
-  )
+  (ast:quote datum))
 (define (@if env c t f)
-  ;; TODO:
-  )
+  (ast:if (stage env c) (stage env t) (stage env f)))
 (define (@lambda env param body)
-  ;; TODO:
-  )
+  (ast:lambda param (stage (env-extend* env (~map2 cons param param)) body)))
 (define (@let env bindings body)
-  ;; TODO:
-  )
+  (ast:apply* (@lambda env (map car bindings) body)
+              (stage* env (map cadr bindings))))
 (define (@cond env . clauses)
-  ;; TODO:
-  )
+  (if (null? clauses) (ast:quote #t)
+    (ast:if (stage env (caar clauses))
+            (stage env (cadar clauses))
+            (apply @cond env (cdr clauses)))))
 
 
 (define env:initial
-  ;; TODO:
-  `(
-    ;(quote  . , @quote)
-    ;(if     . , @if)
-    ;(lambda . , @lambda)
-    ;(let    . , @let)
-    ;(cond   . , @cond)
-    ))
+  `((quote  . , @quote)
+    (if     . , @if)
+    (lambda . , @lambda)
+    (let    . , @let)
+    (cond   . , @cond)))
 
 (define library:base
   `((apply           . ,apply)

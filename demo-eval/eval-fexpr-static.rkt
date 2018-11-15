@@ -33,18 +33,34 @@
 
 ;; Evaluation
 (define (eval env form)
-        ;; TODO: combinations
+  (cond ((pair? form)  ;; combinations
+         (define proc (eval env (car form)))
+         (define operands (cdr form))
+         (if (env-ref-syntax? env (car form))
+           (apply proc env operands)
+           (apply proc (eval* env operands))))
 
-        ;; TODO: variables
+        ;; variables
+        ((symbol? form) (env-ref-value env form))
 
-        ;; TODO: literals
-  )
+        ;; literals
+        (#t             form)))
 
 (define (eval* env forms)
   (map (lambda (form) (eval env form)) forms))
 
 
-;; TODO: @quote, @if, @lambda
+(define (@quote env datum) datum)
+
+(define (@if env c t f)
+  (if (eval env c)
+    (eval env t)
+    (eval env f)))
+
+(define (@lambda env params body)
+  (lambda args
+    (define bindings (~map2 (lambda (p a) `(,p #f . ,a)) params args))
+    (eval (env-extend* env bindings) body)))
 
 
 (define env:initial
@@ -85,17 +101,16 @@
     (env-remove*     #f . ,env-remove*)
     (env-extend*     #f . ,env-extend*)
 
-    ;; TODO:
-    ;(quote           #t . , @quote)
-    ;(if              #t . , @if)
-    ;(lambda          #t . , @lambda)
+    (quote           #t . , @quote)
+    (if              #t . , @if)
+    (lambda          #t . , @lambda)
 
     ;; $ applies a procedure as if it is a syntax operator.
     ($               #t . ,(lambda (env rator . rands)
                              (apply (eval env rator) env rands)))))
 
-;; TODO: bootstrap env:base, which will contain bindings for:
-;;         lambda-syntax, let-syntax, let, cond
+;; Bootstrap env:base, which will contain bindings for:
+;;   lambda-syntax, let-syntax, let, cond
 (define bootstrap-env:base
   '((lambda (@lambda-syntax)
       ;; Use @lambda-syntax to bind itself as the syntax: lambda-syntax
@@ -103,8 +118,8 @@
           ((lambda-syntax
              (let-syntax)
              (let-syntax ((let (lambda (env bindings body)
-                                 ;; TODO:
-                                 )))
+                                 (apply (@ lambda env (map car bindings) body)
+                                        (eval* env (map cadr bindings))))))
 
                (let ((fix (lambda (f)
                             ((lambda (d) (d d))
@@ -114,28 +129,30 @@
                  (let-syntax
                    ((cond (fix (lambda (@cond)
                                  (lambda (env . clauses)
-                                   ;; TODO:
-                                   )))))
+                                   (if (null? clauses) #t
+                                     (if (eval env (caar clauses))
+                                       (eval env (cadar clauses))
+                                       (apply @cond env (cdr clauses)))))))))
 
                    ;; env:base
                    ($ (lambda (env) env))))))
 
            ;; let-syntax
            (lambda (env bindings body)
-             ;; TODO:
-             )))
+             (apply (@lambda-syntax env (map car bindings) body)
+                    (eval* env (map cadr bindings))))))
 
        ;; lambda-syntax
        @lambda-syntax))
 
     ;; @lambda-syntax
     (lambda (env param body)
-      ;; TODO:
-      )))
+      (lambda arg
+        (eval (env-extend* env (~map2 (lambda (p a) (cons p (cons #t a)))
+                                      param arg))
+              body)))))
 
-;; TODO:
-(define env:base env:initial)
-;(define env:base (eval env:initial bootstrap-env:base))
+(define env:base (eval env:initial bootstrap-env:base))
 
 (for-each
   (lambda (form)

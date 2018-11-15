@@ -30,22 +30,35 @@
 
 ;; Evaluation
 (define (combine operator env operands)
-  ;; TODO:
-  )
+  (if (wrap? operator)
+    (combine (unwrap operator) env (eval* env operands))
+    (apply operator env operands)))
 
 (define (eval env form)
-        ;; TODO: combinations
+  (cond ((pair? form)  ;; combinations
+         (combine (eval env (car form)) env (cdr form)))
 
-        ;; TODO: variables
+        ;; variables
+        ((symbol? form) (env-ref-value env form))
 
-        ;; TODO:literals
-  )
+        ;; literals
+        (#t             form)))
 
 (define (eval* env forms)
   (map (lambda (form) (eval env form)) forms))
 
 
-;; TODO: $quote, $if, $vau
+(define ($quote env datum) datum)
+
+(define ($if env c t f)
+  (if (eval env c)
+    (eval env t)
+    (eval env f)))
+
+(define ($vau env params body)
+  (lambda args
+    (define bindings (~map2 (lambda (p a) `(,p . ,a)) params args))
+    (eval (env-extend* env bindings) body)))
 
 
 (define (lift proc) (lambda (ignored-env . args) (apply proc args)))
@@ -92,12 +105,9 @@
            (env-remove*    . ,env-remove*)
            (env-extend*    . ,env-extend*)))
 
-    `(
-      ;; TODO:
-      ;(quote . ,$quote)
-      ;(if    . ,$if)
-      ;(vau   . ,$vau)
-      )))
+    `((quote . ,$quote)
+      (if    . ,$if)
+      (vau   . ,$vau))))
 
 ;; Bootstrap env:base, which will contain bindings for:
 ;;   lambda, let, cond
@@ -113,8 +123,10 @@
                 (let ((cond (vau (env . clauses)
                                  ((fix (lambda (@cond)
                                          (lambda (env clauses)
-                                           ;; TODO:
-                                           )))
+                                           (if (null? clauses) #t
+                                             (if (eval env (caar clauses))
+                                               (eval env (cadar clauses))
+                                               (@cond env (cdr clauses)))))))
                                   env clauses))))
 
                   ;;; env:base
@@ -122,22 +134,19 @@
 
             ;; let
             (vau (env bindings body)
-                 ;; TODO:
-                 ))))
+                 (combine (combine lambda env (list (map car bindings) body))
+                          env
+                          (map cadr bindings))))))
 
     ;; lambda
     (vau (env param body)
-         ;; TODO:
-         )
+         (wrap (combine vau env (list (cons #f param) body))))
 
     ;; apply
     (wrap (vau (env combiner arg)
-               ;; TODO:
-               ))))
+               (combine (unwrap combiner) env arg)))))
 
-;; TODO:
-(define env:base env:initial)
-;(define env:base (eval env:initial bootstrap-env:base))
+(define env:base (eval env:initial bootstrap-env:base))
 
 (for-each
   (lambda (form)
