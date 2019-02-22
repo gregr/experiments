@@ -1,5 +1,9 @@
 #lang racket
 
+; Lists are syntactic sugar:
+; (a b c)    ==> (a . (b . (c . ())))
+; (a b . c)  ==> (a . (b . c))
+
 ;; Quasi-map (map over improper lists)
 ;; e.g., (~map2 list '(a b . c) '(1 2 3 4 5))
 ;;       =
@@ -21,35 +25,56 @@
 (define (env-remove* env names)
   (remf* (lambda (rib) (member (car rib) names)) env))
 
+;(append
+  ;'((a . 1)
+    ;(b . 2)
+    ;(c . (3 4 5))
+    ;)
+  ;env ;; removed a b c
+  ;)
+
 (define (env-extend* env bindings)
   (append bindings (env-remove* env (map car bindings))))
 
 (struct wrap (>combiner) #:transparent)
 (define unwrap wrap->combiner)
 
+;; vau will combine epsilon and lambda: (eps (env) (lambda (x ...) ...))
+;; we'll represent this in Racket as: (lambda (env x ...) ...)
+
+;; [combine ⟨λx.T1⟩ T2 T3]   →   T1[x ← T2]
+;; [combine ⟨εx.T1⟩ T2 T3]   →   [combine T1[x ← T3] T2 T3]
+
+;; Example rewriting of the combined epsilon lambda:
+;; [combine ⟨εenv.⟨λx.T1⟩⟩ T2 T3]    →  [combine ⟨λx.T1⟩[env ← T3] T2 T3]
+;; [combine ⟨λx.T1[env ← T3]⟩ T2 T3] →  T1[env ← T3][x ← T2]
 
 ;; Evaluation
+;;               T1       T3  T2
 (define (combine operator env operands)
   (if (wrap? operator)
     (combine (unwrap operator) env (eval* env operands))
     (apply operator env operands)))
 
 (define (eval env form)
-  (cond ((pair? form)  ;; combinations
-         (combine (eval env (car form)) env (cdr form)))
-
+        ;; combinations
+        ;; [eval (T1 T2) T3]   →   [combine [eval T1 T3] T2 T3]
+  (cond ((pair? form)   (combine (eval env (car form)) env (cdr form)))
         ;; variables
+        ;; [eval s e]   →   lookup(s,e)     if symbol s is bound in environment e
         ((symbol? form) (env-ref-value env form))
-
         ;; literals
-        (#t             form)))
+        ;; [eval d T]   →   d
+        ;;   if d is an empty list, boolean, λ-function, ε-function, or environment
+        (#t form)))
 
 (define (eval* env forms)
   (map (lambda (form) (eval env form)) forms))
 
+;; It turns out we can derive this instead.
+;(define ($quote env datum) datum)
 
-(define ($quote env datum) datum)
-
+;; We only need to provide $if (unless we want church-encoded booleans) and $vau.
 (define ($if env c t f)
   (if (eval env c)
     (eval env t)
@@ -57,9 +82,8 @@
 
 (define ($vau env params body)
   (lambda args
-    (define bindings (~map2 (lambda (p a) `(,p . ,a)) params args))
+    (define bindings (~map2 cons params args))
     (eval (env-extend* env bindings) body)))
-
 
 (define (lift proc) (lambda (ignored-env . args) (apply proc args)))
 (define (lower-arg0 proc)
@@ -104,8 +128,7 @@
            (env-ref-value  . ,env-ref-value)
            (env-remove*    . ,env-remove*)
            (env-extend*    . ,env-extend*)))
-
-    `((quote . ,$quote)
+    `(;(quote . ,$quote)
       (if    . ,$if)
       (vau   . ,$vau))))
 
@@ -113,7 +136,7 @@
 ;;   lambda, let, cond
 (define bootstrap-env:base
   '((wrap
-      (vau (_ lambda apply)
+      (vau (_ quote lambda apply)
            ((lambda (let)
               (let ((fix (lambda (f)
                            ((lambda (d) (d d))
@@ -132,19 +155,29 @@
                   ;;; env:base
                   ((vau (env) env)))))
 
-            ;; let
+            ;;     (let ((x a) (y b) ...) body)
+            ;; ==> ((lambda (x y ...) body) a b ...)
             (vau (env bindings body)
                  (combine (combine lambda env (list (map car bindings) body))
                           env
-                          (map cadr bindings))))))
+                          (map cadr bindings))
+                 ;; Uglier alternative:
+                 ;(apply (wrap (combine lambda env
+                                       ;(list (map car bindings) body)))
+                        ;(map cadr bindings))
+                 ))))
+    ;; quote
+    (vau (env datum) datum)
 
     ;; lambda
+    ;; (lambda param body) ==> (wrap (vau (#f . param) body))
+    ;; The #f means we're ignoring the env argument.
     (vau (env param body)
          (wrap (combine vau env (list (cons #f param) body))))
 
     ;; apply
-    (wrap (vau (env combiner arg)
-               (combine (unwrap combiner) env arg)))))
+    (wrap (vau (env proc arg)
+               (combine (unwrap proc) env arg)))))
 
 (define env:base (eval env:initial bootstrap-env:base))
 
@@ -152,7 +185,7 @@
   (lambda (form)
     (newline)
     (pretty-write form)
-    (displayln '=)
+    (displayln '=>)
     (flush-output)
     (pretty-write (eval env:base form))
     (flush-output))

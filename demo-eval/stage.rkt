@@ -127,7 +127,7 @@
   (lambda (form)
     (newline)
     (pretty-write form)
-    (displayln '=)
+    (displayln '=>)
     (flush-output)
     (define program (@lambda env:initial (map car library:base) form))
     (pretty-write (apply (program env-empty) (map cdr library:base)))

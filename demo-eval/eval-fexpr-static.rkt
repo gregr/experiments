@@ -1,5 +1,9 @@
 #lang racket
 
+; Lists are syntactic sugar:
+; (a b c)    ==> (a . (b . (c . ())))
+; (a b . c)  ==> (a . (b . c))
+
 ;; Quasi-map (map over improper lists)
 ;; e.g., (~map2 list '(a b . c) '(1 2 3 4 5))
 ;;       =
@@ -27,28 +31,107 @@
 (define (env-remove* env names)
   (remf* (lambda (rib) (member (car rib) names)) env))
 
+;(append
+  ;'((a . 1)
+    ;(b . 2)
+    ;(c . (3 4 5))
+    ;)
+  ;env ;; removed a b c
+  ;)
+
+;((name . (syntax? . value))
+ ;...
+ ;)
+
 (define (env-extend* env bindings)
   (append bindings (env-remove* env (map car bindings))))
 
+; Here is John Shutt's calculus for reference.  I'll show my modifications after:
+
+; S   ::=   s | () | #t | #f | (S . S)   .
+
+; T ::= x | [combine T T T] | ⟨λx.T⟩ | ⟨εx.T⟩ | [eval T T] | ⟨wrap T⟩ | e | S   .
+
+; [eval d T]   →   d
+         ;if d is an empty list, boolean, λ-function, ε-function, or environment
+; [eval s e]   →   lookup(s,e)     if symbol s is bound in environment e
+; [eval (T1 T2) T3]   →   [combine [eval T1 T3] T2 T3]
+; [combine ⟨wrap T1⟩ T2 T3]   →   [combine T1 [eval T2 T3] T3]   .
+; [combine ⟨λx.T1⟩ T2 T3]   →   T1[x ← T2]
+; [combine ⟨εx.T1⟩ T2 T3]   →   [combine T1[x ← T3] T2 T3]   .
+
+
+; In my system, S is the same, but T and its rewrites no longer need his extra interpretation machinery for combine.  Specifically, apply replaces and simplifies combine, there's no need for wrap, and there's no need for the environment binder (epsilon).  In other words, it's just like what he calls M, plus eval.  All the fexpr magic now comes from how eval interprets bindings in the environment (which is why I call this approach "static"):
+
+; T ::= x | ⟨λx.T⟩ | ⟨apply T T⟩ | ⟨if T T T⟩ ... etc. | [eval T T] | S   .
+
+; ⟨apply ⟨λx.T1⟩ T2⟩  →   T1[x ← T2]
+; plus typical rules for extended lambda calculus terms, ⟨if T T T⟩ ... etc.
+
+; [eval d T]   →   d
+         ;if d is an empty list, boolean, number, etc.
+; ;; This is the interesting application rule for fexpr magic.
+; ;; Notice T is not evaluated, and that the calling environment is also passed in:
+; [eval (s T) e]   →  ⟨apply ⟨apply [eval s e] e⟩ T⟩
+         ;if s is bound in e and syntax?(s,e) = #t
+; ;; This is the uninteresting application rule you're familiar with:
+; [eval (T1 T2) e]   →   ⟨apply [eval T1 e] [eval T2 e]⟩
+; [eval s e]   →   lookup(s,e)
+         ;if symbol s is bound in environment e
+
+
+; These calculi are independent of any particular operative (John's name for a fexpr) definitions, which would be bound in the environment.  As an example of a typical LAMBDA (assumed to be bound to the appropriate operative) he mentions in prose: "For example, [eval (LAMBDA X FOO) e0] would evaluate to a function with static environment e0, of the form ⟨wrap ⟨λx.[eval FOO ⟪...⟫]⟩⟩ with the contents of e0 embedded somewhere in the ⟪...⟫".  He's roughly saying this:
+
+; [eval (LAMBDA X FOO) e0]  →*  ⟨wrap ⟨λx.[eval FOO ⟪(X x) . e0⟫]⟩⟩
+
+; In my system, you would define a different LAMBDA, which binds names that respond #f to `syntax?`, and possibly something called LAMBDA-SYNTAX for binding names that respond #t to `syntax?`.  Given standard bindings in e0, something like:
+
+; [eval (LAMBDA X FOO) e0]  →*   ⟨λx.[eval FOO ⟪(X #f x) . e0⟫]⟩
+
+; [eval (LAMBDA-SYNTAX X FOO) e0]  →*   ⟨λx.[eval FOO ⟪(X #t x) . e0⟫]⟩
+
+; It's just the usual lexically scoped evaluation of the body.  The only difference is #f vs. #t in the environment extension.
+
+; As a little more context to help you check your understanding, for these transitions to work, the standard env e0 must have bindings for LAMBDA and LAMBDA-SYNTAX of this form:
+; ⟪(LAMBDA #t <an appropriate λ term>)
+   ;. ((LAMBDA-SYNTAX #t <an appropriate λ term>)
+     ;. rest-of-e0)⟫
+
+
+; T ::= x | ⟨λx.T⟩ | ⟨apply T T⟩ | ⟨if T T T⟩ ... etc. | [eval T T] | S   .
+
+; ⟨apply ⟨λx.T1⟩ T2⟩  →   T1[x ← T2]
+; plus typical rules for extended lambda calculus terms, ⟨if T T T⟩ ... etc.
 
 ;; Evaluation
 (define (eval env form)
-  (cond ((pair? form)  ;; combinations
-         (define proc (eval env (car form)))
-         (define operands (cdr form))
-         (if (env-ref-syntax? env (car form))
-           (apply proc env operands)
-           (apply proc (eval* env operands))))
-
-        ;; variables
-        ((symbol? form) (env-ref-value env form))
-
-        ;; literals
-        (#t             form)))
+  (cond
+    ; ;; This is the interesting application rule for fexpr magic.
+    ; ;; Notice T is not evaluated, and that the calling environment is also passed in:
+    ; [eval (s T) e]   →  ⟨apply ⟨apply [eval s e] e⟩ T⟩
+    ;   if s is bound in e and syntax?(s,e) = #t
+    ; ;; This is the uninteresting application rule you're familiar with:
+    ; [eval (T1 T2) e]   →   ⟨apply [eval T1 e] [eval T2 e]⟩
+    ((pair? form)
+     (define rator (car form))
+     (define rands (cdr form))
+     (define proc (eval env rator))
+     (if (and (symbol? rator) (env-ref-syntax? env rator))
+       ;; syntax
+       (apply proc env rands)
+       ;; not syntax
+       (apply proc (eval* env rands))))
+    ;; variables
+    ; [eval s e]   →   lookup(s,e)
+    ;  if symbol s is bound in environment e
+    ((symbol? form) (env-ref-value env form))
+    ;; literals
+    ; [eval d T]   →   d
+    ;  if d is an empty list, boolean, number, etc.
+    (#t form)))
 
 (define (eval* env forms)
   (map (lambda (form) (eval env form)) forms))
-
 
 (define (@quote env datum) datum)
 
@@ -57,11 +140,12 @@
     (eval env t)
     (eval env f)))
 
-(define (@lambda env params body)
+(define (@lambda env param body)
   (lambda args
-    (define bindings (~map2 (lambda (p a) `(,p #f . ,a)) params args))
-    (eval (env-extend* env bindings) body)))
-
+    (eval (env-extend*
+            env (~map2 (lambda (p a)
+                         (cons p (cons #f a))) param args))
+          body)))
 
 (define env:initial
   `((@               #f . ,(lambda (proc . args) (apply proc args)))
@@ -115,12 +199,10 @@
   '((lambda (@lambda-syntax)
       ;; Use @lambda-syntax to bind itself as the syntax: lambda-syntax
       (($ @lambda-syntax (lambda-syntax)
-          ((lambda-syntax
-             (let-syntax)
+          ((lambda-syntax (let-syntax)
              (let-syntax ((let (lambda (env bindings body)
                                  (apply (@ lambda env (map car bindings) body)
                                         (eval* env (map cadr bindings))))))
-
                (let ((fix (lambda (f)
                             ((lambda (d) (d d))
                              (lambda (x) (f (lambda arg
@@ -138,6 +220,8 @@
                    ($ (lambda (env) env))))))
 
            ;; let-syntax
+           ;;     (let-syntax ((x a) (y b) ...) body)
+           ;; ==> ((lambda-syntax (x y ...) body) a b ...)
            (lambda (env bindings body)
              (apply (@lambda-syntax env (map car bindings) body)
                     (eval* env (map cadr bindings))))))
@@ -147,9 +231,10 @@
 
     ;; @lambda-syntax
     (lambda (env param body)
-      (lambda arg
-        (eval (env-extend* env (~map2 (lambda (p a) (cons p (cons #t a)))
-                                      param arg))
+      (lambda args
+        (eval (env-extend*
+                env (~map2 (lambda (p a)
+                             (cons p (cons #t a))) param args))
               body)))))
 
 (define env:base (eval env:initial bootstrap-env:base))
@@ -158,7 +243,7 @@
   (lambda (form)
     (newline)
     (pretty-write form)
-    (displayln '=)
+    (displayln '=>)
     (flush-output)
     (pretty-write (eval env:base form))
     (flush-output))
@@ -176,11 +261,15 @@
 
     ((lambda (x) x) 3)
 
-    ((lambda (lambda) lambda) 3)
+    ((lambda (lambda) lambda) (+ 1 2))
+
+    ($ (lambda (env args) args) (+ 1 2))
 
     ((@ lambda '() '() 5))
 
     ((@ lambda '() '(x) 'x) 6)
+
+    ((lambda (x y) (cons x y)) 11 12)
 
     ((@ lambda
         ($ (lambda (e) e))
