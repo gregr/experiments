@@ -309,6 +309,7 @@
 ;; TODO: augmented map queries.  Maybe rename aug to index.
 ;(define (btree-split-left/aug b threshold))
 ;(define (btree-split-right/aug b threshold))
+;; NOTE: filter/aug only supports augmentations that form a join-semilattice.
 ;(define (btree-filter/aug b threshold))
 
 (define (alist->btree/merge merge params kvs)
