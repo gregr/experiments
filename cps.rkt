@@ -90,7 +90,7 @@
 
     (`(shift ,kv ,E)
       (let ((x (fresh-k-var ctx)))
-        (cons (cons (vector 'shift x kv E) ctx)
+        (cons (cons (vector 'shift x (rename-var kv) E) ctx)
               `(var ,x))))))
 
 (define (cps/k k E)
