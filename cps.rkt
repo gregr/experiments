@@ -1,12 +1,12 @@
 #lang racket
 (require racket/pretty)
 
-;; This CPS transformation does not introduce any new administrative redexes
-;; unless the original expression uses reset or shift.  Those introduced by
-;; shift could be eliminated by threading a substitution through its body.
-;; Eliminating those introduced by reset involves reducing uses of the identity
-;; continuation.  Also, if an expression already contains administrative
-;; redexes, they will remain.
+;; This is a first-order CPS transformation does not introduce any new
+;; administrative redexes unless the original expression uses reset or shift.
+;; Those introduced by shift could be eliminated by threading a substitution
+;; through its body.  Eliminating those introduced by reset involves reducing
+;; uses of the identity continuation.  Also, if an expression already contains
+;; administrative redexes, they will remain.
 
 ;; For simplicity, transformations of reset and shift make use of direct style.
 ;; These DS uses could be eliminated by doing a second CPS transformation, if
