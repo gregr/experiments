@@ -43,7 +43,7 @@
                       (lambda (i r:rand)
                         `(,r:rator ,r:rand ,(return/push k i r)))))))))
 
-(define (cps E) (cps/k 0 E (lambda (_ r) `(halt ,r))))
+(define (cps E) (cps/k 0 E 'halt))
 
 
 (define examples
@@ -59,6 +59,8 @@
       (+ (f ((z a) (x w)))
          (* (if (y (g b)) (h c) '5)
             (j d))))
+
+    (x y)
 
     (lambda (q) (q '11))
     ))
