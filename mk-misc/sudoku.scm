@@ -70,10 +70,7 @@
             (nine*o d)))))
 
 (define (run-sudoku board.in)
-  (define b.in      (board-parts board.in))
-  (define rows.in   (car   b.in))
-  (define cols.in   (cadr  b.in))
-  (define blocks.in (caddr b.in))
+  (define _ (board-parts board.in))  ;; just to validate the input board size
   (define result
     (run 1 (x0  x1  x2  x3  x4  x5  x6  x7  x8
             x9  x10 x11 x12 x13 x14 x15 x16 x17
@@ -193,6 +190,16 @@
                       0 0 0 3 0 0 0 9 0
                       9 0 0 0 0 0 2 0 0))
 
+(define grid.50 '(3 0 0 2 0 0 0 0 0
+                  0 0 0 1 0 7 0 0 0
+                  7 0 6 0 3 0 5 0 0
+                  0 7 0 0 0 9 0 8 0
+                  9 0 0 0 2 0 0 0 4
+                  0 1 0 8 0 0 0 5 0
+                  0 0 9 0 4 0 3 0 1
+                  0 0 0 7 0 2 0 0 0
+                  0 0 0 0 0 8 0 0 6))
+
 (define board.empty '(0 0 0 0 0 0 0 0 0
                       0 0 0 0 0 0 0 0 0
                       0 0 0 0 0 0 0 0 0
@@ -214,6 +221,7 @@
             easy.2
             medium.1
             medium.2
+            grid.50
             hard.1
             hard.2
             very-hard.1
