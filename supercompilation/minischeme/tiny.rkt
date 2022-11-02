@@ -11,6 +11,9 @@
 ;; Value: an atom, singleton vector, pair, or procedure (represented as a closure).
 ; V ::= A | #(V) | (V . V) | #s(closure (<symbol> ...) E ((<symbol> . V) ...))
 
+;; Lambda expression:
+; LAM ::= (lambda (<symbol> ...) E)
+
 ;; Expression:
 ; E ::=
 ;     ;; variable
@@ -19,7 +22,7 @@
 ;     | (quote A)
 ;     | (vector E)
 ;     | (cons E E)
-;     | (lambda (<symbol> ...) E)
+;     | LAM
 ;     ;; quasi-constructor
 ;     | (+ E E)
 ;     ;; accessors
@@ -38,8 +41,7 @@
 ;     | (if E E E)
 ;     ;; procedure call
 ;     | (call E E ...)
-
-;; Program: a list of definitions.
-; P ::= (define name E) ...
+;     ;; recursive procedure binding
+;     | (letrec ((<symbol> LAM) ...) E)
 
 (struct closure (params body env) #:prefab)

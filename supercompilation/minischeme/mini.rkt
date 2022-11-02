@@ -1,5 +1,5 @@
 #lang racket/base
-(provide P.mini->P.tiny E.mini->E.tiny)
+(provide P.mini->E.tiny E.mini->E.tiny)
 (require "tiny.rkt" racket/match)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,6 +18,9 @@
 ;; S-expression: an atom, singleton vector, or pair, without any procedures.
 ; S ::= A | #(S) | (S . S)
 
+;; Lambda expression:
+; LAM ::= (lambda (<symbol> ...) E)
+
 ;; Expression:
 ; E ::=
 ;     ;; variable
@@ -29,7 +32,7 @@
 ;     | (cons E E)
 ;     | (list E ...)
 ;     | (quasiquote QE)
-;     | (lambda (<symbol> ...) E)
+;     | LAM
 ;     ;; quasi-constructor
 ;     | (+ E E)
 ;     ;; accessors
@@ -51,8 +54,10 @@
 ;     | (if E E E)
 ;     | (cond (E E) ... (else E))
 ;     ;; binding
-;     | (let  ((<symbol> E) ...) E)
-;     | (let* ((<symbol> E) ...) E)
+;     | (let <symbol> ((<symbol> E)   ...) E)
+;     | (let          ((<symbol> E)   ...) E)
+;     | (let*         ((<symbol> E)   ...) E)
+;     | (letrec       ((<symbol> LAM) ...) E)
 ;     ;; case analysis and binding
 ;     | (match E (MP E) ...)
 ;     ;; procedure call
@@ -93,12 +98,14 @@
 ;      | #(QP)
 ;      | S                ; where the s-expression is not equal to quasiquote or unquote
 
-;; Definition:
-; D ::= (define name E)
-;     | (define (name <symbol> ...) E)
+;; Top-level definition: a definition of a recursive procedure or a constant.
+; D ::= (define (name <symbol> ...) E)
+;     | (define name LAM)
+;     | (define name L)
+;     | (define name (quote S))
 
-;; Program: a list of definitions.
-; P ::= D ...
+;; Program: a list of definitions followed by an expression.
+; P ::= D ... E
 
 (define (error x) (`(error: ,x)))
 
@@ -148,28 +155,61 @@
     ((list x)    (? x))
     ((cons x x*) (or (? x) (ormap ? x*)))))
 
+;; TODO: support first-class primitives.
+(define (reverse x*) (foldl cons '() x*))
+
 (define (literal? x) (or (eqv? x #t) (eqv? x #f) (number? x)))
 
 (define (atom? x) (or (literal? x) (null? x) (symbol? x)))
 
-(define (binding?  x)  (and (pair? x) (symbol? (car x)) (pair? (cdr x)) (null? (cddr x))))
+(define (binding? x)  (and (pair? x) (symbol? (car x)) (pair? (cdr x)) (null? (cddr x))))
 
-(define (P.mini->P.tiny P.mini)
-  (let ((bound* (foldl (lambda (name name*)
-                         (cond ((eqv? name 'define) (error '(cannot define define)))
-                               ((memv name name*)   (error (list '(same name defined multiple times) name)))
-                               (else                (cons name name*))))
-                       '()
-                       (map (lambda (D)
-                              (match D
-                                (`(define (,name . ,_) ,_) name)
-                                (`(define ,name        ,_) name)))
-                            P.mini))))
-    (map (lambda (D.mini)
-           (match D.mini
-             (`(define (,name . ,param*) ,body) `(define ,name (lambda ,param* ,(E.mini->E.tiny bound* body))))
-             (`(define  ,name            ,body) `(define ,name                 ,(E.mini->E.tiny bound* body)))))
-         P.mini)))
+(define (P.mini->E.tiny P.mini)
+  (let ((bound* (foldl (lambda (D?E name*)
+                         (let ((name (match D?E
+                                       (`(define (,name . ,_) ,_) name)
+                                       (`(define ,name        ,_) name)
+                                       (_                         #f))))
+                           (if name
+                               (cond ((not (symbol? name)) (error (list '(definition name must be a symbol) name)))
+                                     ((eqv? name 'define)  (error '(cannot define define)))
+                                     ((memv name name*)    (error (list '(same name defined multiple times) name)))
+                                     (else                 (cons name name*)))
+                               name*)))
+                       '() P.mini)))
+    (match (foldl (lambda (D?E c*p*e)
+                    (match c*p*e
+                      ((list c* p* e?)
+                       (if e?
+                           (error (list '(program list must end with exactly one expression) D?E))
+                           (match D?E
+                             (`(define (,name . ,param*) ,body)
+                               (list c* (cons `(,name ,(LAM->E.tiny bound* `(lambda ,param* ,body))) p*) #f))
+                             (`(define ,name ,(and `(lambda . ,_) LAM))
+                               (list c* (cons `(,name ,(LAM->E.tiny bound* LAM))                     p*) #f))
+                             (`(define ,name ,(? literal? L))
+                               (list (cons `(,name (quote ,L))             c*) p* #f))
+                             (`(define ,name (quote ,S))
+                               (list (cons `(,name (quote ,(S->E.tiny S))) c*) p* #f))
+                             (`(define ,name ,body)
+                               (error (list '(definition must be of a constant or a procedure) D?E)))
+                             (E (list c* p* (E.mini->E.tiny bound* E))))))))
+                  (list '() '() #f)
+                  P.mini)
+      ((list c* p* e) (if e
+                          (let ((c* (reverse c*)))
+                            `(call (lambda ,(map car c*)
+                                     (letrec ,(reverse p*) ,e))
+                                   . ,(map cadr c*)))
+                          (error '(program list must end with an expression)))))))
+
+(define (S->E.tiny S)
+  (match S
+    ((? atom?)      `(quote S))
+    (`#(,S)         `(vector ,(S->E.tiny S)))
+    (`(,S.a . ,S.b) `(cons   ,(S->E.tiny S.a)
+                             ,(S->E.tiny S.b)))
+    (_              (error (list '(invalid S-expression) S)))))
 
 (define (E.mini->E.tiny bound* E)
   (let* ((loop         (lambda (E)    (E.mini->E.tiny bound* E)))
@@ -183,10 +223,7 @@
       ((cons (? not-keyword?) _)                  (if (list? E)
                                                       `(call . ,(map loop E))
                                                       (error (list '(invalid call expression) E))))
-      (`(quote ,(? atom?))                        E)
-      (`(quote #(,S))                             `(vector ,(loop `(quote ,S))))
-      (`(quote (,S.a . ,S.b))                     `(cons   ,(loop `(quote ,S.a))
-                                                           ,(loop `(quote ,S.b))))
+      (`(quote ,S)                                (S->E.tiny S))
       (`(vector ,E)                               `(vector ,(loop E)))
       (`(cons ,E.a ,E.b)                          `(cons   ,(loop E.a)
                                                            ,(loop E.b)))
@@ -194,8 +231,7 @@
       (`(list ,E.a . ,E*)                         `(cons ,(loop E.a)
                                                          ,(loop `(list . ,E*))))
       (`(quasiquote ,QE)                          (QE->E.tiny bound* QE 0))
-      (`(lambda ,(? parameter*? param*) ,E.body)  `(lambda ,param*
-                                                     ,(E.mini->E.tiny (uappend param* bound*) E.body)))
+      (`(lambda . ,_)                             (LAM->E.tiny bound* E))
       (`(+ ,E.a ,E.b)                             `(+ ,(loop E.a) ,(loop E.b)))
       (`(vector-ref ,E.v ,E.i)                    `(vector-ref ,(loop E.v) ,(loop E.i)))
       (`(car ,E)                                  `(car ,(loop E)))
@@ -222,6 +258,17 @@
       (`(cond (,E.test ,E) . ,clause*)            `(if ,(loop E.test)
                                                        ,(loop E)
                                                        ,(loop `(cond . ,clause*))))
+      (`(let ,(? symbol? name) ,binding* ,E)      (let ((param* (map car binding*)))
+                                                    (cond ((not (andmap binding? binding*))
+                                                           (error (list '(invalid named-let bindings) binding*)))
+                                                          ((not (parameter*? param*))
+                                                           (error (list '(invalid named-let parameters) param*)))
+                                                          (else
+                                                            (let ((bound* (ucons name (uappend param* bound*))))
+                                                              `(call (letrec ((,name (lambda ,param*
+                                                                                       ,(E.mini->E.tiny bound* E))))
+                                                                       ,name)
+                                                                     . ,(map loop (map cadr binding*))))))))
       (`(let ,binding* ,E)                        (let ((param* (map car binding*)))
                                                     (cond ((not (andmap binding? binding*))
                                                            (error (list '(invalid let bindings) binding*)))
@@ -234,8 +281,24 @@
       (`(let* ,binding* ,body)                    (if (not (andmap binding? binding*))
                                                       (error (list '(invalid let* bindings) binding*))
                                                       (E.mini-let*->E.tiny bound* binding* body)))
+      (`(letrec ,binding* ,body)                  (let ((param* (map car binding*)))
+                                                    (cond ((not (andmap binding? binding*))
+                                                           (error (list '(invalid letrec bindings) binding*)))
+                                                          ((not (parameter*? param*))
+                                                           (error (list '(invalid letrec parameters) param*)))
+                                                          (else
+                                                            `(letrec ,(map (lambda (b)
+                                                                             (list (car b) (LAM->E.tiny bound* (cadr b))))
+                                                                           binding*)
+                                                               ,(E.mini->E.tiny (uappend param* bound*) E))))))
       (`(match ,E . ,clause*)                     (E.mini-match->E.tiny bound* E clause*))
       (_                                          (error (list '(invalid expression) E))))))
+
+(define (LAM->E.tiny bound* E)
+  (match E
+    (`(lambda ,(? parameter*? param*) ,E.body)
+      `(lambda ,param* ,(E.mini->E.tiny (uappend param* bound*) E.body)))
+    (_ (error (list '(invalid lambda expression) E)))))
 
 (define (E.mini-let*->E.tiny bound* binding* E.body)
   (match binding*
