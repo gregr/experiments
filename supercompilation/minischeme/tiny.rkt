@@ -44,4 +44,4 @@
 ;     ;; recursive procedure binding
 ;     | (letrec ((<symbol> LAM) ...) E)
 
-(struct closure (params body env) #:prefab)
+(struct closure (param* body env) #:prefab)

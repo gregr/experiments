@@ -103,8 +103,12 @@
 
 (define (error x) (`(error: ,x)))
 
+(define (not x) (if x #f #t))
+
 (define (cadr x) (car (cdr x)))
 (define (cddr x) (cdr (cdr x)))
+
+(define (list? x) (or (null? x) (and (pair? x) (list? (cdr x)))))
 
 (define (memv x x*)
   (match x*
@@ -149,8 +153,13 @@
     ((list x)    (? x))
     ((cons x x*) (or (? x) (ormap ? x*)))))
 
-;; TODO: support first-class primitives.
 (define (reverse x*) (foldl cons '() x*))
+
+(define (map f x*)
+  (let loop ((x* x*))
+    (match x*
+      ('()         '())
+      ((cons x x*) (cons (f x) (loop x*))))))
 
 (define (literal? x) (or (eqv? x #t) (eqv? x #f) (number? x)))
 (define (atom?    x) (or (literal? x) (null? x) (symbol? x)))
@@ -236,7 +245,7 @@
       ('(list)                               '(quote ()))
       (`(list ,E.a . ,E*)                    `(cons ,(loop E.a)
                                                     ,(loop `(list . ,E*))))
-      (`(quasiquote ,QE)                     (QE->E.tiny bound* QE 0))
+      (`(,'quasiquote ,QE)                   (QE->E.tiny bound* QE 0))
       (`(lambda . ,_)                        (LAM->E.tiny bound* E))
       (`(and)                                '(quote #t))
       (`(and ,E)                             (loop E))
@@ -427,7 +436,7 @@
   (match MP
     ((? symbol?)            MP)
     ((? literal?)           `(quote ,MP))
-    (`(quote (? atom?))     MP)
+    (`(quote ,(? atom?))    MP)
     (`(quote #(,S))         `(vector ,(MP->PP `(quote ,S))))
     (`(quote (,S.a . ,S.b)) `(cons   ,(MP->PP `(quote ,S.a))
                                      ,(MP->PP `(quote ,S.b))))
@@ -449,7 +458,7 @@
     ('(or)                  '(not _))
     (`(or ,MP)              (MP->PP MP))
     (`(or ,MP . ,MP*)       `(or ,(MP->PP MP) ,(MP->PP `(or . ,MP*))))
-    (`(quasiquote ,QP)      (QP->PP QP 0))
+    (`(,'quasiquote ,QP)    (QP->PP QP 0))
     (_                      (error (list '(invalid match pattern) MP)))))
 
 (define (QP->PP QP level)
