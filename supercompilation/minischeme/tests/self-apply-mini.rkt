@@ -1,15 +1,12 @@
 #lang racket/base
-(require "../mini.rkt" racket/pretty)
+(require "../mini.rkt" racket/pretty racket/runtime-path)
+
+(define-runtime-path path.here ".")
 
 (define mini.scm
   (call-with-input-file
-    "mini.rkt"
+    (build-path path.here "../mini.scm")
     (lambda (in)
-      ;; Skip of Racket-specific prelude.
-      ;; TODO: have mini.rkt (include "mini.scm") instead, and also read that here.
-      (read-line in)
-      (read-line in)
-      (read-line in)
       (let loop ()
         (let ((x (read in)))
           (if (eof-object? x)
