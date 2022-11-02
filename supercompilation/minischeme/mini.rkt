@@ -18,35 +18,35 @@
 ;; S-expression: an atom, singleton vector, or pair, without any procedures.
 ; S ::= A | #(S) | (S . S)
 
+;; Primitive:
+; PRIM ::= vector
+;        | cons
+;        | +
+;        | vector-ref
+;        | car
+;        | cdr
+;        | eqv?
+;        | null?
+;        | vector?
+;        | pair?
+;        | number?
+;        | symbol?
+;        | procedure?
+
 ;; Lambda expression:
 ; LAM ::= (lambda (<symbol> ...) E)
 
 ;; Expression:
 ; E ::=
+;       PRIM
 ;     ;; variable
-;     <symbol>
+;     | <symbol>
 ;     ;; constructors
 ;     | L
 ;     | (quote S)
-;     | (vector E)
-;     | (cons E E)
-;     | (list E ...)
 ;     | (quasiquote QE)
+;     | (list E ...)
 ;     | LAM
-;     ;; quasi-constructor
-;     | (+ E E)
-;     ;; accessors
-;     | (vector-ref E E)
-;     | (car E)
-;     | (cdr E)
-;     ;; predicates
-;     | (eqv? E E)
-;     | (null? E)
-;     | (vector? E)
-;     | (pair? E)
-;     | (number? E)
-;     | (symbol? E)
-;     | (procedure? E)
 ;     ;; short-circuiting logical operators
 ;     | (and E ...)
 ;     | (or E ...)
@@ -79,13 +79,7 @@
 ;      | (vector MP)
 ;      | (list MP ...)
 ;      | (list* MP ... MP)
-;      | (? E          MP ...)
-;      | (? null?      MP ...)
-;      | (? vector?    MP ...)
-;      | (? pair?      MP ...)
-;      | (? number?    MP ...)
-;      | (? symbol?    MP ...)
-;      | (? procedure? MP ...)
+;      | (? E MP ...)
 ;      | (not MP)
 ;      | (and MP ...)
 ;      | (or  MP ...)
@@ -209,38 +203,41 @@
                              ,(S->E.tiny S.b)))
     (_              (error (list '(invalid S-expression) S)))))
 
+(define (prim? x)
+  (memv x '(vector cons + vector-ref car cdr eqv? null? vector? pair? number? symbol? procedure?)))
+
 (define (E.mini->E.tiny bound* E)
   (let* ((loop         (lambda (E)    (E.mini->E.tiny bound* E)))
          (bound?       (lambda (name) (memv name bound*)))
-         (not-keyword? (lambda (x)    (or (not (symbol? x)) (bound? x)))))
+         (not-keyword? (lambda (x)    (or (not (symbol? x)) (prim? x) (bound? x)))))
     (match E
       ((? literal?)                          `(quote ,E))
       ((? symbol?)                           (if (bound? E)
                                                  E
-                                                 (error (list '(unbound variable) E))))
+                                                 (match E
+                                                   ('vector     '(lambda (x)   (vector x)))
+                                                   ('cons       '(lambda (a b) (cons a b)))
+                                                   ('+          '(lambda (a b) (+ a b)))
+                                                   ('vector-ref '(lambda (v i) (vector-ref v i)))
+                                                   ('car        '(lambda (x)   (car x)))
+                                                   ('cdr        '(lambda (x)   (cdr x)))
+                                                   ('eqv?       '(lambda (a b) (eqv? a b)))
+                                                   ('null?      '(lambda (x)   (null? x)))
+                                                   ('vector?    '(lambda (x)   (vector? x)))
+                                                   ('pair?      '(lambda (x)   (pair? x)))
+                                                   ('number?    '(lambda (x)   (number? x)))
+                                                   ('symbol?    '(lambda (x)   (symbol? x)))
+                                                   ('procedure? '(lambda (x)   (procedure? x)))
+                                                   (_           (error (list '(unbound variable) E))))))
       ((cons (? not-keyword?) _)             (if (list? E)
                                                  `(call . ,(map loop E))
                                                  (error (list '(invalid call expression) E))))
       (`(quote ,S)                           (S->E.tiny S))
-      (`(vector ,E)                          `(vector ,(loop E)))
-      (`(cons ,E.a ,E.b)                     `(cons   ,(loop E.a)
-                                                      ,(loop E.b)))
       ('(list)                               '(quote ()))
       (`(list ,E.a . ,E*)                    `(cons ,(loop E.a)
                                                     ,(loop `(list . ,E*))))
       (`(quasiquote ,QE)                     (QE->E.tiny bound* QE 0))
       (`(lambda . ,_)                        (LAM->E.tiny bound* E))
-      (`(+ ,E.a ,E.b)                        `(+ ,(loop E.a) ,(loop E.b)))
-      (`(vector-ref ,E.v ,E.i)               `(vector-ref ,(loop E.v) ,(loop E.i)))
-      (`(car ,E)                             `(car ,(loop E)))
-      (`(cdr ,E)                             `(cdr ,(loop E)))
-      (`(eqv? ,E.a ,E.b)                     `(eqv? ,(loop E.a) ,(loop E.b)))
-      (`(null?      ,E)                      `(null?      ,(loop E)))
-      (`(vector?    ,E)                      `(vector?    ,(loop E)))
-      (`(pair?      ,E)                      `(pair?      ,(loop E)))
-      (`(number?    ,E)                      `(number?    ,(loop E)))
-      (`(symbol?    ,E)                      `(symbol?    ,(loop E)))
-      (`(procedure? ,E)                      `(procedure? ,(loop E)))
       (`(and)                                '(quote #t))
       (`(and ,E)                             (loop E))
       (`(and ,E . ,E*)                       `(if ,(loop E)
@@ -353,7 +350,7 @@
 
 (define (PP->? bound* PP)
   (let* ((bound?       (lambda (name) (memv name bound*)))
-         (not-keyword? (lambda (x)    (or (not (symbol? x)) (bound? x)))))
+         (not-keyword? (lambda (x)    (or (not (symbol? x)) (prim? x) (bound? x)))))
     (match PP
       ('_                             '(lambda (x sub) sub))
       ((? symbol?)                    `(lambda (x sub)
@@ -387,12 +384,6 @@
       (`(? ,(and (? not-keyword?) E)) `((lambda (?)
                                           (lambda (x sub) (if (call ? x) sub '#f)))
                                         ,(E.mini->E.tiny bound* E)))
-      ('(? null?)                     '(lambda (x sub) (if (null?      x) sub '#f)))
-      ('(? vector?)                   '(lambda (x sub) (if (vector?    x) sub '#f)))
-      ('(? pair?)                     '(lambda (x sub) (if (pair?      x) sub '#f)))
-      ('(? number?)                   '(lambda (x sub) (if (number?    x) sub '#f)))
-      ('(? symbol?)                   '(lambda (x sub) (if (symbol?    x) sub '#f)))
-      ('(? procedure?)                '(lambda (x sub) (if (procedure? x) sub '#f)))
       (`(not ,PP)                     `(lambda (x sub)
                                          (if (call ,(PP->? bound* PP) x sub) '#f sub)))
       (`(and ,PP.a ,PP.b)             `(lambda (x sub)
