@@ -199,9 +199,9 @@
                                  ((memv name name*) (error (list '(same name defined multiple times) name stx)))
                                  (else              (list (cons name name*) def*))))))))
 
-(define (defstate->E.tiny dst)
-  (let ((bound* (defstate-name*       dst))
-        (^E     (defstate-expression  dst)))
+(define (defstate->E.tiny bound* dst)
+  (let ((bound* (uappend (defstate-name* dst) bound*))
+        (^E     (defstate-expression dst)))
     (if (not ^E)
         (error '(program list must end with an expression))
         (match (foldl (lambda (def c*p*)
@@ -221,18 +221,23 @@
                       (letrec ,(reverse p*) ,(^E bound*)))
                     . ,(map cadr c*))))))))
 
-(define (P.mini->E.tiny P.mini)
-  (defstate->E.tiny
-    (foldl (lambda (stx dst)
-             (match stx
-               (`(define (,name . ,param*) ,body)
-                 (defstate-define dst stx name (lambda (bound*) (LAM->E.tiny bound* `(lambda ,param* ,body)))))
-               (`(define ,name ,E)
-                 (defstate-define dst stx name (lambda (bound*) (E.mini->E.tiny bound* E))))
-               (E
-                 (defstate-add-expression dst stx (lambda (bound*) (E.mini->E.tiny bound* E))))))
-           defstate.empty
-           P.mini)))
+(define (P.mini->E.tiny bound* P.mini)
+  (let* ((bound?       (lambda (name) (memv name bound*)))
+         (not-keyword? (lambda (x)    (or (not (symbol? x)) (bound? x)))))
+    (defstate->E.tiny
+      bound*
+      (foldl (lambda (stx dst)
+               (match stx
+                 ((cons (? not-keyword?) _)
+                  (defstate-add-expression dst stx (lambda (bound*) (E.mini->E.tiny bound* stx))))
+                 (`(define (,name . ,param*) ,body)
+                   (defstate-define dst stx name (lambda (bound*) (LAM->E.tiny bound* `(lambda ,param* ,body)))))
+                 (`(define ,name ,E)
+                   (defstate-define dst stx name (lambda (bound*) (E.mini->E.tiny bound* E))))
+                 (_
+                   (defstate-add-expression dst stx (lambda (bound*) (E.mini->E.tiny bound* stx))))))
+             defstate.empty
+             P.mini))))
 
 (define (S->E.tiny S)
   (match S
@@ -248,7 +253,7 @@
 (define (E.mini->E.tiny bound* E)
   (let* ((loop         (lambda (E)    (E.mini->E.tiny bound* E)))
          (bound?       (lambda (name) (memv name bound*)))
-         (not-keyword? (lambda (x)    (or (not (symbol? x)) (prim? x) (bound? x)))))
+         (not-keyword? (lambda (x)    (or (not (symbol? x)) (bound? x)))))
     (match E
       ((? literal?)                          `(quote ,E))
       ((? symbol?)                           (if (bound? E)
@@ -328,6 +333,9 @@
                                                                         binding*)
                                                             ,(E.mini->E.tiny bound* body)))))))
       (`(match ,E . ,clause*)                (E.mini-match->E.tiny bound* E clause*))
+      ((cons (? prim?) _)                    (if (list? E)
+                                                 `(call . ,(map loop E))
+                                                 (error (list '(invalid call expression) E))))
       (_                                     (error (list '(invalid expression) E))))))
 
 (define (LAM->E.tiny bound* E)
