@@ -1,5 +1,5 @@
 #lang racket/base
-(require "../mini.rkt" racket/pretty racket/runtime-path)
+(require "../mini.rkt" "../tiny.rkt" racket/pretty racket/runtime-path)
 
 (define-runtime-path path.here ".")
 
@@ -23,4 +23,7 @@
 
 (define test.program (append mini.scm (list example.scm)))
 
-(pretty-write (P.mini->E.tiny test.program))
+(let ((E.tiny (P.mini->E.tiny test.program)))
+  (pretty-write E.tiny)
+  (E.tiny?! '() E.tiny)
+  (pretty-write `(valid?: ,(E.tiny? '() E.tiny))))
