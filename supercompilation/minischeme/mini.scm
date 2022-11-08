@@ -322,10 +322,11 @@
                                                      ((not (parameter*? param*))
                                                       (error (list '(invalid letrec parameters) param*)))
                                                      (else
-                                                       `(letrec ,(map (lambda (b)
-                                                                        (list (car b) (LAM->E.tiny bound* (cadr b))))
-                                                                      binding*)
-                                                          ,(E.mini->E.tiny (uappend param* bound*) E))))))
+                                                       (let ((bound* (uappend param* bound*)))
+                                                         `(letrec ,(map (lambda (b)
+                                                                          (list (car b) (LAM->E.tiny bound* (cadr b))))
+                                                                        binding*)
+                                                            ,(E.mini->E.tiny bound* body)))))))
       (`(match ,E . ,clause*)                (E.mini-match->E.tiny bound* E clause*))
       (_                                     (error (list '(invalid expression) E))))))
 
