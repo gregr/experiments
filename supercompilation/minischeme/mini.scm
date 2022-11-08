@@ -161,44 +161,78 @@
 (define (atom?    x) (or (literal? x) (null? x) (symbol? x)))
 (define (binding? x) (and (pair? x) (symbol? (car x)) (pair? (cdr x)) (null? (cddr x))))
 
+(define (E.tiny-lambda? E.tiny)
+  (match E.tiny
+    (`(lambda . ,_) #t)
+    (_              #f)))
+
+(define (E.tiny-constant? E.tiny)
+  (match E.tiny
+    (`(quote ,_)       #t)
+    (`(vector ,E)      (E.tiny-constant? E))
+    (`(cons ,E.a ,E.b) (and (E.tiny-constant? E.a) (E.tiny-constant? E.b)))
+    (_                 #f)))
+
+(define defstate.empty '(() ()))
+
+(define (defstate-name* dst) (car dst))
+
+(define (defstate-expression dst)
+  (match dst
+    (`(,_ ((#f ,^E.tiny ,_) . ,_)) ^E.tiny)
+    (_                             #f)))
+
+(define (defstate-definition* dst)
+  (match dst
+    (`(,_ ((#f . ,_) . ,rdef*)) (reverse rdef*))
+    (_                          (reverse (cadr dst)))))
+
+(define (defstate-add-expression dst stx ^E.tiny) (defstate-define dst stx #f ^E.tiny))
+
+(define (defstate-define dst stx name ^E.tiny)
+  (if (and name (not (symbol? name)))
+      (error (list '(definition name must be a symbol) name stx))
+      (match dst
+        (`(,_ ((#f . ,_) . ,_)) (error (list '(program list must end with exactly one expression) stx)))
+        (`(,name* ,def*) (let ((def* (cons (list name ^E.tiny stx) def*)))
+                           (cond ((not name)        (list name* def*))
+                                 ((memv name name*) (error (list '(same name defined multiple times) name stx)))
+                                 (else              (list (cons name name*) def*))))))))
+
+(define (defstate->E.tiny dst)
+  (let ((bound* (defstate-name*       dst))
+        (^E     (defstate-expression  dst)))
+    (if (not ^E)
+        (error '(program list must end with an expression))
+        (match (foldl (lambda (def c*p*)
+                        (match def
+                          ((list name ^E stx)
+                           (let ((E (^E bound*)))
+                             (match c*p*
+                               ((list c* p*)
+                                (cond ((E.tiny-lambda?   E) (list c* (cons (list name E) p*)))
+                                      ((E.tiny-constant? E) (list (cons (list name E) c*) p*))
+                                      (else (error (list '(definition must be of a constant or a procedure) stx))))))))))
+                      (list '() '())
+                      (defstate-definition* dst))
+          ((list c* p*)
+           (let ((c* (reverse c*)))
+             `(call (lambda ,(map car c*)
+                      (letrec ,(reverse p*) ,(^E bound*)))
+                    . ,(map cadr c*))))))))
+
 (define (P.mini->E.tiny P.mini)
-  (let ((bound* (foldl (lambda (D?E name*)
-                         (let ((name (match D?E
-                                       (`(define (,name . ,_) ,_) name)
-                                       (`(define ,name        ,_) name)
-                                       (_                         #f))))
-                           (if name
-                               (cond ((not (symbol? name))  (error (list '(definition name must be a symbol) name)))
-                                     ((atom=? name 'define) (error '(cannot define define)))
-                                     ((memv name name*)     (error (list '(same name defined multiple times) name)))
-                                     (else                  (cons name name*)))
-                               name*)))
-                       '() P.mini)))
-    (match (foldl (lambda (D?E c*p*e)
-                    (match c*p*e
-                      ((list c* p* e?)
-                       (if e?
-                           (error (list '(program list must end with exactly one expression) D?E))
-                           (match D?E
-                             (`(define (,name . ,param*) ,body)
-                               (list c* (cons `(,name ,(LAM->E.tiny bound* `(lambda ,param* ,body))) p*) #f))
-                             (`(define ,name ,(and `(lambda . ,_) LAM))
-                               (list c* (cons `(,name ,(LAM->E.tiny bound* LAM))                     p*) #f))
-                             (`(define ,name ,(? literal? L))
-                               (list (cons `(,name (quote ,L))             c*) p* #f))
-                             (`(define ,name (quote ,S))
-                               (list (cons `(,name (quote ,(S->E.tiny S))) c*) p* #f))
-                             (`(define ,name ,body)
-                               (error (list '(definition must be of a constant or a procedure) D?E)))
-                             (E (list c* p* (E.mini->E.tiny bound* E))))))))
-                  (list '() '() #f)
-                  P.mini)
-      ((list c* p* e) (if e
-                          (let ((c* (reverse c*)))
-                            `(call (lambda ,(map car c*)
-                                     (letrec ,(reverse p*) ,e))
-                                   . ,(map cadr c*)))
-                          (error '(program list must end with an expression)))))))
+  (defstate->E.tiny
+    (foldl (lambda (stx dst)
+             (match stx
+               (`(define (,name . ,param*) ,body)
+                 (defstate-define dst stx name (lambda (bound*) (LAM->E.tiny bound* `(lambda ,param* ,body)))))
+               (`(define ,name ,E)
+                 (defstate-define dst stx name (lambda (bound*) (E.mini->E.tiny bound* E))))
+               (E
+                 (defstate-add-expression dst stx (lambda (bound*) (E.mini->E.tiny bound* E))))))
+           defstate.empty
+           P.mini)))
 
 (define (S->E.tiny S)
   (match S
