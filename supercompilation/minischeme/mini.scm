@@ -202,7 +202,7 @@
 
 (define (S->E.tiny S)
   (match S
-    ((? atom?)      `(quote S))
+    ((? atom?)      `(quote ,S))
     (`#(,S)         `(vector ,(S->E.tiny S)))
     (`(,S.a . ,S.b) `(cons   ,(S->E.tiny S.a)
                              ,(S->E.tiny S.b)))
