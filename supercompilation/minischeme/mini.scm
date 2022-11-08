@@ -21,8 +21,9 @@
 ;        | vector-ref
 ;        | car
 ;        | cdr
-;        | eqv?
+;        | atom=?
 ;        | null?
+;        | boolean?
 ;        | vector?
 ;        | pair?
 ;        | number?
@@ -33,8 +34,7 @@
 ; LAM ::= (lambda (<symbol> ...) E)
 
 ;; Expression:
-; E ::=
-;       PRIM
+; E ::= PRIM
 ;     ;; variable
 ;     | <symbol>
 ;     ;; constructors
@@ -109,7 +109,7 @@
 (define (memv x x*)
   (match x*
     ('()         #f)
-    ((cons y y*) (if (eqv? x y)
+    ((cons y y*) (if (atom=? x y)
                      x*
                      (memv x y*)))))
 
@@ -157,7 +157,7 @@
       ('()         '())
       ((cons x x*) (cons (f x) (loop x*))))))
 
-(define (literal? x) (or (eqv? x #t) (eqv? x #f) (number? x)))
+(define (literal? x) (or (boolean? x) (number? x)))
 (define (atom?    x) (or (literal? x) (null? x) (symbol? x)))
 (define (binding? x) (and (pair? x) (symbol? (car x)) (pair? (cdr x)) (null? (cddr x))))
 
@@ -168,10 +168,10 @@
                                        (`(define ,name        ,_) name)
                                        (_                         #f))))
                            (if name
-                               (cond ((not (symbol? name)) (error (list '(definition name must be a symbol) name)))
-                                     ((eqv? name 'define)  (error '(cannot define define)))
-                                     ((memv name name*)    (error (list '(same name defined multiple times) name)))
-                                     (else                 (cons name name*)))
+                               (cond ((not (symbol? name))  (error (list '(definition name must be a symbol) name)))
+                                     ((atom=? name 'define) (error '(cannot define define)))
+                                     ((memv name name*)     (error (list '(same name defined multiple times) name)))
+                                     (else                  (cons name name*)))
                                name*)))
                        '() P.mini)))
     (match (foldl (lambda (D?E c*p*e)
@@ -209,7 +209,7 @@
     (_              (error (list '(invalid S-expression) S)))))
 
 (define (prim? x)
-  (memv x '(vector cons + vector-ref car cdr eqv? null? vector? pair? number? symbol? procedure?)))
+  (memv x '(vector cons + vector-ref car cdr atom=? null? boolean? vector? pair? number? symbol? procedure?)))
 
 (define (E.mini->E.tiny bound* E)
   (let* ((loop         (lambda (E)    (E.mini->E.tiny bound* E)))
@@ -226,8 +226,9 @@
                                                    ('vector-ref '(lambda (v i) (vector-ref v i)))
                                                    ('car        '(lambda (x)   (car x)))
                                                    ('cdr        '(lambda (x)   (cdr x)))
-                                                   ('eqv?       '(lambda (a b) (eqv? a b)))
+                                                   ('atom=?     '(lambda (a b) (atom=? a b)))
                                                    ('null?      '(lambda (x)   (null? x)))
+                                                   ('boolean?   '(lambda (x)   (boolean? x)))
                                                    ('vector?    '(lambda (x)   (vector? x)))
                                                    ('pair?      '(lambda (x)   (pair? x)))
                                                    ('number?    '(lambda (x)   (number? x)))
@@ -312,7 +313,7 @@
     ('quasiquote           (error '(misplaced quasiquote)))
     ('unquote              (error '(misplaced unquote)))
     ((list 'quasiquote QE) `(cons ,'(quote quasiquote) (cons ,(QE->E.tiny bound* QE (+ level 1)) '())))
-    ((list 'unquote X)     (if (eqv? level 0)
+    ((list 'unquote X)     (if (atom=? level 0)
                                (E.mini->E.tiny bound* X)
                                `(cons ,'(quote unquote) (cons ,(QE->E.tiny bound* X (+ level -1)) '()))))
     (`(,QE.a . ,QE.b)      `(cons ,(QE->E.tiny bound* QE.a level) ,(QE->E.tiny bound* QE.b level)))
@@ -340,7 +341,7 @@
                              (arg*  (map (lambda (b)
                                            `(letrec
                                               ((self (lambda (sub)
-                                                       (if (eqv? ',b (car (car sub)))
+                                                       (if (atom=? ',b (car (car sub)))
                                                            (cdr (car sub))
                                                            (call self (cdr sub))))))
                                               (call self sub)))
@@ -363,8 +364,8 @@
                                            ((self (lambda (sub)
                                                     (if (null? sub)
                                                         (cons (cons ',PP x) '())
-                                                        (if (eqv? ',PP (car (car sub)))
-                                                            (if (eqv? x (cdr (car sub)))
+                                                        (if (atom=? ',PP (car (car sub)))
+                                                            (if (atom=? x (cdr (car sub)))
                                                                 sub
                                                                 '#f)
                                                             (call (lambda (sub.rest)
@@ -373,7 +374,7 @@
                                                                         '#f))
                                                                   (call self (cdr sub))))))))
                                            (call self sub))))
-      (`(quote ,A)                    `(lambda (x sub) (if (eqv? x (quote ,A)) sub '#f)))
+      (`(quote ,A)                    `(lambda (x sub) (if (atom=? x (quote ,A)) sub '#f)))
       (`(cons ,PP.a ,PP.b)            `(lambda (x sub)
                                          (if (pair? x)
                                              (call (lambda (sub)
@@ -462,7 +463,7 @@
     ('quasiquote           (error '(misplaced quasiquote)))
     ('unquote              (error '(misplaced unquote)))
     ((list 'quasiquote QP) `(cons ,'(quote quasiquote) (cons ,(QP->PP QP (+ level 1)) '())))
-    ((list 'unquote X)     (if (eqv? level 0)
+    ((list 'unquote X)     (if (atom=? level 0)
                                (MP->PP X)
                                `(cons ,'(quote unquote) (cons ,(QP->PP X (+ level -1)) '()))))
     (`(,QP.a . ,QP.b)      `(cons ,(QP->PP QP.a level) ,(QP->PP QP.b level)))

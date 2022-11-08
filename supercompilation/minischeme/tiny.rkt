@@ -30,8 +30,9 @@
 ;     | (car E)
 ;     | (cdr E)
 ;     ;; predicates
-;     | (eqv? E E)
+;     | (atom=? E E)
 ;     | (null? E)
+;     | (boolean? E)
 ;     | (vector? E)
 ;     | (pair? E)
 ;     | (number? E)

@@ -17,7 +17,7 @@
   '((let* ((x `(one ,(+ 1 1) three))
            (y (list x)))
       (cond ((and (pair? x) (or (pair? y) (number? y))) 'ok)
-            ((eqv? x y) 'surprising)
+            ((atom=? x y) 'surprising)
             (else (match y
                     ((list (? symbol? u) v) `(got: ,u ,v))))))))
 
