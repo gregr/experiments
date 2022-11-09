@@ -31,7 +31,7 @@
 ;        | procedure?
 
 ;; Lambda expression:
-; LAM ::= (lambda (<symbol> ...) E)
+; LAM ::= (lambda (<symbol> ...) DL)
 
 ;; Expression:
 ; E ::= PRIM
@@ -48,14 +48,14 @@
 ;     | (or E ...)
 ;     ;; case analysis
 ;     | (if E E E)
-;     | (cond (E E) ... (else E))
+;     | (cond (E DL) ... (else DL))
 ;     ;; binding
-;     | (let <symbol> ((<symbol> E)   ...) E)
-;     | (let          ((<symbol> E)   ...) E)
-;     | (let*         ((<symbol> E)   ...) E)
-;     | (letrec       ((<symbol> LAM) ...) E)
+;     | (let <symbol> ((<symbol> E)   ...) DL)
+;     | (let          ((<symbol> E)   ...) DL)
+;     | (let*         ((<symbol> E)   ...) DL)
+;     | (letrec       ((<symbol> LAM) ...) DL)
 ;     ;; case analysis and binding
-;     | (match E (MP E) ...)
+;     | (match E (MP DL) ...)
 ;     ;; procedure call
 ;     | (E E ...)
 
@@ -89,13 +89,13 @@
 ;      | S                ; where the s-expression is not equal to quasiquote or unquote
 
 ;; Top-level definition: a definition of a recursive procedure or a constant.
-; D ::= (define (name <symbol> ...) E)
+; D ::= (define (name <symbol> ...) . DL)
 ;     | (define name LAM)
 ;     | (define name L)
 ;     | (define name (quote S))
 
-;; Program: a list of definitions followed by an expression.
-; P ::= D ... E
+;; Definition list: a list of definitions followed by an expression.
+; DL ::= D ... E
 
 (define (error x) (`(error: ,x)))
 
@@ -193,7 +193,7 @@
   (if (and name (not (symbol? name)))
       (error (list '(definition name must be a symbol) name stx))
       (match dst
-        (`(,_ ((#f . ,_) . ,_)) (error (list '(program list must end with exactly one expression) stx)))
+        (`(,_ ((#f . ,_) . ,_)) (error (list '(definition list must end with exactly one expression) stx)))
         (`(,name* ,def*) (let ((def* (cons (list name ^E.tiny stx) def*)))
                            (cond ((not name)        (list name* def*))
                                  ((memv name name*) (error (list '(same name defined multiple times) name stx)))
@@ -203,7 +203,7 @@
   (let ((bound* (uappend (defstate-name* dst) bound*))
         (^E     (defstate-expression dst)))
     (if (not ^E)
-        (error '(program list must end with an expression))
+        (error '(definition list must end with an expression))
         (match (foldl (lambda (def c*p*)
                         (match def
                           ((list name ^E stx)
@@ -221,7 +221,7 @@
                       (letrec ,(reverse p*) ,(^E bound*)))
                     . ,(map cadr c*))))))))
 
-(define (P.mini->E.tiny bound* P.mini)
+(define (DL.mini->E.tiny bound* P.mini)
   (let* ((bound?       (lambda (name) (memv name bound*)))
          (not-keyword? (lambda (x)    (or (not (symbol? x)) (bound? x)))))
     (defstate->E.tiny
@@ -230,8 +230,8 @@
                (match stx
                  ((cons (? not-keyword?) _)
                   (defstate-add-expression dst stx (lambda (bound*) (E.mini->E.tiny bound* stx))))
-                 (`(define (,name . ,param*) ,body)
-                   (defstate-define dst stx name (lambda (bound*) (LAM->E.tiny bound* `(lambda ,param* ,body)))))
+                 (`(define (,name . ,param*) . ,body)
+                   (defstate-define dst stx name (lambda (bound*) (LAM->E.tiny bound* `(lambda ,param* . ,body)))))
                  (`(define ,name ,E)
                    (defstate-define dst stx name (lambda (bound*) (E.mini->E.tiny bound* E))))
                  (_
@@ -252,6 +252,7 @@
 
 (define (E.mini->E.tiny bound* E)
   (let* ((loop         (lambda (E)    (E.mini->E.tiny bound* E)))
+         (dloop        (lambda (stx*) (DL.mini->E.tiny bound* stx*)))
          (bound?       (lambda (name) (memv name bound*)))
          (not-keyword? (lambda (x)    (or (not (symbol? x)) (bound? x)))))
     (match E
@@ -294,44 +295,44 @@
                                                     ,(loop E)
                                                     (lambda () ,(loop `(or . ,E*)))))
       (`(if ,E.c ,E.t ,E.f)                  `(if ,(loop E.c) ,(loop E.t) ,(loop E.f)))
-      (`(cond (else ,E))                     (loop E))
-      (`(cond (,E.test ,E) . ,clause*)       `(if ,(loop E.test)
-                                                  ,(loop E)
+      (`(cond (else . ,stx*))                (dloop stx*))
+      (`(cond (,E.test . ,stx*) . ,clause*)  `(if ,(loop E.test)
+                                                  ,(dloop stx*)
                                                   ,(loop `(cond . ,clause*))))
-      (`(let ,(? symbol? name) ,binding* ,E) (let ((param* (map car binding*)))
-                                               (cond ((not (andmap binding? binding*))
-                                                      (error (list '(invalid named-let bindings) binding*)))
+      (`(let ,(? symbol? name) ,b* . ,body)  (let ((param* (map car b*)))
+                                               (cond ((not (andmap binding? b*))
+                                                      (error (list '(invalid named-let bindings) b*)))
                                                      ((not (parameter*? param*))
                                                       (error (list '(invalid named-let parameters) param*)))
                                                      (else
                                                        (let ((bound* (ucons name (uappend param* bound*))))
                                                          `(call (letrec ((,name (lambda ,param*
-                                                                                  ,(E.mini->E.tiny bound* E))))
+                                                                                  ,(DL.mini->E.tiny bound* body))))
                                                                   ,name)
-                                                                . ,(map loop (map cadr binding*))))))))
-      (`(let ,binding* ,E)                   (let ((param* (map car binding*)))
-                                               (cond ((not (andmap binding? binding*))
-                                                      (error (list '(invalid let bindings) binding*)))
+                                                                . ,(map loop (map cadr b*))))))))
+      (`(let ,b* . ,body)                    (let ((param* (map car b*)))
+                                               (cond ((not (andmap binding? b*))
+                                                      (error (list '(invalid let bindings) b*)))
                                                      ((not (parameter*? param*))
                                                       (error (list '(invalid let parameters) param*)))
                                                      (else
                                                        `(call (lambda ,param*
-                                                                ,(E.mini->E.tiny (uappend param* bound*) E))
-                                                              . ,(map loop (map cadr binding*)))))))
-      (`(let* ,binding* ,body)               (if (not (andmap binding? binding*))
-                                                 (error (list '(invalid let* bindings) binding*))
-                                                 (E.mini-let*->E.tiny bound* binding* body)))
-      (`(letrec ,binding* ,body)             (let ((param* (map car binding*)))
-                                               (cond ((not (andmap binding? binding*))
-                                                      (error (list '(invalid letrec bindings) binding*)))
+                                                                ,(DL.mini->E.tiny (uappend param* bound*) body))
+                                                              . ,(map loop (map cadr b*)))))))
+      (`(let* ,b* . ,body)                   (if (not (andmap binding? b*))
+                                                 (error (list '(invalid let* bindings) b*))
+                                                 (E.mini-let*->E.tiny bound* b* body)))
+      (`(letrec ,b* . ,body)                 (let ((param* (map car b*)))
+                                               (cond ((not (andmap binding? b*))
+                                                      (error (list '(invalid letrec bindings) b*)))
                                                      ((not (parameter*? param*))
                                                       (error (list '(invalid letrec parameters) param*)))
                                                      (else
                                                        (let ((bound* (uappend param* bound*)))
                                                          `(letrec ,(map (lambda (b)
                                                                           (list (car b) (LAM->E.tiny bound* (cadr b))))
-                                                                        binding*)
-                                                            ,(E.mini->E.tiny bound* body)))))))
+                                                                        b*)
+                                                            ,(DL.mini->E.tiny bound* body)))))))
       (`(match ,E . ,clause*)                (E.mini-match->E.tiny bound* E clause*))
       ((cons (? prim?) _)                    (if (list? E)
                                                  `(call . ,(map loop E))
@@ -340,16 +341,16 @@
 
 (define (LAM->E.tiny bound* E)
   (match E
-    (`(lambda ,(? parameter*? param*) ,E.body)
-      `(lambda ,param* ,(E.mini->E.tiny (uappend param* bound*) E.body)))
+    (`(lambda ,(? parameter*? param*) . ,stx.body*)
+      `(lambda ,param* ,(DL.mini->E.tiny (uappend param* bound*) stx.body*)))
     (_ (error (list '(invalid lambda expression) E)))))
 
-(define (E.mini-let*->E.tiny bound* binding* E.body)
-  (match binding*
-    ('()                                      (E.mini->E.tiny bound* E.body))
-    ((cons (list (? symbol? x) E.x) binding*) `(call (lambda (,x)
-                                                       ,(E.mini-let*->E.tiny (ucons x bound*) binding* E.body))
-                                                     ,(E.mini->E.tiny bound* E.x)))))
+(define (E.mini-let*->E.tiny bound* binding* stx*.body)
+  (let loop ((bound* bound*) (binding* binding*))
+    (match binding*
+      ('()                                      (DL.mini->E.tiny bound* stx*.body))
+      ((cons (list (? symbol? x) E.x) binding*) `(call (lambda (,x) ,(loop (ucons x bound*) binding*))
+                                                       ,(E.mini->E.tiny bound* E.x))))))
 
 (define (QE->E.tiny bound* QE level)
   (match QE
@@ -378,7 +379,7 @@
          ,(E.mini->E.tiny bound* E.x)
          ,(foldr (lambda (clause ?+rhs*)
                    (match clause
-                     ((list MP E.rhs)
+                     ((cons MP stx*.rhs)
                       (let* ((PP    (MP->PP MP))
                              (b*.PP (PP-bound* PP '()))
                              (arg*  (map (lambda (b)
@@ -391,7 +392,7 @@
                                          b*.PP)))
                         `(cons (cons ,(PP->? bound* PP)
                                      (call (lambda (rhs) (lambda (sub) (call rhs . ,arg*)))
-                                           ,(LAM->E.tiny bound* `(lambda ,b*.PP ,E.rhs))))
+                                           ,(LAM->E.tiny bound* `(lambda ,b*.PP . ,stx*.rhs))))
                                ,?+rhs*)))
                      (_ (error (list '(invalid match clause) clause)))))
                  '(quote ())

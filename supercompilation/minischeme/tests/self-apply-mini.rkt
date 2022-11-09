@@ -23,7 +23,7 @@
 
 (define test.program (append mini.scm (list example.scm)))
 
-(let ((E.tiny (P.mini->E.tiny '() test.program)))
+(let ((E.tiny (DL.mini->E.tiny '() test.program)))
   (pretty-write E.tiny)
   (E.tiny?! '() E.tiny)
   (pretty-write `(valid?: ,(E.tiny? '() E.tiny))))
