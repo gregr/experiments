@@ -23,7 +23,7 @@
 
 (define test.program (append mini.scm (list example.scm)))
 
-(let ((E.tiny (DL.mini->E.tiny '() test.program)))
+(let ((E.tiny (parse-definition*-expression (env-extend:base env.empty) test.program)))
   (pretty-write E.tiny)
   (E.tiny?! '() E.tiny)
   (pretty-write `(valid?: ,(E.tiny? '() E.tiny))))
