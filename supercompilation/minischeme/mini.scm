@@ -249,6 +249,8 @@
 (define (env-bind-variable  env x)  (env-bind env x (list (cons 'expression parse-variable))))
 (define (env-bind-variable* env x*) (foldl (lambda (x env) (env-bind-variable env x)) env x*))
 
+(define (parse-mini-scm-program stx*) (parse-definition*-expression (env-extend:base env.empty) stx*))
+
 ;;;;;;;;;;;;;;;;;;;
 ;;; Definitions ;;;
 ;;;;;;;;;;;;;;;;;;;

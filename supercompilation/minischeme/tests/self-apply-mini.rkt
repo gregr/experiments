@@ -21,9 +21,9 @@
             (else (match y
                     ((list (? symbol? u) v) `(got: ,u ,v))))))))
 
-(define test.program (append mini.scm (list example.scm)))
+(define test.mini.example (append mini.scm (list example.scm)))
 
-(let ((E.tiny (parse-definition*-expression (env-extend:base env.empty) test.program)))
+(let ((E.tiny (parse-mini-scm-program test.mini.example)))
   (pretty-write E.tiny)
   (E.tiny?! '() E.tiny)
   (pretty-write `(valid?: ,(E.tiny? '() E.tiny))))
