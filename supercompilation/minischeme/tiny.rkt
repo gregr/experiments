@@ -192,24 +192,24 @@
       (`(lambda . ,_)          (eval-lambda (lambda () env) E))
       (`(+ ,E.a ,E.b)          (let ((a (loop E.a)) (b (loop E.b)))
                                  (unless (and (number? a) (number? b))
-                                   (error "+ must be applied to numbers" a b))
+                                   (error "+ must be applied to numbers" a b `(+ ,E.a ,E.b)))
                                  (+ a b)))
       (`(vector-ref ,E.v ,E.i) (let ((v (loop E.v)) (i (loop E.i)))
                                  (unless (and (vector? v) (integer? i) (exact? i) (<= 0 i))
                                    (error "vector-ref must be applied to a vector and a nonnegative integer"
-                                          v i))
+                                          v i `(vector-ref ,E.v ,E.i)))
                                  (vector-ref v i)))
       (`(car ,E)               (let ((p (loop E)))
                                  (unless (pair? p)
-                                   (error "car must be applied to a pair" p))
+                                   (error "car must be applied to a pair" p `(car ,E)))
                                  (car p)))
       (`(cdr ,E)               (let ((p (loop E)))
                                  (unless (pair? p)
-                                   (error "cdr must be applied to a pair" p))
+                                   (error "cdr must be applied to a pair" p `(cdr ,E)))
                                  (cdr p)))
       (`(atom=? ,E.a ,E.b)     (let ((a (loop E.a)) (b (loop E.b)))
                                  (unless (and (atom? a) (atom? b))
-                                   (error "atom=? must be applied to atoms" a b))
+                                   (error "atom=? must be applied to atoms" a b `(atom=? ,E.a ,E.b)))
                                  (atom=? a b)))
       (`(null? ,E)             (null?      (loop E)))
       (`(boolean? ,E)          (boolean?   (loop E)))
@@ -226,12 +226,14 @@
                                     (let ((len.p* (length param*)) (len.a* (length arg*)))
                                       (cond ((< len.a* len.p*) (error "too few args"
                                                                       'expected: len.p* 'actual: len.a*
-                                                                      'param*: param* 'arg*: arg*))
+                                                                      'param*: param* 'arg*: arg*
+                                                                      'source: `(call ,E.p . ,E*.arg)))
                                             ((< len.p* len.a*) (error "too many args"
                                                                       'expected: len.p* 'actual: len.a*
-                                                                      'param*: param* 'arg*: arg*))
+                                                                      'param*: param* 'arg*: arg*
+                                                                      'source: `(call ,E.p . ,E*.arg)))
                                             (else (eval.tiny (env-bind* (^env) param* arg*) E.body)))))
-                                   (_ (error "cannot call non-procedure" proc)))))
+                                   (_ (error "cannot call non-procedure" proc `(call ,E.p . ,E*.arg))))))
       (`(letrec ,bp* ,E.body)  (let ((param* (map car  bp*))
                                      (E*.rhs (map cadr bp*)))
                                  (letrec ((^env (lambda () env.rec))
