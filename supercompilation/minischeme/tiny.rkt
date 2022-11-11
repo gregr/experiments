@@ -1,6 +1,12 @@
 #lang racket/base
-(provide (struct-out closure) E.tiny? E.tiny?!)
-(require racket/match)
+(provide (struct-out closure) E.tiny? E.tiny?! eval-tiny-expression)
+(require (rename-in racket/base (error rkt:error)) racket/match)
+
+(define (atom=? a b)
+  (define (atom? x) (or (null? x) (boolean? x) (number? x) (symbol? x)))
+  (and (or (and (atom? a) (atom? b))
+           (rkt:error "atom=? called with non-atom" a b))
+       (eqv? a b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Tiny Scheme Grammars ;;;
@@ -164,3 +170,74 @@
                                     (loop bpair* (cons param param*) (cons rhs rhs*)))
                                    (_ (error "invalid binding-pair list" bpair*)))))
       (_                       (error "unrecognized expression" stx)))))
+
+(define env.empty (hash))
+
+(define (env-bind* env n* v*)
+  (foldl (lambda (n v env) (hash-set env n v)) env n* v*))
+
+(define (env-ref env x) (hash-ref env x))
+
+(define (eval-lambda ^env E.lam)
+  (match E.lam
+    (`(lambda ,param* ,E.body) (closure param* E.body ^env))))
+
+(define (eval.tiny env E)
+  (let loop ((E E))
+    (match E
+      ((? symbol?)             (env-ref env E))
+      (`(quote ,x)             x)
+      (`(vector ,E)            (vector (loop E)))
+      (`(cons ,E.a ,E.b)       (cons (loop E.a) (loop E.b)))
+      (`(lambda . ,_)          (eval-lambda (lambda () env) E))
+      (`(+ ,E.a ,E.b)          (let ((a (loop E.a)) (b (loop E.b)))
+                                 (unless (and (number? a) (number? b))
+                                   (error "+ must be applied to numbers" a b))
+                                 (+ a b)))
+      (`(vector-ref ,E.v ,E.i) (let ((v (loop E.v)) (i (loop E.i)))
+                                 (unless (and (vector? v) (integer? i) (exact? i) (<= 0 i))
+                                   (error "vector-ref must be applied to a vector and a nonnegative integer"
+                                          v i))
+                                 (vector-ref v i)))
+      (`(car ,E)               (let ((p (loop E)))
+                                 (unless (pair? p)
+                                   (error "car must be applied to a pair" p))
+                                 (car p)))
+      (`(cdr ,E)               (let ((p (loop E)))
+                                 (unless (pair? p)
+                                   (error "cdr must be applied to a pair" p))
+                                 (cdr p)))
+      (`(atom=? ,E.a ,E.b)     (let ((a (loop E.a)) (b (loop E.b)))
+                                 (unless (and (atom? a) (atom? b))
+                                   (error "atom=? must be applied to atoms" a b))
+                                 (atom=? a b)))
+      (`(null? ,E)             (null?      (loop E)))
+      (`(boolean? ,E)          (boolean?   (loop E)))
+      (`(vector? ,E)           (vector?    (loop E)))
+      (`(pair? ,E)             (pair?      (loop E)))
+      (`(number? ,E)           (number?    (loop E)))
+      (`(symbol? ,E)           (symbol?    (loop E)))
+      (`(procedure? ,E)        (procedure? (loop E)))
+      (`(if ,E.c ,E.t ,E.f)    (if (loop E.c) (loop E.t) (loop E.f)))
+      (`(call ,E.p . ,E*.arg)  (let ((proc (loop E.p))
+                                     (arg* (map loop E*.arg)))
+                                 (match proc
+                                   ((closure param* E.body ^env)
+                                    (let ((len.p* (length param*)) (len.a* (length arg*)))
+                                      (cond ((< len.a* len.p*) (error "too few args"
+                                                                      'expected: len.p* 'actual: len.a*
+                                                                      'param*: param* 'arg*: arg*))
+                                            ((< len.p* len.a*) (error "too many args"
+                                                                      'expected: len.p* 'actual: len.a*
+                                                                      'param*: param* 'arg*: arg*))
+                                            (else (eval.tiny (env-bind* (^env) param* arg*) E.body)))))
+                                   (_ (error "cannot call non-procedure" proc)))))
+      (`(letrec ,bp* ,E.body)  (let ((param* (map car  bp*))
+                                     (E*.rhs (map cadr bp*)))
+                                 (letrec ((^env (lambda () env.rec))
+                                          (rhs* (map (lambda (E.rhs) (eval-lambda ^env E.rhs)) E*.rhs))
+                                          (env.rec (env-bind* env param* rhs*)))
+                                   (eval.tiny env.rec E.body))))
+      (_                       (error "unrecognized expression" E)))))
+
+(define (eval-tiny-expression E) (eval.tiny env.empty E))
