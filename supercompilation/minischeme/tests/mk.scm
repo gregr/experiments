@@ -95,7 +95,7 @@
     (define (set-state-next-id st id)  (make-state (state-sub st) id))
     (define (set-state-sub     st sub) (make-state sub (state-next-id st)))
 
-    (define state.empty '(() 0))
+    (define state.empty '(() . 0))
 
     (define (call/fresh var->g)
       (lambda (st)
@@ -112,6 +112,8 @@
              (v   (walk v sub)))
         ;; TODO: it might also be useful to allow any procedure values to unify.
         (cond ((and (var? u) (var? v) (var=? u v)) st)
+              ((var? u)  (assign u v st))
+              ((var? v)  (assign v u st))
               ((pair? u) (and (pair? v) (let ((st (unify (car u) (car v) st)))
                                           (and st (unify (cdr u) (cdr v) st)))))
               (else      (and (atom? u) (atom? v) (atom=? u v) st)))))
