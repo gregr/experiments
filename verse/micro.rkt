@@ -468,26 +468,21 @@
 
     (`(alt ,a ,b)          (state uid S E))
 
-    (`(one ,E)             (let ((S.outer S))
-                             (let loop ((uid uid) (S S) (E E))
-                               (match (step #t uid S E)
-                                 (#f #f)
-                                 ((state uid S E)
-                                  (match E
-                                    (`(alt (alt ,a ,b) ,c)
-                                      (loop uid S (alt a (alt b c))))
-                                    (`(alt ,a ,b)
-                                      (let ((b (S-reify S b)))
-                                        (aggregate-step
-                                          uid S.outer S a
-                                          (lambda ()      (state uid S.outer (one b)))
-                                          (lambda (uid a) (state uid S.outer a))
-                                          (lambda (uid a) (state uid S.outer (one (alt a b)))))))
-                                    (_ (aggregate-step
-                                         uid S.outer S E
-                                         (lambda ()      #f)
-                                         (lambda (uid E) (state uid S.outer E))
-                                         (lambda (uid E) (state uid S.outer (one E)))))))))))
+    (`(one ,E)             (let loop ((E E))
+                             (match E
+                               (`(alt (alt ,a ,b) ,c) (loop (alt a (alt b c))))
+                               (`(alt ,a ,b)
+                                 (let ((b (S-reify S b)))
+                                   (aggregate-step
+                                     uid S a
+                                     (lambda ()      (state uid S (one b)))
+                                     (lambda (uid a) (state uid S a))
+                                     (lambda (uid a) (state uid S (one (alt a b)))))))
+                               (_ (aggregate-step
+                                    uid S E
+                                    (lambda ()      #f)
+                                    (lambda (uid E) (state uid S E))
+                                    (lambda (uid E) (state uid S (one E))))))))
 
     (`(all ,rdone* ,E)     (define (finish uid S rdone*)
                              (let* ((arg*     (reverse rdone*))
@@ -498,31 +493,26 @@
                                       (nexist uid* (nseq (seq* (map == (map value var*) arg*))
                                                          (value (list->vector var*)))))))
                            (define (push rdone* E) (cons E rdone*))
-                           (let ((S.outer S))
-                             (let loop ((uid uid) (S S) (E E))
-                               (match (step #t uid S E)
-                                 (#f (finish uid S rdone*))
-                                 ((state uid S E)
-                                  (match E
-                                    (`(alt (alt ,a ,b) ,c)
-                                      (loop uid S (alt a (alt b c))))
-                                    (`(alt ,a ,b)
-                                      (let ((b (S-reify S b)))
-                                        (aggregate-step
-                                          uid S.outer S a
-                                          (lambda ()      (state uid S.outer (all rdone*          b)))
-                                          (lambda (uid a) (state uid S.outer (all (push rdone* a) b)))
-                                          (lambda (uid a) (state uid S.outer (all rdone* (alt a b)))))))
-                                    (_ (aggregate-step
-                                         uid S.outer S E
-                                         (lambda ()      (finish uid S.outer rdone*))
-                                         (lambda (uid E) (finish uid S.outer (push rdone* E)))
-                                         (lambda (uid E) (state uid S.outer (all rdone* E)))))))))))
+                           (let loop ((E E))
+                             (match E
+                               (`(alt (alt ,a ,b) ,c) (loop (alt a (alt b c))))
+                               (`(alt ,a ,b)
+                                 (let ((b (S-reify S b)))
+                                   (aggregate-step
+                                     uid S a
+                                     (lambda ()      (state uid S (all rdone*          b)))
+                                     (lambda (uid a) (state uid S (all (push rdone* a) b)))
+                                     (lambda (uid a) (state uid S (all rdone* (alt a b)))))))
+                               (_ (aggregate-step
+                                    uid S E
+                                    (lambda ()      (finish uid S rdone*))
+                                    (lambda (uid E) (finish uid S (push rdone* E)))
+                                    (lambda (uid E) (state uid S (all rdone* E))))))))
 
     (`(exist ,id* ,e)      (step choice? uid (S-exist S id*) e))))
 
-(define (aggregate-step uid S S.inner E k.fail k.result k.incomplete)
-  (match (step #t uid S.inner E)
+(define (aggregate-step uid S E k.fail k.result k.incomplete)
+  (match (step #t uid S E)
     (#f (k.fail))
     ((state uid S.inner E)
      (let ((S.diff (S-diff S.inner S)))
