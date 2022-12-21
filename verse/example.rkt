@@ -74,6 +74,15 @@
                        (== (app (ref first) (ref x)) (value 2)))
                   (ref y)))))
 
+    ;; Simplification of the previous example:
+    (exist (first)
+      (seq (== (ref first) (lam pr (exist (a b)
+                                     (seq (== (ref pr) (op cons (ref a) (ref b)))
+                                          (ref a)))))
+           (exist (y)
+             (seq (== (app (ref first) (op cons (ref y) (value 5))) (value 2))
+                  (ref y)))))
+
     (exist (x y)
       (seq (seq (== (ref x) (op + (value 3) (ref y)))
                 (== (ref y) (value 7)))
@@ -296,9 +305,25 @@
                       (op < (value 2) (ref x)))
                 '(op + (ref x) (value 1)))
 
+          (vfor '(x y)
+                '(seq (== (ref x) (alt (value 10) (value 20)))
+                      (== (ref y) (alt (value 1) (alt (value 2) (value 3)))))
+                '(op + (ref x) (ref y)))
+
           `(all ,(vfor '(x)
                        '(== (ref x) (alt (value 10) (value 20)))
                        '(alt (ref x) (op + (ref x) (value 1)))))
+
+          '(all (exist (y)
+                  (seq (== (ref y) (op + (value 3) (value 4)))
+                       (app (lam x (op + (ref x) (value 1)))
+                            (ref y)))))
+
+          '(all (exist (x)
+                  (seq (op vector-refo
+                           (all (alt (value 2) (alt (value 3) (alt (value 2) (alt (value 7) (value 9))))))
+                           (ref x) (value 2))
+                       (ref x))))
 
           `(exist (x)
              (== (ref x) ,(vif '()
@@ -307,6 +332,12 @@
                                '(value 33)
                                '(value 55))))
 
+          '(all (exist (x y)
+                  (seq (== (ref y) (alt (seq (== (ref x) (value 3))
+                                             (op * (ref x) (value 2)))
+                                        (== (ref x) (value 4))))
+                       (all (alt (op + (ref x) (value 1)) (ref y))))))
+
           `(all (exist (x)
                   (seq ,(vif '()
                              '(op < (value 0) (ref x))
@@ -314,6 +345,12 @@
                              '(value 44))
                        (seq (== (ref x) (value 1))
                             (alt (value 77) (value 99))))))
+
+          ;; Known to get stuck:
+          '(all (exist (f)
+                  (seq (app (ref f) (value ()))
+                       (alt (== (value #t) (value #f))
+                            (== (value 3) (alt (value 1) (value 3)))))))
 
           `(all (exist (f x y)
                   (seq (seq (== (ref f) (lam p (seq (== (ref x) (value 7))
@@ -324,29 +361,6 @@
                                               '(value 8))))
                        (app (ref f) (ref y)))))
           ))
-
-    (all (exist (y)
-           (seq (== (ref y) (op + (value 3) (value 4)))
-                (app (lam x (op + (ref x) (value 1)))
-                     (ref y)))))
-
-    (all (exist (x y)
-           (seq (== (ref y) (alt (seq (== (ref x) (value 3))
-                                      (op * (ref x) (value 2)))
-                                 (== (ref x) (value 4))))
-                (all (alt (op + (ref x) (value 1)) (ref y))))))
-
-    (all (exist (x)
-           (seq (op vector-refo
-                    (all (alt (value 2) (alt (value 3) (alt (value 2) (alt (value 7) (value 9))))))
-                    (ref x) (value 2))
-                (ref x))))
-
-    ;; Known to get stuck:
-    (all (exist (f)
-           (seq (app (ref f) (value ()))
-                (alt (== (value #t) (value #f))
-                     (== (value 3) (alt (value 1) (value 3)))))))
 
     (all (op + (value 3) (alt (value 20) (value 30))))
 
