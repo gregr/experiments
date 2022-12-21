@@ -5,16 +5,10 @@
 ;;; microVerse
 ;;; based on: https://simon.peytonjones.org/assets/pdfs/verse-conf.pdf
 
-;; TODO: implement a higher-level "mini" syntax on top of this.
-
 ;; TODO: IO operations?
 ;; - immediate read/write on a channel: sort of like unsafePerformIO
 ;; - scoped IO: an IO handler that receives and services IO request descriptions, sort of like the IO monad
 ;; - transactional IO: a (mozart/oz-style) single-assignment stream of IO requests is gradually assigned to by concurrent processes
-
-;; TODO: derive these:
-;; + - * / > >= car cdr vector vector-length vector-ref null? boolean? pair?
-;; vector can be derived from vector-lengtho and vector-refo
 
 (define env.empty '())
 
@@ -45,6 +39,8 @@
 (define (S-domain S) (list->set (map car (S-x=>v S))))
 
 (define (S-local? S x) (set-member? (S-local* S) (var-id x)))
+
+(define (S-clear-local* S) (subst (set) (S-x=>v S)))
 
 (define (S-exist S id*)
   (subst (foldl (lambda (id id*) (set-add id* id)) (S-local* S) id*) (S-x=>v S)))
@@ -373,6 +369,7 @@
           ((eq? name 'cons) (argcount?! 2) (return (cons (walk-var S (car arg*))
                                                          (walk-var S (cadr arg*)))))
           (else (case name
+                  ((number?)    (typepred number?))
                   ((symbol?)    (typepred symbol?))
                   ((string?)    (typepred string?))
                   ((vector?)    (typepred vector?))
@@ -472,12 +469,11 @@
                              (match E
                                (`(alt (alt ,a ,b) ,c) (loop (alt a (alt b c))))
                                (`(alt ,a ,b)
-                                 (let ((b (S-reify S b)))
-                                   (aggregate-step
-                                     uid S a
-                                     (lambda ()      (state uid S (one b)))
-                                     (lambda (uid a) (state uid S a))
-                                     (lambda (uid a) (state uid S (one (alt a b)))))))
+                                 (aggregate-step
+                                   uid S a
+                                   (lambda ()      (state uid S (one b)))
+                                   (lambda (uid a) (state uid S a))
+                                   (lambda (uid a) (state uid S (one (alt a b))))))
                                (_ (aggregate-step
                                     uid S E
                                     (lambda ()      #f)
@@ -497,12 +493,11 @@
                              (match E
                                (`(alt (alt ,a ,b) ,c) (loop (alt a (alt b c))))
                                (`(alt ,a ,b)
-                                 (let ((b (S-reify S b)))
-                                   (aggregate-step
-                                     uid S a
-                                     (lambda ()      (state uid S (all rdone*          b)))
-                                     (lambda (uid a) (state uid S (all (push rdone* a) b)))
-                                     (lambda (uid a) (state uid S (all rdone* (alt a b)))))))
+                                 (aggregate-step
+                                   uid S a
+                                   (lambda ()      (state uid S (all rdone*          b)))
+                                   (lambda (uid a) (state uid S (all (push rdone* a) b)))
+                                   (lambda (uid a) (state uid S (all rdone* (alt a b))))))
                                (_ (aggregate-step
                                     uid S E
                                     (lambda ()      (finish uid S rdone*))
@@ -512,21 +507,22 @@
     (`(exist ,id* ,e)      (step choice? uid (S-exist S id*) e))))
 
 (define (aggregate-step uid S E k.fail k.result k.incomplete)
-  (match (step #t uid S E)
-    (#f (k.fail))
-    ((state uid S.inner E)
-     (let ((S.diff (S-diff S.inner S)))
-       (if (and (value? E) (let ((added* (S-domain S.diff))
-                                 (exist* (S-local* S.diff)))
-                             (set-empty? (set-subtract added* exist*))))
-           (let* ((id*      (S-local* S.diff))
-                  (uid.next (+ uid (set-count id*)))
-                  (uid*     (range uid uid.next))
-                  (id=>id   (make-immutable-hash (map cons (set->list id*) uid*)))
-                  (id->id   (lambda (id) (hash-ref id=>id id id))))
-             (k.result uid.next (S-reify (S-rename S.diff id->id)
-                                         (value (value-rename (value-value E) id->id)))))
-           (k.incomplete uid (S-reify S.diff E)))))))
+  (let ((S (S-clear-local* S)))
+    (match (step #t uid S E)
+      (#f (k.fail))
+      ((state uid S.inner E)
+       (let ((S.diff (S-diff S.inner S)))
+         (if (and (value? E) (let ((added* (S-domain S.diff))
+                                   (exist* (S-local* S.diff)))
+                               (set-empty? (set-subtract added* exist*))))
+             (let* ((id*      (S-local* S.diff))
+                    (uid.next (+ uid (set-count id*)))
+                    (uid*     (range uid uid.next))
+                    (id=>id   (make-immutable-hash (map cons (set->list id*) uid*)))
+                    (id->id   (lambda (id) (hash-ref id=>id id id))))
+               (k.result uid.next (S-reify (S-rename S.diff id->id)
+                                           (value (value-rename (value-value E) id->id)))))
+             (k.incomplete uid (S-reify S.diff E))))))))
 
 ;; NOTE: we may want to define a variant of "all" that only operates for
 ;; effect, and does not produce an aggregate result.  This will avoid space
