@@ -103,6 +103,91 @@ experimenting, is because their execution states are currently much less verbose
 than those of the corresponding miniVerse programs, making them easier to follow.
 (This can be fixed for miniVerse programs.  See the TODO list.)
 
+## miniVerse grammar
+
+```
+CONSTANT ::= <scheme-value>
+NAME     ::= <symbol>
+
+;; NOTE: operator keywords may be shadowed by lambda and exist bindings
+E ::= (quote CONSTANT)
+    | (lambda (NAME ...) E E ...)  ; body is an implicit begin
+    | (exist (NAME ...) E E ...)   ; body is an implicit begin
+    | (== E E)
+    | (begin E E ...) ; n-ary sequence
+    | (alt E ...)     ; empty alt produces a "fail"
+    | (one E E ...)   ; body is an implicit begin
+    | (all E E ...)   ; body is an implicit begin
+    | (if/exist (NAME ...) E E E)  ; wraps an exist scope around the condition and consequent
+    | (for/exist (NAME ...) E E)   ; wraps an exist scope around the iterator and body
+    | (if E E E)
+    | (for E E)
+    | (E.proc E ...)  ; n-ary application (if E.proc is not an unshadowed operator keyword)
+    | NAME            ; variable reference
+```
+
+The initial miniVerse environment also defines these procedures:
+
+```
+;; unary predicates
+null? boolean? pair? number? symbol? string? vector? procedure?
+
+(vector E ...)
+(vector-ref E.vector E.index)
+(vector-length E.vector)
+
+(list E ...)
+(cons E E)
+(car E)
+(cdr E)
+
+;; 2-ary predicates
+< <= > >=
+
+;; 2-ary arithmetic
++ - * /
+
+;; These correspond to tuple operator definitions from the VC paper:
+vhead vtail vcons vmap
+```
+
+## microVerse grammar
+
+```
+CONSTANT ::= <scheme-value>
+NAME     ::= <scheme-value>
+
+OPNAME ::= number? | symbol? | string? | vector? | procedure?
+         | vector-lengtho          ; (op vector-lengtho E.vector E.output)
+         | vector-refo             ; (op vector-refo E.vector E.index E.output)
+         | cons                    ; 2-ary pair constructor
+         | < | <= | + | - | * | /  ; 2-ary operators
+         | +o | -o | *o | /o       ; 3-ary result-type-checking arithmetic
+
+E ::= (value CONSTANT)
+    | (ref NAME)
+    | (lam NAME E)
+    | (exist (NAME ...) E)
+    | (== E E)
+    | (op OPNAME E ...)
+    | (app E E)
+    | (seq E E)
+    | (alt E E)
+    | (one E)
+    | (all E)
+```
+
+## Miscellaneous notes
+
+Scheme vectors assume the role of VC tuples in this implementation.
+VC tuple indexing corresponds to miniVerse's `vector-ref`, which can also be run "backwards".
+
+Existential scope is tree-structured in this implementation, so `if` and `for` have explicit
+scope-introducing counterparts `if/exist` and `for/exist` that can be used to recover the
+scoping behavior described in the VC paper.
+
+No evaluation will be performed under lambda.
+
 ## TODO
 
 - Make tracing less verbose by eliminating unused dependencies in states
