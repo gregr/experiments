@@ -293,7 +293,7 @@
                                                                         (op + (ref i) (value 1)))))))
                                                 (value ()))))
                                 (app (ref loop) (value 0)))))))
-            (map prim1 '(number? symbol? string? vector?))
+            (map prim1 '(number? symbol? string? vector? procedure?))
             (map prim2 '(cons + - * / < <=)))))
 
 (define-values (env.boot.1 addr*.boot.1 code.boot.1)
