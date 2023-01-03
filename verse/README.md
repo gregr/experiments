@@ -158,11 +158,11 @@ CONSTANT ::= <scheme-value>
 NAME     ::= <scheme-value>
 
 OPNAME ::= number? | symbol? | string? | vector? | procedure?
-         | vector-lengtho          ; (op vector-lengtho E.vector E.output)
-         | vector-refo             ; (op vector-refo E.vector E.index E.output)
-         | cons                    ; 2-ary pair constructor
-         | < | <= | + | - | * | /  ; 2-ary operators
-         | +o | -o | *o | /o       ; 3-ary result-type-checking arithmetic
+         | vector-lengtho     ; (op vector-lengtho E.vector E.output)
+         | vector-refo        ; (op vector-refo E.vector E.index E.output)
+         | cons               ; 2-ary pair constructor
+         | < | <=             ; 2-ary operators
+         | +o | -o | *o | /o  ; 3-ary arithmetic
 
 E ::= (value CONSTANT)
     | (ref NAME)

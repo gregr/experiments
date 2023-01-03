@@ -84,7 +84,7 @@
                   (ref y)))))
 
     (exist (x y)
-      (seq (seq (== (ref x) (op + (value 3) (ref y)))
+      (seq (seq (op +o (value 3) (ref y) (ref x))
                 (== (ref y) (value 7)))
            (ref x)))
 
@@ -99,9 +99,13 @@
 
     (all (exist (x)
            (alt (seq (== (ref x) (value 3))
-                     (op + (ref x) (value 1)))
+                     (exist (out)
+                       (seq (op +o (ref x) (value 1) (ref out))
+                            (ref out))))
                 (seq (== (ref x) (value 4))
-                     (op * (ref x) (value 2))))))
+                     (exist (out)
+                       (seq (op *o (ref x) (value 2) (ref out))
+                            (ref out)))))))
 
     (all (exist (append)
            (seq (== (ref append)
@@ -303,20 +307,29 @@
           (vfor '(x)
                 '(seq (== (ref x) (alt (value 2) (alt (value 3) (value 5))))
                       (op < (value 2) (ref x)))
-                '(op + (ref x) (value 1)))
+                '(exist (out)
+                   (seq (op +o (ref x) (value 1) (ref out))
+                        (ref out))))
 
           (vfor '(x y)
                 '(seq (== (ref x) (alt (value 10) (value 20)))
                       (== (ref y) (alt (value 1) (alt (value 2) (value 3)))))
-                '(op + (ref x) (ref y)))
+                '(exist (out)
+                   (seq (op +o (ref x) (ref y) (ref out))
+                        (ref out))))
 
           `(all ,(vfor '(x)
                        '(== (ref x) (alt (value 10) (value 20)))
-                       '(alt (ref x) (op + (ref x) (value 1)))))
+                       '(alt (ref x)
+                             (exist (out)
+                               (seq (op +o (ref x) (value 1) (ref out))
+                                    (ref out))))))
 
           '(all (exist (y)
-                  (seq (== (ref y) (op + (value 3) (value 4)))
-                       (app (lam x (op + (ref x) (value 1)))
+                  (seq (op +o (value 3) (value 4) (ref y))
+                       (app (lam x (exist (out)
+                                     (seq (op +o (ref x) (value 1) (ref out))
+                                          (ref out))))
                             (ref y)))))
 
           '(all (exist (x)
@@ -334,9 +347,13 @@
 
           '(all (exist (x y)
                   (seq (== (ref y) (alt (seq (== (ref x) (value 3))
-                                             (op * (ref x) (value 2)))
+                                             (exist (out)
+                                               (seq (op *o (ref x) (value 2) (ref out))
+                                                    (ref out))))
                                         (== (ref x) (value 4))))
-                       (all (alt (op + (ref x) (value 1)) (ref y))))))
+                       (all (alt (exist (out)
+                                   (seq (op +o (ref x) (value 1) (ref out))
+                                        (ref out))) (ref y))))))
 
           `(all (exist (x)
                   (seq ,(vif '()
@@ -362,7 +379,9 @@
                        (app (ref f) (ref y)))))
           ))
 
-    (all (op + (value 3) (alt (value 20) (value 30))))
+    (all (exist (out)
+           (seq (op +o (value 3) (alt (value 20) (value 30)) (ref out))
+                (ref out))))
 
     (all (alt (value 1) (alt (value 7) (value 2))))
 
