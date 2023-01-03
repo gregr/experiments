@@ -158,11 +158,11 @@ CONSTANT ::= <scheme-value>
 NAME     ::= <scheme-value>
 
 OPNAME ::= number? | symbol? | string? | vector? | procedure?
-         | vector-lengtho     ; (op vector-lengtho E.vector E.output)
-         | vector-refo        ; (op vector-refo E.vector E.index E.output)
-         | cons               ; 2-ary pair constructor
-         | < | <=             ; 2-ary operators
-         | +o | -o | *o | /o  ; 3-ary arithmetic
+         | vector-lengtho  ; (op vector-lengtho E.vector E.output)
+         | vector-refo     ; (op vector-refo E.vector E.index E.output)
+         | cons            ; 2-ary pair constructor
+         | < | <=          ; 2-ary operators
+         | +o | *o         ; 3-ary arithmetic
 
 E ::= (value CONSTANT)
     | (ref NAME)
@@ -187,6 +187,8 @@ scope-introducing counterparts `if/exist` and `for/exist` that can be used to re
 scoping behavior described in the VC paper.
 
 No evaluation will be performed under lambda.
+
+Arithmetic operators can be run "backwards" in some special cases, but there is no general arithmetic solver.
 
 ## TODO
 
