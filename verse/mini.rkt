@@ -317,7 +317,7 @@
                                 (exist (a b out)
                                   (seq (op vector-refo (ref argv) (value 0) (ref a))
                                        (seq (op vector-refo (ref argv) (value 1) (ref b))
-                                            (seq (seq (op number? (value b))
+                                            (seq (seq (op number? (ref b))
                                                       (app (one (alt (seq (== (ref b) (value 0))
                                                                           (lam #f (== (value #t) (value #f))))
                                                                      (lam #f (== (value #t) (value #t)))))

@@ -402,9 +402,9 @@
                          (out (walk S (caddr arg*))))
                      (cond
                        ((and (number? a) (number? b))       (rewrite (== (value out) (value (* a b)))))
-                       ((eqv? a 0)                          (rewrite (seq (op number? (value b))
+                       ((eqv? a 0)                          (rewrite (seq (op 'number? (list (value b)))
                                                                           (== (value out) (value 0)))))
-                       ((eqv? b 0)                          (rewrite (seq (op number? (value a))
+                       ((eqv? b 0)                          (rewrite (seq (op 'number? (list (value a)))
                                                                           (== (value out) (value 0)))))
                        ((and (eqv? out 0) (number? a))      (rewrite (== (value b) (value 0))))
                        ((and (eqv? out 0) (number? b))      (rewrite (== (value a) (value 0))))
