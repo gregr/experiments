@@ -2,6 +2,9 @@
 ;;;   https://davidchristiansen.dk/tutorials/nbe/
 ;;; This version includes let bindings and a tower of universes.
 
+;; TODO: implement some form of inference to make it less tedious
+;; to use derived operators like replace, symm, and cong.
+
 #lang racket/base
 (provide (all-defined-out))
 (require racket/match racket/pretty)
@@ -776,6 +779,12 @@
                                          target
                                          (lambda (x) (= Y (f from) (f x)))
                                          same))))
+                   (symm (the (Pi ((X U) (from X) (to X))
+                                  (-> (= X from to) (= X to from)))
+                              (lambda (X from to target)
+                                (ind-= target
+                                       (lambda (x _) (= X x from))
+                                       same))))
                    (proof.+-associative
                      (the (Pi ((a Nat) (b Nat) (c Nat))
                               (= Nat (+ (+ a b) c) (+ a (+ b c))))
@@ -815,147 +824,132 @@
                    (proof.*-distributive
                      (the (Pi ((a Nat) (b Nat) (c Nat))
                               (= Nat (* a (+ b c)) (+ (* a b) (* a c))))
-                          ;; TODO: implement some form of inference to make it less tedious
-                          ;; to use derived operators like replace, symm, and cong.
-                          TODO
-                          ;(lambda (a b c)
-                          ;  (ind-Nat
-                          ;    a
-                          ;    (lambda (a)
-                          ;      (= Nat
-                          ;         (* a (+ b c))
-                          ;         (+ (* a b) (* a c))))
-                          ;    (same 0)
-                          ;    (lambda (m proof.m)
-                          ;      (replace
-                          ;        (proof.+-associative (+ b (* m b)) c (* m c))
-                          ;        (lambda (x)
-                          ;          (= Nat
-                          ;             (+ (+ b c)
-                          ;                (* m (+ b c)))
-                          ;             x))
-                          ;        (replace
-                          ;          (symm (proof.+-associative b (* m b) c))
-                          ;          (lambda (x)
-                          ;            (= Nat
-                          ;               (+ (+ b c)
-                          ;                  (* m (+ b c)))
-                          ;               (+ x (* m c))))
-                          ;          (replace
-                          ;            (proof.+-commutative (* m b) c)
-                          ;            (lambda (x)
-                          ;              (= Nat
-                          ;                 (+ (+ b c)
-                          ;                    (* m (+ b c)))
-                          ;                 (+ (+ b x)
-                          ;                    (* m c))))
-                          ;            (replace
-                          ;              (proof.+-associative b c (* m b))
-                          ;              (lambda (x)
-                          ;                (= Nat
-                          ;                   (+ (+ b c)
-                          ;                      (* m (+ b c)))
-                          ;                   (+ x (* m c))))
-                          ;              (replace
-                          ;                (symm (proof.+-associative (+ b c) (* m b) (* m c)))
-                          ;                (lambda (x)
-                          ;                  (= Nat
-                          ;                     (+ (+ b c)
-                          ;                        (* m (+ b c)))
-                          ;                     x))
-                          ;                (replace
-                          ;                  proof.m
-                          ;                  (lambda (x)
-                          ;                    (= Nat
-                          ;                       (+ (+ b c)
-                          ;                          (* m (+ b c)))
-                          ;                       (+ (+ b c)
-                          ;                          x)))
-                          ;                  (same (+ (+ b c) (* m (+ b c)))))))))))))
-                          ))
+                          (lambda (a b c)
+                            (ind-Nat
+                              a
+                              (lambda (a)
+                                (= Nat
+                                   (* a (+ b c))
+                                   (+ (* a b) (* a c))))
+                              same
+                              (lambda (m proof.m)
+                                (ind-=
+                                  (proof.+-associative (+ b (* m b)) c (* m c))
+                                  (lambda (x _) (= Nat
+                                                   (+ (+ b c)
+                                                      (* m (+ b c)))
+                                                   x))
+                                  (ind-=
+                                    (symm Nat (+ (+ b (* m b)) c) (+ b (+ (* m b) c))
+                                          (proof.+-associative b (* m b) c))
+                                    (lambda (x _) (= Nat
+                                                     (+ (+ b c)
+                                                        (* m (+ b c)))
+                                                     (+ x (* m c))))
+                                    (ind-=
+                                      (proof.+-commutative (* m b) c)
+                                      (lambda (x _) (= Nat
+                                                       (+ (+ b c)
+                                                          (* m (+ b c)))
+                                                       (+ (+ b x)
+                                                          (* m c))))
+                                      (ind-=
+                                        (proof.+-associative b c (* m b))
+                                        (lambda (x _) (= Nat
+                                                         (+ (+ b c)
+                                                            (* m (+ b c)))
+                                                         (+ x (* m c))))
+                                        (ind-=
+                                          (symm Nat
+                                                (+ (+ (+ b c) (* m b)) (* m c))
+                                                (+ (+ b c) (+ (* m b) (* m c)))
+                                                (proof.+-associative (+ b c) (* m b) (* m c)))
+                                          (lambda (x _) (= Nat
+                                                           (+ (+ b c)
+                                                              (* m (+ b c)))
+                                                           x))
+                                          (ind-=
+                                            proof.m
+                                            (lambda (x _) (= Nat
+                                                             (+ (+ b c)
+                                                                (* m (+ b c)))
+                                                             (+ (+ b c)
+                                                                x)))
+                                            same)))))))))))
                    (proof.*-commutative
                      (the (Pi ((a Nat) (b Nat))
                               (= Nat (* b a) (* a b)))
-                          TODO
-                          ;(lambda (a b)
-                          ;  (ind-Nat
-                          ;    a
-                          ;    (lambda (a) (= Nat (* b a) (* a b)))
-                          ;    (ind-Nat
-                          ;      b
-                          ;      (lambda (b) (= Nat (* b 0) 0))
-                          ;      (same 0)
-                          ;      (lambda (n proof.n) proof.n))
-                          ;    (lambda (m proof.m)
-                          ;      (replace
-                          ;        (symm (proof.*-distributive b 1 m))
-                          ;        (lambda (x)
-                          ;          (= Nat
-                          ;             x
-                          ;             (+ b (* m b))))
-                          ;        (replace
-                          ;          proof.m
-                          ;          (lambda (x)
-                          ;            (= Nat
-                          ;               (+ (* b 1) (* b m))
-                          ;               (+ b x)))
-                          ;          (replace
-                          ;            (ind-Nat
-                          ;              b
-                          ;              (lambda (b) (= Nat b (* b 1)))
-                          ;              (same 0)
-                          ;              (lambda (n proof.n) (cong proof.n (+ 1))))
-                          ;            (lambda (x)
-                          ;              (= Nat
-                          ;                 (+ x (* b m))
-                          ;                 (+ b (* b m))))
-                          ;            (same (+ b (* b m)))))))))
-                          ))
+                          (lambda (a b)
+                            (ind-Nat
+                              a
+                              (lambda (a) (= Nat (* b a) (* a b)))
+                              (ind-Nat
+                                b
+                                (lambda (b) (= Nat (* b 0) 0))
+                                same
+                                (lambda (n proof.n) proof.n))
+                              (lambda (m proof.m)
+                                (ind-=
+                                  (symm Nat (* b (+ 1 m)) (+ (* b 1) (* b m))
+                                        (proof.*-distributive b 1 m))
+                                  (lambda (x _) (= Nat
+                                                   x
+                                                   (+ b (* m b))))
+                                  (ind-=
+                                    proof.m
+                                    (lambda (x _) (= Nat
+                                                     (+ (* b 1) (* b m))
+                                                     (+ b x)))
+                                    (ind-=
+                                      (ind-Nat
+                                        b
+                                        (lambda (b) (= Nat b (* b 1)))
+                                        same
+                                        (lambda (n proof.n) (cong Nat Nat n (* n 1) proof.n (+ 1))))
+                                      (lambda (x _)
+                                        (= Nat
+                                           (+ x (* b m))
+                                           (+ b (* b m))))
+                                      same))))))))
                    (proof.*-associative
                      (the (Pi ((a Nat) (b Nat) (c Nat))
                               (= Nat (* (* a b) c) (* a (* b c))))
-                          TODO
-                          ;(lambda (a b c)
-                          ;  (ind-Nat
-                          ;    a
-                          ;    (lambda (a)
-                          ;      (= Nat
-                          ;         (* (* a b) c)
-                          ;         (* a (* b c))))
-                          ;    (same 0)
-                          ;    (lambda (m proof.m)
-                          ;      (replace
-                          ;        (proof.*-commutative (+ b (* m b)) c)
-                          ;        (lambda (x)
-                          ;          (= Nat
-                          ;             x
-                          ;             (+ (* b c) (* m (* b c)))))
-                          ;        (replace
-                          ;          (symm (proof.*-distributive c b (* m b)))
-                          ;          (lambda (x)
-                          ;            (= Nat
-                          ;               x
-                          ;               (+ (* b c) (* m (* b c)))))
-                          ;          (replace
-                          ;            (proof.*-commutative b c)
-                          ;            (lambda (x)
-                          ;              (= Nat
-                          ;                 (+ (* c b) (* c (* m b)))
-                          ;                 (+ x (* m (* b c)))))
-                          ;            (replace
-                          ;              (proof.*-commutative c (* m b))
-                          ;              (lambda (x)
-                          ;                (= Nat
-                          ;                   (+ (* c b) x)
-                          ;                   (+ (* c b) (* m (* b c)))))
-                          ;              (replace
-                          ;                proof.m
-                          ;                (lambda (x)
-                          ;                  (= Nat
-                          ;                     (+ (* c b) (* (* m b) c))
-                          ;                     (+ (* c b) x)))
-                          ;                (same (+ (* c b) (* (* m b) c)))))))))))
-                          )))
+                          (lambda (a b c)
+                            (ind-Nat
+                              a
+                              (lambda (a) (= Nat
+                                             (* (* a b) c)
+                                             (* a (* b c))))
+                              same
+                              (lambda (m proof.m)
+                                (ind-=
+                                  (proof.*-commutative (+ b (* m b)) c)
+                                  (lambda (x _)
+                                    (= Nat
+                                       x
+                                       (+ (* b c) (* m (* b c)))))
+                                  (ind-=
+                                    (symm Nat (* c (+ b (* m b))) (+ (* c b) (* c (* m b)))
+                                          (proof.*-distributive c b (* m b)))
+                                    (lambda (x _) (= Nat
+                                                     x
+                                                     (+ (* b c) (* m (* b c)))))
+                                    (ind-=
+                                      (proof.*-commutative b c)
+                                      (lambda (x _) (= Nat
+                                                       (+ (* c b) (* c (* m b)))
+                                                       (+ x (* m (* b c)))))
+                                      (ind-=
+                                        (proof.*-commutative c (* m b))
+                                        (lambda (x _) (= Nat
+                                                         (+ (* c b) x)
+                                                         (+ (* c b) (* m (* b c)))))
+                                        (ind-=
+                                          proof.m
+                                          (lambda (x _) (= Nat
+                                                           (+ (* c b) (* (* m b) c))
+                                                           (+ (* c b) x)))
+                                          same)))))))))))
               sole)
 
 ;            ;; this should succeed
