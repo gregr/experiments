@@ -675,46 +675,373 @@
                                (lambda (n) (add1 n)))))))
               (+ 4 3))
 
-            ;; this should succeed
-            (the (Pi ((y Nat)) (= Nat y y))
-                 (lambda (y)
-                   (let ((z y))
-                     ((the (Pi ((x Nat)) (= Nat z y))
-                           (lambda (x) same))
-                      2))))
+            (the (Pi ((a Nat) (b Nat))
+                     (-> (= Nat a b) (= Nat b a)))
+                 (lambda (a b proof.a=b)
+                   (ind-= proof.a=b
+                          (lambda (x _) (= Nat x a))
+                          same)))
 
-             ;; this correctly fails
+            (let ((symm (the (Pi ((X U) (from X) (to X))
+                                 (-> (= X from to) (= X to from)))
+                             (lambda (X from to target)
+                               (ind-= target
+                                      (lambda (x _) (= X x from))
+                                      same)))))
+              (the (Pi ((a Nat) (b Nat))
+                       (-> (= Nat a b) (= Nat b a)))
+                   (lambda (a b proof.a=b)
+                     (symm Nat a b proof.a=b))))
+
+            (let ((replace (the (Pi ((X U) (from X) (to X))
+                                    (-> (= X from to)
+                                        (Pi ((motive (-> X U)))
+                                            (-> (motive from) (motive to)))))
+                                (lambda (X from to target motive base)
+                                  (ind-= target
+                                         (lambda (x _) (motive x))
+                                         base)))))
+              (the (Pi ((a Nat) (b Nat))
+                       (-> (= Nat a b) (= Nat b a)))
+                   (lambda (a b proof.a=b)
+                     (replace Nat a b
+                              proof.a=b
+                              (lambda (x) (= Nat x a))
+                              same))))
+
+            (let* ((replace (the (Pi ((X U) (from X) (to X))
+                                     (-> (= X from to)
+                                         (Pi ((motive (-> X U)))
+                                             (-> (motive from) (motive to)))))
+                                 (lambda (X from to target motive base)
+                                   (ind-= target
+                                          (lambda (x _) (motive x))
+                                          base)))))
+              (the (Pi ((a Nat) (b Nat))
+                       (-> (= Nat a b) (= Nat (add1 a) (add1 b))))
+                   (lambda (a b proof.a=b)
+                     (replace Nat a b
+                              proof.a=b
+                              (lambda (x) (= Nat (add1 a) (add1 x)))
+                              same))))
+
+            (let* ((replace (the (Pi ((X U) (from X) (to X))
+                                     (-> (= X from to)
+                                         (Pi ((motive (-> X U)))
+                                             (-> (motive from) (motive to)))))
+                                 (lambda (X from to target motive base)
+                                   (ind-= target
+                                          (lambda (x _) (motive x))
+                                          base))))
+                   (cong (the (Pi ((X U) (Y U) (from X) (to X))
+                                  (-> (= X from to)
+                                      (Pi ((f (-> X Y)))
+                                          (= Y (f from) (f to)))))
+                              (lambda (X Y from to target f)
+                                (replace X from to
+                                         target
+                                         (lambda (x) (= Y (f from) (f x)))
+                                         same)))))
+              (the (Pi ((a Nat) (b Nat))
+                       (-> (= Nat a b) (= Nat (add1 a) (add1 b))))
+                   (lambda (a b proof.a=b)
+                     (cong Nat Nat a b proof.a=b (lambda (n) (add1 n))))))
+
+            ;; Arithmetic with proofs
+            (let* ((iter-Nat (the (Pi ((X U)) (-> Nat X (-> X X) X))
+                                  (lambda (X n base step)
+                                    (ind-Nat
+                                      n
+                                      (lambda (_) X)
+                                      base
+                                      (lambda (_) step)))))
+                   (+ (the (-> Nat Nat Nat)
+                           (lambda (a b) (iter-Nat Nat a b (lambda (n) (add1 n))))))
+                   (* (the (-> Nat Nat Nat)
+                           (lambda (a b) (iter-Nat Nat a 0 (+ b)))))
+                   (replace (the (Pi ((X U) (from X) (to X))
+                                     (-> (= X from to)
+                                         (Pi ((motive (-> X U)))
+                                             (-> (motive from) (motive to)))))
+                                 (lambda (X from to target motive base)
+                                   (ind-= target
+                                          (lambda (x _) (motive x))
+                                          base))))
+                   (cong (the (Pi ((X U) (Y U) (from X) (to X))
+                                  (-> (= X from to)
+                                      (Pi ((f (-> X Y)))
+                                          (= Y (f from) (f to)))))
+                              (lambda (X Y from to target f)
+                                (replace X from to
+                                         target
+                                         (lambda (x) (= Y (f from) (f x)))
+                                         same))))
+                   (proof.+-associative
+                     (the (Pi ((a Nat) (b Nat) (c Nat))
+                              (= Nat (+ (+ a b) c) (+ a (+ b c))))
+                          (lambda (a b c)
+                            (ind-Nat
+                              a
+                              (lambda (a) (= Nat
+                                             (+ (+ a b) c)
+                                             (+ a (+ b c))))
+                              same
+                              (lambda (m proof.m)
+                                (cong Nat Nat (+ (+ m b) c) (+ m (+ b c)) proof.m (+ 1)))))))
+                   (proof.+-commutative
+                     (the (Pi ((a Nat) (b Nat))
+                              (= Nat (+ b a) (+ a b)))
+                          (lambda (a b)
+                            (ind-Nat
+                              a
+                              (lambda (a) (= Nat (+ b a) (+ a b)))
+                              (ind-Nat
+                                b
+                                (lambda (b) (= Nat (+ b 0) b))
+                                same
+                                (lambda (n proof.n) (cong Nat Nat (+ n 0) n proof.n (+ 1))))
+                              (lambda (m proof.m)
+                                (replace
+                                  Nat (+ 1 (+ b m)) (+ b (+ 1 m))
+                                  (ind-Nat
+                                    b
+                                    (lambda (b) (= Nat (+ 1 (+ b m)) (+ b (+ 1 m))))
+                                    same
+                                    (lambda (n proof.n)
+                                      (cong Nat Nat (+ 1 (+ n m)) (+ n (+ 1 m))
+                                            proof.n (+ 1))))
+                                  (lambda (x) (= Nat x (+ 1 (+ m b))))
+                                  (cong Nat Nat (+ b m) (+ m b) proof.m (+ 1))))))))
+                   (proof.*-distributive
+                     (the (Pi ((a Nat) (b Nat) (c Nat))
+                              (= Nat (* a (+ b c)) (+ (* a b) (* a c))))
+                          ;; TODO: implement some form of inference to make it less tedious
+                          ;; to use derived operators like replace, symm, and cong.
+                          TODO
+                          ;(lambda (a b c)
+                          ;  (ind-Nat
+                          ;    a
+                          ;    (lambda (a)
+                          ;      (= Nat
+                          ;         (* a (+ b c))
+                          ;         (+ (* a b) (* a c))))
+                          ;    (same 0)
+                          ;    (lambda (m proof.m)
+                          ;      (replace
+                          ;        (proof.+-associative (+ b (* m b)) c (* m c))
+                          ;        (lambda (x)
+                          ;          (= Nat
+                          ;             (+ (+ b c)
+                          ;                (* m (+ b c)))
+                          ;             x))
+                          ;        (replace
+                          ;          (symm (proof.+-associative b (* m b) c))
+                          ;          (lambda (x)
+                          ;            (= Nat
+                          ;               (+ (+ b c)
+                          ;                  (* m (+ b c)))
+                          ;               (+ x (* m c))))
+                          ;          (replace
+                          ;            (proof.+-commutative (* m b) c)
+                          ;            (lambda (x)
+                          ;              (= Nat
+                          ;                 (+ (+ b c)
+                          ;                    (* m (+ b c)))
+                          ;                 (+ (+ b x)
+                          ;                    (* m c))))
+                          ;            (replace
+                          ;              (proof.+-associative b c (* m b))
+                          ;              (lambda (x)
+                          ;                (= Nat
+                          ;                   (+ (+ b c)
+                          ;                      (* m (+ b c)))
+                          ;                   (+ x (* m c))))
+                          ;              (replace
+                          ;                (symm (proof.+-associative (+ b c) (* m b) (* m c)))
+                          ;                (lambda (x)
+                          ;                  (= Nat
+                          ;                     (+ (+ b c)
+                          ;                        (* m (+ b c)))
+                          ;                     x))
+                          ;                (replace
+                          ;                  proof.m
+                          ;                  (lambda (x)
+                          ;                    (= Nat
+                          ;                       (+ (+ b c)
+                          ;                          (* m (+ b c)))
+                          ;                       (+ (+ b c)
+                          ;                          x)))
+                          ;                  (same (+ (+ b c) (* m (+ b c)))))))))))))
+                          ))
+                   (proof.*-commutative
+                     (the (Pi ((a Nat) (b Nat))
+                              (= Nat (* b a) (* a b)))
+                          TODO
+                          ;(lambda (a b)
+                          ;  (ind-Nat
+                          ;    a
+                          ;    (lambda (a) (= Nat (* b a) (* a b)))
+                          ;    (ind-Nat
+                          ;      b
+                          ;      (lambda (b) (= Nat (* b 0) 0))
+                          ;      (same 0)
+                          ;      (lambda (n proof.n) proof.n))
+                          ;    (lambda (m proof.m)
+                          ;      (replace
+                          ;        (symm (proof.*-distributive b 1 m))
+                          ;        (lambda (x)
+                          ;          (= Nat
+                          ;             x
+                          ;             (+ b (* m b))))
+                          ;        (replace
+                          ;          proof.m
+                          ;          (lambda (x)
+                          ;            (= Nat
+                          ;               (+ (* b 1) (* b m))
+                          ;               (+ b x)))
+                          ;          (replace
+                          ;            (ind-Nat
+                          ;              b
+                          ;              (lambda (b) (= Nat b (* b 1)))
+                          ;              (same 0)
+                          ;              (lambda (n proof.n) (cong proof.n (+ 1))))
+                          ;            (lambda (x)
+                          ;              (= Nat
+                          ;                 (+ x (* b m))
+                          ;                 (+ b (* b m))))
+                          ;            (same (+ b (* b m)))))))))
+                          ))
+                   (proof.*-associative
+                     (the (Pi ((a Nat) (b Nat) (c Nat))
+                              (= Nat (* (* a b) c) (* a (* b c))))
+                          TODO
+                          ;(lambda (a b c)
+                          ;  (ind-Nat
+                          ;    a
+                          ;    (lambda (a)
+                          ;      (= Nat
+                          ;         (* (* a b) c)
+                          ;         (* a (* b c))))
+                          ;    (same 0)
+                          ;    (lambda (m proof.m)
+                          ;      (replace
+                          ;        (proof.*-commutative (+ b (* m b)) c)
+                          ;        (lambda (x)
+                          ;          (= Nat
+                          ;             x
+                          ;             (+ (* b c) (* m (* b c)))))
+                          ;        (replace
+                          ;          (symm (proof.*-distributive c b (* m b)))
+                          ;          (lambda (x)
+                          ;            (= Nat
+                          ;               x
+                          ;               (+ (* b c) (* m (* b c)))))
+                          ;          (replace
+                          ;            (proof.*-commutative b c)
+                          ;            (lambda (x)
+                          ;              (= Nat
+                          ;                 (+ (* c b) (* c (* m b)))
+                          ;                 (+ x (* m (* b c)))))
+                          ;            (replace
+                          ;              (proof.*-commutative c (* m b))
+                          ;              (lambda (x)
+                          ;                (= Nat
+                          ;                   (+ (* c b) x)
+                          ;                   (+ (* c b) (* m (* b c)))))
+                          ;              (replace
+                          ;                proof.m
+                          ;                (lambda (x)
+                          ;                  (= Nat
+                          ;                     (+ (* c b) (* (* m b) c))
+                          ;                     (+ (* c b) x)))
+                          ;                (same (+ (* c b) (* (* m b) c)))))))))))
+                          )))
+              sole)
+
+;            ;; this should succeed
+;            (the (Pi ((y Nat)) (= Nat y y))
+;                 (lambda (y)
+;                   (let ((z y))
+;                     ((the (Pi ((x Nat)) (= Nat z y))
+;                           (lambda (x) same))
+;                      2))))
+;
+;            ;; this correctly fails
+;            ;(the (Pi ((y Nat)) (= Nat y 2))
+;            ;     (lambda (y)
+;            ;       (let ((z y))
+;            ;         ((the (Pi ((y Nat)) (= Nat z y))
+;            ;               (lambda (y) same))
+;            ;          2))))
+;
+;            ;; this succeeds due to TODO
 ;            (the (Pi ((y Nat)) (= Nat y 2))
 ;                 (lambda (y)
 ;                   (let ((z y))
 ;                     ((the (Pi ((y Nat)) (= Nat z y))
-;                           (lambda (y) same))
+;                           (lambda (y) TODO))
 ;                      2))))
-
-            ;; this succeeds due to TODO
-            (the (Pi ((y Nat)) (= Nat y 2))
-                 (lambda (y)
-                   (let ((z y))
-                     ((the (Pi ((y Nat)) (= Nat z y))
-                           (lambda (y) TODO))
-                      2))))
-
-            ;; This correctly fails
-            (the (Pi ((y Nat)) (= Nat y 2))
-                 (lambda (y)
-                   ((the ((the (-> Nat U)
-                               (lambda (z) (Pi ((y Nat)) (= Nat z y))))
-                          y)
-                         (lambda (y) same))
-                    2)))
-
-            ;; This succeeds due to TODO
-            (the (Pi ((y Nat)) (= Nat y 2))
-                 (lambda (y)
-                   ((the ((the (-> Nat U)
-                               (lambda (z) (Pi ((y Nat)) (= Nat z y))))
-                          y)
-                         (lambda (y) TODO))
-                    2)))
+;
+;            ;; This correctly fails
+;            ;(the (Pi ((y Nat)) (= Nat y 2))
+;            ;     (lambda (y)
+;            ;       ((the ((the (-> Nat U)
+;            ;                   (lambda (z) (Pi ((y Nat)) (= Nat z y))))
+;            ;              y)
+;            ;             (lambda (y) same))
+;            ;        2)))
+;
+;            ;; This succeeds due to TODO
+;            (the (Pi ((y Nat)) (= Nat y 2))
+;                 (lambda (y)
+;                   ((the ((the (-> Nat U)
+;                               (lambda (z) (Pi ((y Nat)) (= Nat z y))))
+;                          y)
+;                         (lambda (y) TODO))
+;                    2)))
+;
+;            ;; This correctly fails
+;            ;(the (Pi ((y Nat))
+;            ;         ((the (-> Nat (U 1))
+;            ;               (lambda (x)
+;            ;                 (Pi ((y Nat))
+;            ;                     (= U
+;            ;                        ((the (-> Nat U)
+;            ;                              (lambda (z) (= Nat x z)))
+;            ;                         y)
+;            ;                        (= Nat y y)))))
+;            ;          y))
+;            ;     (lambda (a b) same))
+;
+;            ;; This correctly fails
+;            ;(the (Pi ((y Nat))
+;            ;        ((the (-> Nat U)
+;            ;              (lambda (x)
+;            ;                (Pi ((y Nat))
+;            ;                    (= (= Nat y y)
+;            ;                        (the (= Nat x y)
+;            ;                            same)
+;            ;                        (the (= Nat y y)
+;            ;                            same)))))
+;            ;          y))
+;            ;    (lambda (a b) same))
+;
+;            ;; This correctly fails, but succeeds if Pi-bound variables are not renamed
+;            ;(the (Pi ((y Nat))
+;            ;         (let ((x y))
+;            ;           (Pi ((y Nat))
+;            ;               (= (= Nat y y)
+;            ;                  (the (= Nat x y)
+;            ;                       same)
+;            ;                  (the (= Nat y y)
+;            ;                       same)))))
+;            ;     (lambda (a b) same))
+;
+;            ;; This correctly fails
+;            ;(the (Pi ((y Nat))
+;            ;         (let ((x y))
+;            ;           (Pi ((y Nat))
+;            ;               (= U (= Nat x y) (= Nat y y)))))
+;            ;     (lambda (a b) same))
 
             ))
