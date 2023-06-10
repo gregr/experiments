@@ -64,6 +64,7 @@
 (define V.Absurd            (V:construct 'Absurd  '()))
 (define V.Trivial           (V:construct 'Trivial '()))
 (define V.Nat               (V:construct 'Nat     '()))
+(define (V:= X from to)     (V:construct '= (list X from to)))
 (define V.zero              (V:construct 'zero '()))
 (define (V:add1 x)          (V:construct 'add1 (list x)))
 (define V.same              (V:construct 'same '()))
@@ -134,13 +135,12 @@
                                    step))))
       (`(ind-= #(V:construct same ()) ,motive ,base) base)
       (`(ind-= ,(and target `#(neutral #(V:construct = (,X ,from ,to)) ,N)) ,motive ,base)
-        (neutral (elim 'apply motive to target)
+        (neutral (elim 'apply (elim 'apply motive to) target)
                  (V:ind-= N
-                          (V:the (V:Pi X (closure/proc
-                                           'x
-                                           (lambda (x) (V:-> (V:construct '= X from x) U.top))))
+                          (V:the (V:Pi X (closure/proc 'x (lambda (x)
+                                                            (V:-> (V:= X from x) U.top))))
                                  motive)
-                          (V:the (elim 'apply motive from V.same) base))))
+                          (V:the (elim 'apply (elim 'apply motive from) V.same) base))))
       (_ (error "evaluate unimplemented for eliminator" (cons id v*))))))
 
 (define (evaluate env E)
@@ -250,7 +250,7 @@
       (`#(E:eliminate ,id ,e*)
         (define (pretty-fail e T . x*)
           (let ((e `(the ,(maybe-pretty-type env T) ,(E-pretty e))))
-            (apply pretty-error (append x* (list e `(in: ,(E-pretty E)))))))
+            (apply pretty-error (append x* (list e 'in: (E-pretty E))))))
         (match (cons id e*)
           (`(apply ,f ,a) (let ((A->B (loop f)))
                             (match A->B
@@ -288,8 +288,7 @@
               (match T
                 (`#(V:construct = (,X ,from ,to))
                   (check-type! env (V:Pi X (closure/proc 'x (lambda (x)
-                                                              (V:-> (V:construct '= X from x)
-                                                                    U.top))))
+                                                              (V:-> (V:= X from x) U.top))))
                                motive)
                   (let ((target (evaluate env target))
                         (motive (evaluate env motive)))
@@ -316,7 +315,8 @@
   (let loop! ((T T) (E E))
     (define (pretty-fail . x*)
       (apply pretty-error (append x* (list (maybe-pretty-type env T)
-                                           `(expression-being-checked: ,(E-pretty E))))))
+                                           'expression-being-checked:
+                                           (E-pretty E)))))
     (match E
       (`#(E:lam ,x ,body)
         (match T
@@ -341,7 +341,9 @@
                      (lambda (m n) (or (not n) (and m (<= m n))))
                      (normalize env U.top T.synth)
                      (normalize env U.top T))
-             (pretty-error "wrong type" `(expected-type: ,(maybe-pretty-type env T))
+             (pretty-error "wrong type"
+                           (maybe-pretty-type env T)
+                           'expression-being-checked:
                            `(the ,(maybe-pretty-type env T.synth) ,(E-pretty E)))))))))
 
 (define (alpha-equivalent?/U<= U<=? A B)
