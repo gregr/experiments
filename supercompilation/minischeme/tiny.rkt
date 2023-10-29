@@ -1,12 +1,6 @@
 #lang racket/base
 (provide (struct-out closure) E.tiny? E.tiny?! eval-tiny-expression)
-(require (rename-in racket/base (error rkt:error)) racket/match)
-
-(define (atom=? a b)
-  (define (atom? x) (or (null? x) (boolean? x) (number? x) (symbol? x)))
-  (and (or (and (atom? a) (atom? b))
-           (rkt:error "atom=? called with non-atom" a b))
-       (eqv? a b)))
+(require racket/bool racket/match)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Tiny Scheme Grammars ;;;
@@ -36,8 +30,7 @@
 ;     | (vector-ref E E)
 ;     | (car E)
 ;     | (cdr E)
-;     ;; predicates
-;     | (atom=? E E)
+;     ;; type predicates
 ;     | (null? E)
 ;     | (boolean? E)
 ;     | (vector? E)
@@ -45,6 +38,9 @@
 ;     | (number? E)
 ;     | (symbol? E)
 ;     | (procedure? E)
+;     ;; equality predicates
+;     | (= E E)               ; numeric equality
+;     | (symbol=? E E)
 ;     ;; case analysis
 ;     | (if E E E)
 ;     ;; procedure call
@@ -98,7 +94,6 @@
       (`(vector-ref ,(? loop?) ,(? loop?))    #t)
       (`(car ,(? loop?))                      #t)
       (`(cdr ,(? loop?))                      #t)
-      (`(atom=? ,(? loop?) ,(? loop?))        #t)
       (`(null? ,(? loop?))                    #t)
       (`(boolean? ,(? loop?))                 #t)
       (`(vector? ,(? loop?))                  #t)
@@ -106,6 +101,8 @@
       (`(number? ,(? loop?))                  #t)
       (`(symbol? ,(? loop?))                  #t)
       (`(procedure? ,(? loop?))               #t)
+      (`(=        ,(? loop?) ,(? loop?))      #t)
+      (`(symbol=? ,(? loop?) ,(? loop?))      #t)
       (`(if ,(? loop?) ,(? loop?) ,(? loop?)) #t)
       (`(call ,(? loop?) . ,arg*)             (and (list? arg*) (andmap loop? arg*)))
       (`(letrec ,bpair* ,body)                (let loop ((bpair* bpair*) (param* '()) (rhs* '()))
@@ -147,7 +144,6 @@
       (`(vector-ref ,x ,i)     (loop?! x) (loop?! i))
       (`(car ,x)               (loop?! x))
       (`(cdr ,x)               (loop?! x))
-      (`(atom=? ,a ,b)         (loop?! a) (loop?! b))
       (`(null? ,x)             (loop?! x))
       (`(boolean? ,x)          (loop?! x))
       (`(vector? ,x)           (loop?! x))
@@ -155,6 +151,8 @@
       (`(number? ,x)           (loop?! x))
       (`(symbol? ,x)           (loop?! x))
       (`(procedure? ,x)        (loop?! x))
+      (`(=        ,a ,b)       (loop?! a) (loop?! b))
+      (`(symbol=? ,a ,b)       (loop?! a) (loop?! b))
       (`(if ,c ,t ,f)          (loop?! c) (loop?! t) (loop?! f))
       (`(call ,p . ,arg*)      (loop?! p)
                                (unless (list? arg*) (error "arguments are not a list" arg*))
@@ -207,10 +205,6 @@
                                  (unless (pair? p)
                                    (error "cdr must be applied to a pair" p `(cdr ,E)))
                                  (cdr p)))
-      (`(atom=? ,E.a ,E.b)     (let ((a (loop E.a)) (b (loop E.b)))
-                                 (unless (and (atom? a) (atom? b))
-                                   (error "atom=? must be applied to atoms" a b `(atom=? ,E.a ,E.b)))
-                                 (atom=? a b)))
       (`(null? ,E)             (null?      (loop E)))
       (`(boolean? ,E)          (boolean?   (loop E)))
       (`(vector? ,E)           (vector?    (loop E)))
@@ -218,6 +212,8 @@
       (`(number? ,E)           (number?    (loop E)))
       (`(symbol? ,E)           (symbol?    (loop E)))
       (`(procedure? ,E)        (procedure? (loop E)))
+      (`(=        ,E.a ,E.b)   (=          (loop E.a) (loop E.b)))
+      (`(symbol=? ,E.a ,E.b)   (symbol=?   (loop E.a) (loop E.b)))
       (`(if ,E.c ,E.t ,E.f)    (if (loop E.c) (loop E.t) (loop E.f)))
       (`(call ,E.p . ,E*.arg)  (let ((proc (loop E.p))
                                      (arg* (map loop E*.arg)))

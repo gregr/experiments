@@ -21,7 +21,6 @@
 ;        | vector-ref
 ;        | car
 ;        | cdr
-;        | atom=?
 ;        | null?
 ;        | boolean?
 ;        | vector?
@@ -29,6 +28,8 @@
 ;        | number?
 ;        | symbol?
 ;        | procedure?
+;        | =
+;        | symbol=?
 
 ;; Lambda expression:
 ; LAM ::= (lambda (<symbol> ...) DL)
@@ -110,6 +111,15 @@
 
 (define (list? x) (or (null? x) (and (pair? x) (list? (cdr x)))))
 
+(define (atom? x) (or (null? x) (boolean? x) (number? x) (symbol? x)))
+
+(define (atom=? a b)
+  (cond ((null?    a) (null? b))
+        ((boolean? a) (and (boolean? b) (if a b (not b))))
+        ((number?  a) (and (number? b) (= a b)))
+        ((symbol?  b) (and (symbol? b) (symbol=? a b)))
+        (else         #f)))
+
 (define (memv x x*)
   (match x*
     ('()         #f)
@@ -123,7 +133,7 @@
       ('()                            #f)
       ((cons (and (cons k v) kv) kv*) (if (? k) kv (loop kv*))))))
 
-(define (assoc-atom key kv*) (assoc/? (lambda (k) (atom=? k key)) kv*))
+(define (assoc-symbol key kv*) (assoc/? (lambda (k) (symbol=? k key)) kv*))
 
 (define (foldl f acc x*)
   (match x*
@@ -169,7 +179,6 @@
 ;;;;;;;;;;;;;;;;;;
 
 (define (literal? x) (or (boolean? x) (number? x)))
-(define (atom?    x) (or (literal? x) (null? x) (symbol? x)))
 (define (binding? x) (and (pair? x) (symbol? (car x)) (pair? (cdr x)) (null? (cddr x))))
 
 (define (parameter*? param*)
@@ -192,12 +201,12 @@
     (_                 #f)))
 
 (define (env-bind   env name vocab=>x) (cons (cons name vocab=>x) env))
-(define (env-bound? env name)          (not (not (assoc-atom name env))))
+(define (env-bound? env name)          (not (not (assoc-symbol name env))))
 
 (define (env-ref env vocab name)
-  (let ((name+vocab=>x (assoc-atom name env)))
+  (let ((name+vocab=>x (assoc-symbol name env)))
     (and name+vocab=>x
-         (let ((vocab+x (assoc-atom vocab (cdr name+vocab=>x))))
+         (let ((vocab+x (assoc-symbol vocab (cdr name+vocab=>x))))
            (and vocab+x (cdr vocab+x))))))
 
 (define env.empty '())
@@ -213,14 +222,15 @@
            (vector-ref (lambda (v i) (vector-ref v i)))
            (car        (lambda (x)   (car x)))
            (cdr        (lambda (x)   (cdr x)))
-           (atom=?     (lambda (a b) (atom=? a b)))
            (null?      (lambda (x)   (null? x)))
            (boolean?   (lambda (x)   (boolean? x)))
            (vector?    (lambda (x)   (vector? x)))
            (pair?      (lambda (x)   (pair? x)))
            (number?    (lambda (x)   (number? x)))
            (symbol?    (lambda (x)   (symbol? x)))
-           (procedure? (lambda (x)   (procedure? x))))))
+           (procedure? (lambda (x)   (procedure? x)))
+           (=          (lambda (a b) (=        a b)))
+           (symbol=?   (lambda (a b) (symbol=? a b))))))
 
 (define (env-extend:base-definition env)
   (env-bind env 'define (list (cons 'definition:operator parse-define))))
@@ -376,7 +386,7 @@
          ('quasiquote           (error (list '(misplaced quasiquote) stx)))
          ('unquote              (error (list '(misplaced unquote) stx)))
          ((list 'quasiquote QE) `(cons ,($quote 'quasiquote) (cons ,(loop QE (+ level 1)) '())))
-         ((list 'unquote X)     (if (atom=? level 0)
+         ((list 'unquote X)     (if (= level 0)
                                     (parse-expression env X)
                                     `(cons ,($quote 'unquote) (cons ,(loop X (+ level -1)) '()))))
          (`(,QE.a . ,QE.b)      `(cons ,(loop QE.a level) ,(loop QE.b level)))
@@ -519,7 +529,7 @@
                                  (arg*  (map (lambda (b)
                                                `(letrec
                                                   ((self (lambda (sub)
-                                                           (if (atom=? ',b (car (car sub)))
+                                                           (if (symbol=? ',b (car (car sub)))
                                                                (cdr (car sub))
                                                                (call self (cdr sub))))))
                                                   (call self sub)))
@@ -535,24 +545,22 @@
 
 (define (PP->? env PP)
   (define equal?.tiny
-    `(letrec ((atom?  (lambda (x)
-                        (if (null? x) '#t (if (boolean? x) '#t (if (number? x) '#t (symbol? x))))))
-              (equal? (lambda (a b)
-                        (if (call atom? a)
-                            (if (call atom? b)
-                                (atom=? a b)
-                                '#f)
-                            (if (pair? a)
-                                (if (pair? b)
-                                    (if (call equal? (car a) (car b))
-                                        (call equal? (cdr a) (cdr b))
-                                        '#f)
-                                    '#f)
-                                (if (vector? a)
-                                    (if (vector? b)
-                                        (call equal? (vector-ref a '0) (vector-ref b '0))
-                                        '#f)
-                                    '#f))))))
+    `(letrec ((equal? (lambda (a b)
+                        (if (null? a) (null? b)
+                            (if (boolean? a) (if (boolean? b) (if a b (if b '#f '#t)) '#f)
+                                (if (number? a) (if (number? b) (= a b) '#f)
+                                    (if (symbol? a) (if (symbol? b) (symbol=? a b) '#f)
+                                        (if (pair? a)
+                                            (if (pair? b)
+                                                (if (call equal? (car a) (car b))
+                                                    (call equal? (cdr a) (cdr b))
+                                                    '#f)
+                                                '#f)
+                                            (if (vector? a)
+                                                (if (vector? b)
+                                                    (call equal? (vector-ref a '0) (vector-ref b '0))
+                                                    '#f)
+                                                '#f)))))))))
        equal?))
   (let loop ((PP PP))
     (match PP
@@ -562,7 +570,7 @@
                                 ((self (lambda (sub)
                                          (if (null? sub)
                                              (cons (cons ',PP x) '())
-                                             (if (atom=? ',PP (car (car sub)))
+                                             (if (symbol=? ',PP (car (car sub)))
                                                  (if (call ,equal?.tiny x (cdr (car sub)))
                                                      sub
                                                      '#f)
@@ -661,7 +669,7 @@
     ('quasiquote           (error '(misplaced quasiquote)))
     ('unquote              (error '(misplaced unquote)))
     ((list 'quasiquote QP) `(cons ,'(quote quasiquote) (cons ,(QP->PP QP (+ level 1)) '())))
-    ((list 'unquote X)     (if (atom=? level 0)
+    ((list 'unquote X)     (if (= level 0)
                                (MP->PP X)
                                `(cons ,'(quote unquote) (cons ,(QP->PP X (+ level -1)) '()))))
     (`(,QP.a . ,QP.b)      `(cons ,(QP->PP QP.a level) ,(QP->PP QP.b level)))

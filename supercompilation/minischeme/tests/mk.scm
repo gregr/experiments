@@ -5,6 +5,13 @@
 
     (define (atom? x) (or (null? x) (boolean? x) (number? x) (symbol? x)))
 
+    (define (atom=? a b)
+      (cond ((null?    a) (null? b))
+            ((boolean? a) (and (boolean? b) (if a b (not b))))
+            ((number?  a) (and (number? b) (= a b)))
+            ((symbol?  b) (and (symbol? b) (symbol=? a b)))
+            (else         #f)))
+
     (define (not x) (if x #f #t))
 
     (define (foldl f acc x*)
@@ -66,7 +73,7 @@
 
     (define (var   id)  (vector id))
     (define (var?  x)   (vector? x))
-    (define (var=? a b) (atom=? (vector-ref a 0) (vector-ref b 0)))
+    (define (var=? a b) (= (vector-ref a 0) (vector-ref b 0)))
 
     (define sub.empty '())
 
