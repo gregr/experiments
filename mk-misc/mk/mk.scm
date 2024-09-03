@@ -526,9 +526,13 @@
 
 (define ext-s-check
   (lambda (x v S)
-    (cond
-      ((occurs-check x v S) (values #f #f))
-      (else (values (subst-add S x v) `((,x . ,v)))))))
+    (let ((go (lambda (x v S)
+                (cond
+                  ((occurs-check x v S) (values #f #f))
+                  (else (values (subst-add S x v) `((,x . ,v))))))))
+      (if (and (var? v) (< (var-idx x) (var-idx v)))
+          (go v x S)
+          (go x v S)))))
 
 ; Returns as values the extended substitution and a list of associations added
 ; during the unification, or (values #f #f) if the unification failed.
