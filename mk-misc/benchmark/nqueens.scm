@@ -65,7 +65,7 @@
   (newline))
 
 ;(for-each pretty-answer (time (run 2 (board) (nqueenso board))))
-==>
+;==>
 ;(time (run 2 ...))
 ;    1 collection
 ;    0.007927582s elapsed cpu time, including 0.000481000s collecting
