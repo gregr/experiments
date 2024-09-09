@@ -91,12 +91,24 @@
                 '()))
           (loop (+ row 1)))
          '()))
+   ;; - for each cell
+   ;;   - one clause to assert the cell has at least one of the values
+   (let loop ((row 1))
+     (if (<= row N)
+         (append (let loop ((col 1))
+                   (if (<= col N)
+                       (cons (let loop ((value 1))
+                               (if (<= value N)
+                                   (cons (cell-value->var row col value)
+                                         (loop (+ value 1)))
+                                   '()))
+                             (loop (+ col 1)))
+                       '()))
+                 (loop (+ row 1)))
+         '()))
    ;; - for each group (row, column, or block)
    ;;   - for each value
    ;;     - one clause asserting that at least one cell in the group has that value
-   ;;     - for each cell in the group
-   ;;       - for each co-cell in the group
-   ;;         - one clause to assert that if the cell has that value, then the co-cell does not
    (let loop ((group* group*))
      (if (null? group*)
          '()
@@ -110,25 +122,7 @@
                                    (row  (car cell))
                                    (col  (cdr cell)))
                               (cons (cell-value->var row col value) (loop (cdr cell*))))))
-                      (append
-                       (let loop ((cell* (car group*)))
-                         (if (null? cell*)
-                             '()
-                             (let* ((cell    (car cell*))
-                                    (row     (car cell))
-                                    (col     (cdr cell))
-                                    (not-var (neg (cell-value->var row col value))))
-                               (append
-                                (let loop ((cell* (cdr cell*)))
-                                  (if (null? cell*)
-                                      '()
-                                      (let* ((co-cell (car cell*))
-                                             (co-row  (car co-cell))
-                                             (co-col  (cdr co-cell))
-                                             (co-var  (cell-value->var co-row co-col value)))
-                                        (cons (list not-var (neg co-var)) (loop (cdr cell*))))))
-                                (loop (cdr cell*))))))
-                       (loop (+ value 1))))
+                      (loop (+ value 1)))
                 '()))
           (loop (cdr group*))))))))
 
@@ -154,6 +148,17 @@
 
 (define (sudoku-solve row*)
   (s-map sudoku-reify (solve (make-sudoku-sat-clause* row*))))
+
+;; ?s
+(define really-easy.1 '((4 6 9 8 3 2 1 5 7)
+                        (7 3 5 1 9 6 2 8 4)
+                        (2 8 1 7 4 5 3 9 6)
+                        (9 2 6 3 7 8 4 1 5)
+                        (1 5 8 4 2 9 7 6 3)
+                        (3 4 7 5 6 1 9 2 8)
+                        (5 1 3 9 8 4 6 7 2)
+                        (6 9 4 2 5 7 0 3 1)
+                        (0 7 2 6 1 3 5 4 9)))
 
 ;; ?s
 (define easy.1 '((0 0 0 0 3 2 0 5 7)
@@ -264,10 +269,11 @@
                       (0 0 0 0 0 0 0 0 0)
                       (0 0 0 0 0 0 0 0 0)))
 
-;; TODO: naive SAT solver cannot solve even the easiest puzzle in a reasonable amount of time.
+;; TODO: the naive SAT solver can only solve ridiculously easy problems in a reasonable amount of time.
 (for-each (lambda (board) (pretty-write (time (sudoku-solve1 board))))
           (list
-           easy.1
+           really-easy.1
+           ;easy.1
            ;easy.2
            ;medium.1
            ;medium.2
