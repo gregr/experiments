@@ -3,7 +3,7 @@
   nqueens-solve1
   nqueens-solve
   )
-(require "sat1.rkt")
+(require "sat1.rkt" racket/pretty)
 
 ;;; N-Queens where N=8
 
@@ -91,7 +91,8 @@
 (define (nqueens-solve)
   (s-map nqueens-reify (solve (make-nqueens-sat-clause*))))
 
-;> (time (nqueens-solve1))
+(pretty-write (time (nqueens-solve1)))
+;==>
 ;cpu time: 3780 real time: 3896 gc time: 60
 ;((1 0 0 0 0 0 0 0)
 ; (0 0 0 0 1 0 0 0)
@@ -102,7 +103,8 @@
 ; (0 1 0 0 0 0 0 0)
 ; (0 0 0 1 0 0 0 0))
 
-;> (time (s-take 2 (nqueens-solve)))
+(pretty-write (time (s-take 2 (nqueens-solve))))
+;==>
 ;cpu time: 5464 real time: 5671 gc time: 23
 ;(((1 0 0 0 0 0 0 0)
 ;  (0 0 0 0 1 0 0 0)
