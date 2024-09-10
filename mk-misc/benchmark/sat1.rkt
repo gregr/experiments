@@ -40,7 +40,7 @@
   (* (if (< literal 0) -1 1) literal-value))
 
 (define (hash->vector x=>v)
-  (let* ((len (+ (apply max (hash-keys x=>v)) 1))
+  (let* ((len (+ (apply max 0 (hash-keys x=>v)) 1))
          (v*  (make-vector len 0)))
     (let loop ((i 0))
       (when (< i len)
