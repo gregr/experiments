@@ -103,7 +103,7 @@
 ; (0 1 0 0 0 0 0 0)
 ; (0 0 0 1 0 0 0 0))
 
-(pretty-write (time (s-take 2 (nqueens-solve))))
+;(pretty-write (time (s-take 2 (nqueens-solve))))
 ;==>
 ;cpu time: 5464 real time: 5671 gc time: 23
 ;(((1 0 0 0 0 0 0 0)

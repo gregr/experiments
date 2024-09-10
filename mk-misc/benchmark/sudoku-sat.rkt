@@ -150,16 +150,49 @@
 (define (sudoku-solve row*)
   (s-map sudoku-reify (solve (make-sudoku-sat-clause* row*))))
 
-;; ?s
-(define really-easy.1 '((4 6 9 8 3 2 1 5 7)
-                        (7 3 5 1 9 6 2 8 4)
-                        (2 8 1 7 4 0 3 9 6)
-                        (9 2 6 3 7 8 4 1 5)
-                        (1 5 8 4 2 9 7 6 3)
-                        (3 4 0 5 6 1 9 2 8)
-                        (5 1 3 0 8 4 6 7 2)
-                        (6 9 4 2 5 7 0 3 1)
-                        (0 7 2 6 1 3 5 4 9)))
+;; For the second naive solver:
+;(define really-easy.1 '((4 6 9 8 3 2 1 0 7)
+;                        (7 3 5 1 9 6 2 8 4)
+;                        (2 8 1 7 4 0 3 9 6)
+;                        (9 2 0 3 7 8 4 1 5)
+;                        (1 5 8 4 2 9 7 0 3)
+;                        (3 4 0 5 6 1 9 2 8)
+;                        (5 1 3 0 8 4 6 7 2)
+;                        (6 9 4 2 5 7 0 3 1)
+;                        (0 7 2 6 1 3 5 4 9)))
+
+;; 0.226s
+(define really-easy.1 '((0 6 0 0 3 2 0 5 7)
+                        (0 0 5 1 0 0 2 0 0)
+                        (2 8 1 7 4 5 0 9 6)
+                        (0 0 0 0 7 0 0 0 0)
+                        (0 0 8 0 0 9 7 6 0)
+                        (0 4 0 5 0 1 0 0 8)
+                        (5 0 3 9 8 4 0 7 0)
+                        (6 0 4 0 5 7 0 3 1)
+                        (0 0 2 0 1 0 0 0 9)))
+
+;; 14.3s
+;(define really-easy.1 '((0 0 0 0 3 2 0 5 7)
+;                        (0 0 5 1 0 0 2 0 0)
+;                        (2 8 1 7 4 5 0 9 6)
+;                        (0 0 0 0 7 0 0 0 0)
+;                        (0 0 8 0 0 9 7 6 0)
+;                        (0 4 0 5 0 1 0 0 8)
+;                        (5 0 3 9 8 4 0 7 0)
+;                        (6 0 4 0 5 7 0 3 1)
+;                        (0 0 2 0 1 0 0 0 9)))
+
+;; 5.33s
+;(define really-easy.1 '((0 6 0 0 3 2 0 5 7)
+;                        (0 0 5 1 0 0 0 0 0)
+;                        (2 8 1 7 4 5 0 9 6)
+;                        (0 0 0 0 7 0 0 0 0)
+;                        (0 0 8 0 0 9 7 6 0)
+;                        (0 4 0 5 0 1 0 0 8)
+;                        (5 0 3 9 8 4 0 7 0)
+;                        (6 0 4 0 5 7 0 3 1)
+;                        (0 0 2 0 1 0 0 0 9)))
 
 ;; ?s
 (define easy.1 '((0 0 0 0 3 2 0 5 7)
@@ -270,7 +303,8 @@
                       (0 0 0 0 0 0 0 0 0)
                       (0 0 0 0 0 0 0 0 0)))
 
-;; TODO: the naive SAT solver can only solve ridiculously easy problems in a reasonable amount of time.
+;; TODO: the basic SAT solver with 2-watched clauses and unit propagation still takes 47.5 seconds
+;; to solve easy.1, unfortunately.
 (for-each (lambda (board) (pretty-write (time (sudoku-solve1 board))))
           (list
            really-easy.1
