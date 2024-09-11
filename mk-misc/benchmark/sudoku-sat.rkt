@@ -519,6 +519,24 @@
            very-hard.2
            ))
 
+(for-each (lambda (board) (pretty-write (time (s-take 20 (sudoku-solve board)))))
+          (list
+           really-easy.0
+           really-easy.1
+           really-easy.2
+           really-easy.3
+           really-easy.4
+           easy.1
+           easy.2
+           medium.1
+           medium.2
+           grid.50
+           hard.1
+           hard.2
+           very-hard.1
+           very-hard.2
+           ))
+
 ;; The naive SAT solvers still have trouble even with the direct problem representation.
 
 ;; 2-watching solver with the direct problem representation:
