@@ -150,8 +150,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (literal-transform l val) (* (if (< l 0) -1 1) val))
 
-;; This solver improves sudoku performance by ~50000000x (50 million x) compared to the
-;; previous one, yet it still takes 47.5 seconds to solve the easy.1 sudoku problem.
 (define (solve1 clause*)
   (define (continue i=>l* var=>i*+ var=>i*- var=>val)
     (let loop ((i 0) (i=>l* i=>l*) (var=>i*+ var=>i*+) (var=>i*- var=>i*-) (var=>val var=>val))
