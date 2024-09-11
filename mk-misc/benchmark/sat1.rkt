@@ -3,6 +3,7 @@
   s->list
   s-take
   s-append
+  s-append-interleaving
   s-map
   solve1
   solve
