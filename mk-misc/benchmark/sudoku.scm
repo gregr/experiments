@@ -187,7 +187,7 @@
                    (2 6 0 3 4 9 0 5 0)
                    (0 0 0 0 0 0 0 7 0)))
 
-;; 5.23s
+;; 5.19s
 (define grid.50 '((3 0 0 2 0 0 0 0 0)
                   (0 0 0 1 0 7 0 0 0)
                   (7 0 6 0 3 0 5 0 0)
@@ -198,7 +198,7 @@
                   (0 0 0 7 0 2 0 0 0)
                   (0 0 0 0 0 8 0 0 6)))
 
-;; 8.62s
+;; 8.61s
 (define hard.1 '((0 0 8 6 2 7 0 0 9)
                  (0 0 0 5 0 0 0 0 0)
                  (0 3 0 0 9 0 0 0 0)
@@ -209,7 +209,7 @@
                  (4 0 0 0 8 0 0 0 0)
                  (0 0 0 3 0 0 2 4 0)))
 
-;; 115s
+;; 116s
 (define hard.2 '((0 0 5 0 7 0 0 0 0)
                  (0 0 6 0 0 9 0 0 0)
                  (0 9 0 0 5 0 0 0 0)
@@ -231,7 +231,7 @@
                       (6 0 0 0 0 0 0 0 3)
                       (0 4 0 0 8 0 0 0 0)))
 
-;; 63s
+;; 62s
 (define very-hard.2 '((0 4 0 0 0 0 0 0 0)
                       (0 0 6 0 1 0 4 0 0)
                       (0 0 1 0 3 7 0 0 0)
@@ -302,3 +302,130 @@
             very-hard.1
             very-hard.2
             ))
+
+;(time (run-sudoku board.in))
+;    33 collections
+;    0.204376376s elapsed cpu time, including 0.011181000s collecting
+;    0.204373000s elapsed real time, including 0.011206000s collecting
+;    274071200 bytes allocated, including 274380192 bytes reclaimed
+;(4 6 9 8 3 2 1 5 7)
+;(7 3 5 1 9 6 2 8 4)
+;(2 8 1 7 4 5 3 9 6)
+;(9 2 6 3 7 8 4 1 5)
+;(1 5 8 4 2 9 7 6 3)
+;(3 4 7 5 6 1 9 2 8)
+;(5 1 3 9 8 4 6 7 2)
+;(6 9 4 2 5 7 8 3 1)
+;(8 7 2 6 1 3 5 4 9)
+;(time (run-sudoku board.in))
+;    2 collections
+;    0.010825542s elapsed cpu time, including 0.000170000s collecting
+;    0.010824000s elapsed real time, including 0.000171000s collecting
+;    14445776 bytes allocated, including 16593856 bytes reclaimed
+;(8 3 2 6 4 9 1 5 7)
+;(7 4 5 8 2 1 3 9 6)
+;(1 9 6 3 7 5 2 8 4)
+;(3 7 8 2 9 6 4 1 5)
+;(4 2 9 5 1 8 7 6 3)
+;(5 6 1 4 3 7 9 2 8)
+;(6 1 3 7 8 2 5 4 9)
+;(2 5 7 9 6 4 8 3 1)
+;(9 8 4 1 5 3 6 7 2)
+;(time (run-sudoku board.in))
+;    6 collections
+;    0.037522251s elapsed cpu time, including 0.001143000s collecting
+;    0.037521000s elapsed real time, including 0.001150000s collecting
+;    51547056 bytes allocated, including 51176832 bytes reclaimed
+;(3 4 2 6 8 7 9 1 5)
+;(1 9 7 2 5 4 6 8 3)
+;(5 6 8 9 1 3 4 2 7)
+;(9 2 6 3 4 5 8 7 1)
+;(8 5 1 7 2 6 3 4 9)
+;(4 7 3 8 9 1 2 5 6)
+;(6 8 5 4 7 9 1 3 2)
+;(7 3 4 1 6 2 5 9 8)
+;(2 1 9 5 3 8 7 6 4)
+;(time (run-sudoku board.in))
+;    23 collections
+;    0.142945624s elapsed cpu time, including 0.005993000s collecting
+;    0.142943000s elapsed real time, including 0.006016000s collecting
+;    194528624 bytes allocated, including 192354640 bytes reclaimed
+;(7 9 4 1 3 2 6 8 5)
+;(6 2 1 5 9 8 7 3 4)
+;(3 8 5 7 6 4 2 1 9)
+;(1 3 9 4 2 7 5 6 8)
+;(8 7 6 9 1 5 3 4 2)
+;(5 4 2 6 8 3 1 9 7)
+;(4 5 3 8 7 1 9 2 6)
+;(2 6 7 3 4 9 8 5 1)
+;(9 1 8 2 5 6 4 7 3)
+;(time (run-sudoku board.in))
+;    681 collections
+;    5.188113000s elapsed cpu time, including 0.616263000s collecting
+;    5.188059000s elapsed real time, including 0.617888000s collecting
+;    5710874480 bytes allocated, including 5678872536 bytes reclaimed
+;(3 5 1 2 8 6 4 9 7)
+;(4 9 2 1 5 7 6 3 8)
+;(7 8 6 9 3 4 5 1 2)
+;(2 7 5 4 6 9 1 8 3)
+;(9 3 8 5 2 1 7 6 4)
+;(6 1 4 8 7 3 2 5 9)
+;(8 2 9 6 4 5 3 7 1)
+;(1 6 3 7 9 2 8 4 5)
+;(5 4 7 3 1 8 9 2 6)
+;(time (run-sudoku board.in))
+;    1050 collections
+;    8.605886042s elapsed cpu time, including 1.186783000s collecting
+;    8.605831000s elapsed real time, including 1.189613000s collecting
+;    8803871376 bytes allocated, including 8803080304 bytes reclaimed
+;(5 1 8 6 2 7 4 3 9)
+;(2 6 9 5 4 3 7 8 1)
+;(7 3 4 1 9 8 5 2 6)
+;(8 5 6 9 7 4 3 1 2)
+;(3 4 7 2 6 1 9 5 8)
+;(1 9 2 8 3 5 6 7 4)
+;(9 7 1 4 5 2 8 6 3)
+;(4 2 3 7 8 6 1 9 5)
+;(6 8 5 3 1 9 2 4 7)
+;(time (run-sudoku board.in))
+;    8094 collections
+;    115.938085583s elapsed cpu time, including 24.049269000s collecting
+;    115.938187000s elapsed real time, including 24.076598000s collecting
+;    67862130464 bytes allocated, including 67852054280 bytes reclaimed
+;(3 4 5 8 7 1 6 2 9)
+;(7 2 6 3 4 9 1 5 8)
+;(8 9 1 2 5 6 3 7 4)
+;(4 7 9 1 3 2 5 8 6)
+;(5 3 8 7 6 4 9 1 2)
+;(1 6 2 5 9 8 4 3 7)
+;(6 8 7 9 1 5 2 4 3)
+;(2 5 4 6 8 3 7 9 1)
+;(9 1 3 4 2 7 8 6 5)
+;(time (run-sudoku board.in))
+;    8699 collections
+;    153.055432042s elapsed cpu time, including 36.314495000s collecting
+;    153.054721000s elapsed real time, including 36.344586000s collecting
+;    72934282272 bytes allocated, including 72888455240 bytes reclaimed
+;(3 5 4 1 7 8 2 6 9)
+;(7 6 2 9 4 3 5 1 8)
+;(8 1 9 6 5 2 7 3 4)
+;(4 9 7 2 3 1 8 5 6)
+;(1 2 6 8 9 5 3 4 7)
+;(5 8 3 4 6 7 1 9 2)
+;(9 3 1 7 2 4 6 8 5)
+;(6 7 8 5 1 9 4 2 3)
+;(2 4 5 3 8 6 9 7 1)
+;(time (run-sudoku board.in))
+;    5087 collections
+;    61.871641792s elapsed cpu time, including 12.232564000s collecting
+;    61.871278000s elapsed real time, including 12.249296000s collecting
+;    42655118128 bytes allocated, including 42703884160 bytes reclaimed
+;(3 4 5 9 6 2 7 8 1)
+;(7 2 6 8 1 5 4 3 9)
+;(8 9 1 4 3 7 5 2 6)
+;(4 7 9 6 5 8 3 1 2)
+;(1 6 2 7 4 3 9 5 8)
+;(5 3 8 2 9 1 6 7 4)
+;(2 5 4 1 7 9 8 6 3)
+;(6 8 7 3 2 4 1 9 5)
+;(9 1 3 5 8 6 2 4 7)
