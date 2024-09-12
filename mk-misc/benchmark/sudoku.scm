@@ -242,6 +242,28 @@
                       (0 0 0 3 0 0 0 9 0)
                       (9 0 0 0 0 0 2 0 0)))
 
+;; 30s
+(define extremely-hard.1 '((0 1 0 0 0 2 5 4 0)
+                           (0 9 8 0 0 0 0 0 0)
+                           (0 0 0 0 0 0 0 0 0)
+                           (6 0 7 0 0 0 3 0 0)
+                           (5 0 0 2 0 0 0 0 0)
+                           (0 0 0 9 0 0 0 0 0)
+                           (0 0 0 0 6 0 0 9 8)
+                           (0 0 0 0 3 0 0 0 0)
+                           (7 0 0 0 0 0 0 0 0)))
+
+;; 380s
+(define extremely-hard.2 '((0 0 0 1 0 2 0 3 0)
+                           (8 0 0 7 0 0 0 0 0)
+                           (4 0 0 0 0 0 9 0 0)
+                           (0 1 0 3 0 0 0 0 0)
+                           (0 0 0 0 6 0 4 0 0)
+                           (0 0 0 0 0 0 0 0 0)
+                           (6 0 9 0 4 0 0 0 0)
+                           (0 0 0 0 0 0 0 7 1)
+                           (0 0 0 0 5 0 0 0 0)))
+
 (define board.empty '((0 0 0 0 0 0 0 0 0)
                       (0 0 0 0 0 0 0 0 0)
                       (0 0 0 0 0 0 0 0 0)
@@ -301,6 +323,8 @@
             hard.2
             very-hard.1
             very-hard.2
+            extremely-hard.1
+            extremely-hard.2
             ))
 
 ;(time (run-sudoku board.in))
@@ -429,3 +453,31 @@
 ;(2 5 4 1 7 9 8 6 3)
 ;(6 8 7 3 2 4 1 9 5)
 ;(9 1 3 5 8 6 2 4 7)
+;(time (run-sudoku board.in))
+;    2623 collections
+;    29.800163291s elapsed cpu time, including 5.333381000s collecting
+;    29.800422000s elapsed real time, including 5.340819000s collecting
+;    21989139952 bytes allocated, including 21979490456 bytes reclaimed
+;(3 1 6 8 9 2 5 4 7)
+;(4 9 8 3 5 7 1 6 2)
+;(2 7 5 6 4 1 9 8 3)
+;(6 2 7 4 8 5 3 1 9)
+;(5 4 9 2 1 3 8 7 6)
+;(8 3 1 9 7 6 4 2 5)
+;(1 5 3 7 6 4 2 9 8)
+;(9 6 2 1 3 8 7 5 4)
+;(7 8 4 5 2 9 6 3 1)
+;(time (run-sudoku board.in))
+;    18209 collections
+;    380.161110541s elapsed cpu time, including 100.642735000s collecting
+;    380.163640000s elapsed real time, including 100.710321000s collecting
+;    152675654320 bytes allocated, including 152617784536 bytes reclaimed
+;(7 9 6 1 8 2 5 3 4)
+;(8 5 3 7 9 4 1 2 6)
+;(4 2 1 5 3 6 9 8 7)
+;(9 1 4 3 7 5 2 6 8)
+;(3 8 7 2 6 9 4 1 5)
+;(2 6 5 4 1 8 7 9 3)
+;(6 7 9 8 4 1 3 5 2)
+;(5 4 8 9 2 3 6 7 1)
+;(1 3 2 6 5 7 8 4 9)
