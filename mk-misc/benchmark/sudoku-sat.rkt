@@ -531,6 +531,29 @@
 ; (5 4 8 9 2 3 6 7 1)
 ; (1 3 2 6 5 7 8 4 9))
 
+;; A "hard" puzzle from: https://github.com/frankmcsherry/blog/blob/master/posts/2020-06-06.md
+;; The blog implementation solves this puzzle in 44.7ms.
+;; Our SAT solver is about 15x faster in this case.
+(define not-too-hard '((0 0 1 2 0 3 4 0 0)
+                       (0 0 0 6 0 7 0 0 0)
+                       (5 0 0 0 0 0 0 0 3)
+                       (3 7 0 0 0 0 0 8 1)
+                       (0 0 0 0 0 0 0 0 0)
+                       (6 2 0 0 0 0 0 3 7)
+                       (1 0 0 0 0 0 0 0 8)
+                       (0 0 0 8 0 5 0 0 0)
+                       (0 0 6 4 0 2 5 0 0)))
+;cpu time: 3 real time: 3 gc time: 0
+;((7 8 1 2 5 3 4 9 6)
+; (2 4 3 6 9 7 8 1 5)
+; (5 6 9 1 4 8 7 2 3)
+; (3 7 5 9 2 4 6 8 1)
+; (9 1 8 3 7 6 2 5 4)
+; (6 2 4 5 8 1 9 3 7)
+; (1 5 2 7 6 9 3 4 8)
+; (4 9 7 8 3 5 1 6 2)
+; (8 3 6 4 1 2 5 7 9))
+
 (define board.empty '((0 0 0 0 0 0 0 0 0)
                       (0 0 0 0 0 0 0 0 0)
                       (0 0 0 0 0 0 0 0 0)
@@ -559,6 +582,7 @@
            very-hard.2
            extremely-hard.1
            extremely-hard.2
+           not-too-hard
            ))
 
 (for-each (lambda (board) (pretty-write (time (s-take 20 (sudoku-solve board)))))
@@ -579,6 +603,7 @@
            very-hard.2
            extremely-hard.1
            extremely-hard.2
+           not-too-hard
            ))
 
 ;; The naive SAT solvers still have trouble even with the direct problem representation.
@@ -744,3 +769,13 @@
 ; (6 7 9 8 4 1 3 5 2)
 ; (5 4 8 9 2 3 6 7 1)
 ; (1 3 2 6 5 7 8 4 9))
+;cpu time: 3 real time: 3 gc time: 0
+;((7 8 1 2 5 3 4 9 6)
+; (2 4 3 6 9 7 8 1 5)
+; (5 6 9 1 4 8 7 2 3)
+; (3 7 5 9 2 4 6 8 1)
+; (9 1 8 3 7 6 2 5 4)
+; (6 2 4 5 8 1 9 3 7)
+; (1 5 2 7 6 9 3 4 8)
+; (4 9 7 8 3 5 1 6 2)
+; (8 3 6 4 1 2 5 7 9))
